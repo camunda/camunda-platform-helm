@@ -21,6 +21,7 @@ topology:
       features:
         - multinamespace-reset-clients
         - multinamespace-optimize-hub
+        - ingress-nginx
     - role: orchestration
       namespace-suffix: orcha
       modeler-cluster-id: orcha

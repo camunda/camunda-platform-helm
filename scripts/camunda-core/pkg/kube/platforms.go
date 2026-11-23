@@ -142,6 +142,9 @@ func applyExternalSecretsOther(ctx context.Context, client *Client, repoRoot, ch
 		logging.Logger.Debug().Msg("no integration-test external-secret manifest found (optional, continuing)")
 		return nil
 	}
+	if err := deleteExternalSecretsTargeting(ctx, client, namespace, secretNameIntegrationCredentials); err != nil {
+		return err
+	}
 	if err := applyManifestFile(ctx, client, namespace, file); err != nil {
 		return fmt.Errorf("apply integration-test credentials %s: %w", file, err)
 	}
@@ -207,6 +210,9 @@ const (
 
 	replicatedSecretInterval = 5 * time.Second
 	replicatedSecretTimeout  = 300 * time.Second
+
+	deletedExternalSecretInterval = time.Second
+	deletedExternalSecretTimeout  = 120 * time.Second
 )
 
 // The stub is applied with empty tls.crt/tls.key, so existence is not enough: the secret is
@@ -274,15 +280,33 @@ func deleteExternalSecretsTargeting(ctx context.Context, client *Client, namespa
 			Str("namespace", namespace).
 			Str("externalSecret", item.GetName()).
 			Str("target", targetSecret).
-			Msg("removing stale ExternalSecret so it cannot overwrite the replicated secret")
+			Msg("removing stale ExternalSecret that targets the same Secret")
 
 		err = client.dynamicClient.Resource(externalSecretGVR).Namespace(namespace).
 			Delete(ctx, item.GetName(), metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return fmt.Errorf("delete stale ExternalSecret %q in %q: %w", item.GetName(), namespace, err)
 		}
+		if err := waitExternalSecretDeleted(ctx, client, namespace, item.GetName()); err != nil {
+			return err
+		}
 	}
 
+	return nil
+}
+
+func waitExternalSecretDeleted(ctx context.Context, client *Client, namespace, name string) error {
+	err := wait.PollUntilContextTimeout(ctx, deletedExternalSecretInterval, deletedExternalSecretTimeout, true,
+		func(ctx context.Context) (bool, error) {
+			_, err := client.dynamicClient.Resource(externalSecretGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+			if apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		})
+	if err != nil {
+		return fmt.Errorf("wait for deleted ExternalSecret %q in %q to be gone: %w", name, namespace, err)
+	}
 	return nil
 }
 

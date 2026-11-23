@@ -170,23 +170,13 @@ func synthesizeReleaseOpts(base RunOptions, platform string, namespaceOverride s
 //     future-proof and functionally identical today.
 //
 //   - Secrets.ExternalSecrets: forced to true for every release.
-//     BuildEntryFlags sets ExternalSecrets = (NamespaceOverride == ""),
-//     which is a normal-path optimization: per-scenario CI workflows that
-//     pre-create the namespace via --namespace-override already ran
-//     .github/actions/cluster-setup-secrets, so re-applying external
-//     secrets would be redundant (and can fail on EKS RBAC, see
-//     BuildEntryFlags' comment). The topology path ALWAYS sets
-//     NamespaceOverride (one per release namespace) but has NO equivalent
-//     cluster-setup-secrets action run for it — so the topology driver
+//     BuildEntryFlags sets ExternalSecrets only without NamespaceOverride or
+//     with --external-secrets. The topology path ALWAYS sets
+//     NamespaceOverride (one per release namespace), so the topology driver
 //     itself must own provisioning integration-test-credentials (and other
 //     external secrets) into every release namespace from the same Vault
 //     path, or dependent companions like the Hub release's bundled
 //     Keycloak CreateContainerConfigError on the missing secret.
-//     NOTE for Stage 3 (CI wiring): when a topology scenario is wired into
-//     CI, the workflow must NOT also invoke cluster-setup-secrets for these
-//     namespaces — this driver already provisions them, and doing both
-//     would double-provision (and reintroduces the EKS RBAC risk
-//     BuildEntryFlags' comment warns about).
 func applyTopologyReleaseOverrides(flags *config.RuntimeFlags, crossRefEnv map[string]string) {
 	if flags.ExtraEnv == nil {
 		flags.ExtraEnv = make(map[string]string, len(crossRefEnv))

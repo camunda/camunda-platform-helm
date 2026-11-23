@@ -1,5 +1,34 @@
 # Changelog
 
+## [15.4.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.4.2...camunda-platform-8.10-15.4.3) (2026-11-19)
+
+
+### Bug Fixes
+
+* **8.10,8.11:** skip the gRPC upstream TLS ingress-nginx warning on openshift-default [ready] ([#7823](https://github.com/camunda/camunda-platform-helm/issues/7823)) ([c974fde](https://github.com/camunda/camunda-platform-helm/commit/c974fde29c74a67ffe36fc899af237fd9ea60392))
+* apply global pullPolicy to optimize migration init container ([#7882](https://github.com/camunda/camunda-platform-helm/issues/7882)) ([42b9ab1](https://github.com/camunda/camunda-platform-helm/commit/42b9ab159aa6b4720a0be521180c6b863fab5c5c))
+
+
+### Documentation
+
+* correct the legacy exporter removal procedure in the chart READMEs ([#7900](https://github.com/camunda/camunda-platform-helm/issues/7900)) ([fcfe3f1](https://github.com/camunda/camunda-platform-helm/commit/fcfe3f1a98ea84bb837a6524c97789c7bcd8ef68))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7878](https://github.com/camunda/camunda-platform-helm/issues/7878)) ([2e321fc](https://github.com/camunda/camunda-platform-helm/commit/2e321fc24f0bdfc97d5252ba13053dbcff8f49c3))
+* update camunda-platform-images (patch) ([#7948](https://github.com/camunda/camunda-platform-helm/issues/7948)) ([24c3363](https://github.com/camunda/camunda-platform-helm/commit/24c33630ca87012318741b003168dcddf4520d8e))
+* update camunda-platform-images (patch) ([#7955](https://github.com/camunda/camunda-platform-helm/issues/7955)) ([ed88ff2](https://github.com/camunda/camunda-platform-helm/commit/ed88ff2c9c084f0c192f07eda5781fc086c16016))
+
+## [15.4.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.4.1...camunda-platform-8.10-15.4.2) (2026-11-06)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7842](https://github.com/camunda/camunda-platform-helm/issues/7842)) ([3757c4b](https://github.com/camunda/camunda-platform-helm/commit/3757c4b0eac53daa29e198b5b26bef7e5975b7b9))
+* update camunda-platform-images (patch) ([#7856](https://github.com/camunda/camunda-platform-helm/issues/7856)) ([e769321](https://github.com/camunda/camunda-platform-helm/commit/e76932181ce7b858208843eddceb1d11674316a5))
+* update camunda-platform-images (patch) ([#7865](https://github.com/camunda/camunda-platform-helm/issues/7865)) ([839db2b](https://github.com/camunda/camunda-platform-helm/commit/839db2b945f746c45328a2ad104c2d3d485a99e5))
+
 ## [15.4.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.10-15.4.0...camunda-platform-8.10-15.4.1) (2026-11-03)
 
 

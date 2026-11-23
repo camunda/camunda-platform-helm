@@ -1,5 +1,44 @@
 # Changelog
 
+## [14.12.3](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.12.2...camunda-platform-8.9-14.12.3) (2026-11-19)
+
+
+### Bug Fixes
+
+* **8.8,8.9:** declare bundled subchart image tags ([#7938](https://github.com/camunda/camunda-platform-helm/issues/7938)) ([051a1a2](https://github.com/camunda/camunda-platform-helm/commit/051a1a2dd3f19cadc588420c2dc9f34dc5fb3bdf))
+* **8.8,8.9:** declare bundled subchart values [ready] ([#7890](https://github.com/camunda/camunda-platform-helm/issues/7890)) ([4e72ccf](https://github.com/camunda/camunda-platform-helm/commit/4e72ccf4ef8fec000704d342110149a701594087))
+* apply global pullPolicy to optimize migration init container ([#7882](https://github.com/camunda/camunda-platform-helm/issues/7882)) ([42b9ab1](https://github.com/camunda/camunda-platform-helm/commit/42b9ab159aa6b4720a0be521180c6b863fab5c5c))
+* disable BASE64 intrinsics in Keycloak and Elasticsearch for CVE-2026-114938 ([#7954](https://github.com/camunda/camunda-platform-helm/issues/7954)) ([d32c9ff](https://github.com/camunda/camunda-platform-helm/commit/d32c9ffb144a621dfd51bcd0ed3b566bd8f72f1e))
+* keep the 8.9 connectors headless Service as ClusterIP when connectors.service.type changes ([#7859](https://github.com/camunda/camunda-platform-helm/issues/7859)) ([4e02da1](https://github.com/camunda/camunda-platform-helm/commit/4e02da16be96e938d291940aa43e5e6410b0d93b))
+* warn that bitnamilegacy images still trust the compromised eMudhra roots ([#7906](https://github.com/camunda/camunda-platform-helm/issues/7906)) ([26d16ec](https://github.com/camunda/camunda-platform-helm/commit/26d16ec99ec56d8e4aecad99203cee1af1a52604))
+
+
+### Documentation
+
+* correct the legacy exporter removal procedure in the chart READMEs ([#7900](https://github.com/camunda/camunda-platform-helm/issues/7900)) ([fcfe3f1](https://github.com/camunda/camunda-platform-helm/commit/fcfe3f1a98ea84bb837a6524c97789c7bcd8ef68))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7878](https://github.com/camunda/camunda-platform-helm/issues/7878)) ([2e321fc](https://github.com/camunda/camunda-platform-helm/commit/2e321fc24f0bdfc97d5252ba13053dbcff8f49c3))
+* update camunda-platform-images (patch) ([#7948](https://github.com/camunda/camunda-platform-helm/issues/7948)) ([24c3363](https://github.com/camunda/camunda-platform-helm/commit/24c33630ca87012318741b003168dcddf4520d8e))
+* update camunda-platform-images (patch) ([#7955](https://github.com/camunda/camunda-platform-helm/issues/7955)) ([ed88ff2](https://github.com/camunda/camunda-platform-helm/commit/ed88ff2c9c084f0c192f07eda5781fc086c16016))
+* update registry.camunda.cloud/vendor-ee/elasticsearch docker tag to v8.19.25 ([#7896](https://github.com/camunda/camunda-platform-helm/issues/7896)) ([1805ce2](https://github.com/camunda/camunda-platform-helm/commit/1805ce2cf7ff326dd129bac3e1cc328c362b1148))
+
+## [14.12.2](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.12.1...camunda-platform-8.9-14.12.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* include global.host in the Camunda REST API URL ([#7791](https://github.com/camunda/camunda-platform-helm/issues/7791)) ([c069939](https://github.com/camunda/camunda-platform-helm/commit/c069939597fec3b4a81aa4022cdddec93d05acc1))
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#7842](https://github.com/camunda/camunda-platform-helm/issues/7842)) ([3757c4b](https://github.com/camunda/camunda-platform-helm/commit/3757c4b0eac53daa29e198b5b26bef7e5975b7b9))
+* update camunda-platform-images (patch) ([#7856](https://github.com/camunda/camunda-platform-helm/issues/7856)) ([e769321](https://github.com/camunda/camunda-platform-helm/commit/e76932181ce7b858208843eddceb1d11674316a5))
+* update camunda-platform-images (patch) ([#7865](https://github.com/camunda/camunda-platform-helm/issues/7865)) ([839db2b](https://github.com/camunda/camunda-platform-helm/commit/839db2b945f746c45328a2ad104c2d3d485a99e5))
+
 ## [14.12.1](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.9-14.12.0...camunda-platform-8.9-14.12.1) (2026-11-03)
 
 

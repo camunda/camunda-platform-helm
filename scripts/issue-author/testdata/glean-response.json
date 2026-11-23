@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {"author": "USER", "messageType": "CONTENT", "fragments": [{"text": "prompt"}]},
+    {"author": "GLEAN_AI", "messageType": "UPDATE", "fragments": [{"text": "Searching the triage guidelines"}]},
+    {"author": "GLEAN_AI", "messageType": "CONTENT", "fragments": [
+      {"text": "Assessment:\n```json\n{\"work_type\":\"BUG\",\"kind\":\"bug\",\"severity\":\"high\",\"likelihood\":\"mid\",\"confidence\":0.85,"},
+      {"citation": {"sourceDocument": {"title": "Distro Bug Triage"}}},
+      {"text": "\"rationale\":\"The chart is in the SM Platform scope.\\n\\nThe upgrade stops the pods.\\n\",\"similar_issues\":[\"#7\",\"#8\"],\"missing_info\":true,\"missing_info_details\":\"The chart version.\"}\n```\n"}
+    ]}
+  ],
+  "chatId": "fixture"
+}

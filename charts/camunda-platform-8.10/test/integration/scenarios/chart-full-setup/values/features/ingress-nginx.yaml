@@ -1,0 +1,14 @@
+# Keeps this role's HTTP Ingress on ingress-nginx.
+#
+# The multi-namespace topologies (multinamespace*, physicaltenants) serve one shared host from
+# several namespaces. The orchestration and optimize roles use identity/keycloak-external*, which
+# stay on nginx (Contour rejects the ExternalName Keycloak Service), so the hub role must stay on
+# nginx too. Split across controllers, DNS returns both load balancer IPs for the shared host and
+# about half the requests hit a controller that has no route for the path (404).
+# The gRPC Ingress has its own host and stays on Contour.
+global:
+  compatibility:
+    nginx:
+      renderAnnotations: true
+  ingress:
+    className: nginx

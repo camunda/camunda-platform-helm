@@ -4745,7 +4745,7 @@
                                         },
                                         "clientIdClaim": {
                                             "type": "string",
-                                            "description": "(DEPRECATED) can be used to set client ID claim.",
+                                            "description": "(DEPRECATED) can be used to set client ID claim. This value also sets the Optimize client ID claim (`camunda.security.authentication.oidc.client-id-claim`), which Optimize uses to accept API client tokens on its public API.",
                                             "default": "client_id"
                                         },
                                         "groupsClaim": {

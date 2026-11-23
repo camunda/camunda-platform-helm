@@ -658,7 +658,7 @@ jobs:
 
       - name: Import Vault secrets for notification
         id: vault-notification
-        if: steps.auto-merge.outputs.enabled == 'true'
+        if: ${{ !cancelled() }}
         continue-on-error: true
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
@@ -686,6 +686,30 @@ jobs:
                   text: |
                     :white_check_mark: *Helm Chart ${{ needs.release.outputs.version }}* released and auto-merge enabled for the release-please PR.
                     <${{ github.server_url }}/${{ github.repository }}/pull/${{ steps.mark-published.outputs.pr_number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
+
+      # Every skip path above (PR changed, rebase targets another version, stamp failed)
+      # exits 0. Without this alert the published release's PR stays open silently and
+      # the next dev build fails on "chart version ... is already released".
+      - name: Alert if release-please PR was not queued for merge
+        # A successful lookup without a PR number is a supported replay no-op (no open PR,
+        # or the PR targets another version): do not page for it.
+        if: >-
+          ${{ !cancelled() && steps.auto-merge.outputs.enabled != 'true' &&
+              (steps.release-pr.outcome != 'success' || steps.release-pr.outputs.pr_number != '') }}
+        continue-on-error: true
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ steps.vault-notification.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    <!subteam^S0CEY294VGC> :rotating_light:
+                    *Helm Chart ${{ needs.release.outputs.version }}* was published, but auto-merge was *not* enabled for its release-please PR. Check the workflow log first: confirm the PR targets this version and that the release date stamp succeeded (re-run the job if not). Then label the PR `autorelease: published`, approve and merge it. Until it merges, the next dev build of this chart fails.
+                    <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
 
   ensure-release-pr-merged:
     name: Ensure release-please PR merges
@@ -720,7 +744,7 @@ jobs:
       - name: Shepherd release-please PR through merge queue
         id: merge-queue
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@3e556b42c8771fe1afb91361ae44e81367a37f5e # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@13e74c7d453d3dcdca49f4a3413da3770643bfc2 # main
         with:
           pr-number: ${{ needs.post-release.outputs.pr-number }}
           app-id: ${{ steps.secrets.outputs.GH_APP_ID_DISTRO_CI }}
@@ -767,7 +791,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     *Helm Chart ${{ needs.release.outputs.version }}* was published, but its release-please PR did *not* merge (result: `${{ steps.merge-queue.outputs.result || 'unknown' }}`, last queue state: `${{ steps.merge-queue.outputs.queue-state || 'unknown' }}`).
                     Please merge it so `main` syncs with the released artifact.
                     <${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.post-release.outputs.pr-number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
@@ -831,7 +855,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    <!subteam^S05K9BK6RTK> :rotating_light:
+                    <!subteam^S0CEY294VGC> :rotating_light:
                     The *Chart Public Release* pipeline has failed.
 
                     *RC tag:* ${{ inputs.rc-tag }}

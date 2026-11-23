@@ -173,7 +173,7 @@ jobs:
 
       - name: Setup Go for cache annotation
         if: steps.resolve-pr-sha.outputs.pr-head-sha != '' && steps.resolve-e2e-suite.outputs.version != ''
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with:
           go-version-file: scripts/ci-result-cache/go.mod
           # Cache disabled: the previous setup-go invocation (in the

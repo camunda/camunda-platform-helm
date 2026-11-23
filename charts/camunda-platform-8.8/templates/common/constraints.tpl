@@ -197,7 +197,24 @@ Non-fatal deprecation/config warnings. Consumed by NOTES.txt (helm install/upgra
 configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the GitOps path
 (helm template / Argo CD / Flux). Feed new deprecations here so they reach both channels.
 */}}
+{{- /* NOTE: Warns when external env sources can carry JDK_JAVA_OPTIONS. */ -}}
+{{- define "camunda.base64MitigationWarnings" -}}
+{{- $kc := .Values.identityKeycloak | default dict -}}
+{{- $sources := list -}}
+{{- if $kc.extraEnvVarsCM }}{{ $sources = append $sources "identityKeycloak.extraEnvVarsCM" }}{{ end -}}
+{{- if $kc.extraEnvVarsSecret }}{{ $sources = append $sources "identityKeycloak.extraEnvVarsSecret" }}{{ end -}}
+{{- if kindIs "slice" ($kc.extraEnvVars | default list) -}}
+{{- range $entry := $kc.extraEnvVars -}}
+{{- if and (kindIs "string" $entry.name) (eq $entry.name "JDK_JAVA_OPTIONS") (hasKey $entry "valueFrom") }}{{ $sources = append $sources "identityKeycloak.extraEnvVars[valueFrom]" }}{{ end -}}
+{{- end -}}
+{{- end -}}
+{{- if $sources -}}
+{{- printf "\n%s" (printf "[camunda][warning] SECURITY NOTICE: CVE-2026-114938 mitigation may not apply. Keycloak loads JDK_JAVA_OPTIONS from %s after the chart's ConfigMap, so those values can replace -XX:-UseBASE64Intrinsics. Add the flag to them." (join ", " $sources)) }}
+{{- end -}}
+{{- end -}}
+
 {{- define "camunda.constraints.warnings" }}
+  {{- include "camunda.base64MitigationWarnings" . }}
   {{- if and .Values.global.identity.auth.enabled (empty (include "camundaPlatform.authIssuerUrlWithFallback" . | trim)) }}
     {{- $issuerBackendUrl := include "camundaPlatform.authIssuerBackendUrl" . | trim }}
     {{- $keycloakURL := .Values.global.identity.keycloak.url | default dict }}
