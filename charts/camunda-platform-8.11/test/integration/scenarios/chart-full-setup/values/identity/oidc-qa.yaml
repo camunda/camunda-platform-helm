@@ -5,6 +5,9 @@
 global:
   annotations:
     keycloak-token-url: "https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/token"
+  security:
+    authentication:
+      method: oidc
   identity:
     auth:
       issuer: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
@@ -101,3 +104,18 @@ identity:
       value: "Hub Admin"
     - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_3
       value: "Optimize"
+
+# Without the resource scope Entra issues a Microsoft Graph access token, which
+# Optimize cannot validate against the Camunda issuer; it then falls back to ID
+# token claims and denies access. The chart exposes tokenScope for connectors
+# and orchestration only, so Optimize takes the property as env.
+optimize:
+  env:
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_0
+      value: "openid"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_1
+      value: "profile"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_2
+      value: "email"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_3
+      value: "$ENTRA_APP_CLIENT_ID/.default"
