@@ -944,43 +944,35 @@ func isPrunableURI(uri, host string) bool {
 	return isCIDomainURI(uri) && !isHostURI(uri, host)
 }
 
-func countPrunable(uris []string, host string) int {
-	n := 0
-	for _, uri := range uris {
-		if isPrunableURI(uri, host) {
-			n++
+// oldestPrunableHost returns the host of the first prunable URI in web, then
+// in spa. Registrations append, so list order is registration order.
+func oldestPrunableHost(web, spa []string, host string) string {
+	for _, list := range [][]string{web, spa} {
+		for _, uri := range list {
+			if !isPrunableURI(uri, host) {
+				continue
+			}
+			if u, err := url.Parse(uri); err == nil && u.Host != "" {
+				return u.Host
+			}
 		}
 	}
-	return n
+	return ""
 }
 
-func firstPrunable(uris []string, host string) int {
-	for i, uri := range uris {
-		if isPrunableURI(uri, host) {
-			return i
-		}
-	}
-	return -1
-}
-
-// capRedirectURIs drops the oldest CI URIs of other hosts, from whichever
-// list holds more of them, until web and spa together fit maxRedirectURIs.
+// capRedirectURIs evicts whole CI deployments, oldest first and from both
+// lists at once, until web, spa and reserved together fit maxRedirectURIs.
 // Non-CI URIs and the current host's URIs are never dropped.
-func capRedirectURIs(web, spa []string, host string) ([]string, []string) {
-	for len(web)+len(spa) > maxRedirectURIs {
-		wc, sc := countPrunable(web, host), countPrunable(spa, host)
-		switch {
-		case wc == 0 && sc == 0:
+func capRedirectURIs(web, spa []string, reserved int, host string) ([]string, []string) {
+	for len(web)+len(spa)+reserved > maxRedirectURIs {
+		evict := oldestPrunableHost(web, spa, host)
+		if evict == "" {
 			return web, spa
-		case wc >= sc:
-			i := firstPrunable(web, host)
-			logging.Logger.Debug().Str("uri", web[i]).Msg("Pruning oldest CI redirect URI")
-			web = slices.Delete(web, i, i+1)
-		default:
-			i := firstPrunable(spa, host)
-			logging.Logger.Debug().Str("uri", spa[i]).Msg("Pruning oldest CI redirect URI")
-			spa = slices.Delete(spa, i, i+1)
 		}
+		logging.Logger.Debug().Str("host", evict).Msg("Pruning oldest CI deployment's redirect URIs")
+		drop := func(uri string) bool { return isHostURI(uri, evict) }
+		web = slices.DeleteFunc(web, drop)
+		spa = slices.DeleteFunc(spa, drop)
 	}
 	return web, spa
 }
@@ -1069,6 +1061,9 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 		Spa struct {
 			RedirectURIs []string `json:"redirectUris"`
 		} `json:"spa"`
+		PublicClient struct {
+			RedirectURIs []string `json:"redirectUris"`
+		} `json:"publicClient"`
 	}
 	if err := json.Unmarshal(body, &appData); err != nil {
 		return fmt.Errorf("entra: parse app registration: %w", err)
@@ -1085,7 +1080,8 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 	// Step 4: Filter and merge.
 	finalWebURIs := filterRedirectURIs(appData.Web.RedirectURIs, newWebURIs, opts.IngressHost)
 	finalSpaURIs := filterRedirectURIs(appData.Spa.RedirectURIs, newSpaURIs, opts.IngressHost)
-	finalWebURIs, finalSpaURIs = capRedirectURIs(finalWebURIs, finalSpaURIs, opts.IngressHost)
+	finalWebURIs, finalSpaURIs = capRedirectURIs(finalWebURIs, finalSpaURIs,
+		len(appData.PublicClient.RedirectURIs), opts.IngressHost)
 
 	logging.Logger.Info().
 		Int("finalWebURIs", len(finalWebURIs)).
