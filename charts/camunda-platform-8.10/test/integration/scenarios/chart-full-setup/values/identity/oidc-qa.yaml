@@ -105,3 +105,18 @@ identity:
       value: "Hub Admin"
     - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_3
       value: "Optimize"
+
+# Without the resource scope Entra issues a Microsoft Graph access token, which
+# Optimize cannot validate against the Camunda issuer; it then falls back to ID
+# token claims and denies access. The chart exposes tokenScope for connectors
+# and orchestration only, so Optimize takes the property as env.
+optimize:
+  env:
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_0
+      value: "openid"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_1
+      value: "profile"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_2
+      value: "email"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_3
+      value: "$ENTRA_APP_CLIENT_ID/.default"
