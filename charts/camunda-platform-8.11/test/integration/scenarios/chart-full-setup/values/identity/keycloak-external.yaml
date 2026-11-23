@@ -25,18 +25,21 @@
 
 global:
   host: "$CAMUNDA_HOSTNAME"
-  # Stays on ingress-nginx (Contour rejects the ExternalName Keycloak Service), so keep the
-  # chart's nginx annotations that base.yaml turns off for the Contour scenarios.
+  # Every release of a multi-namespace topology serves one shared host, so all of them must use
+  # the same ingress class (Contour, like base.yaml). Mixed classes split DNS across two controllers
+  # and about half the requests 404. These releases render no ExternalName Service.
   compatibility:
     nginx:
-      renderAnnotations: true
+      renderAnnotations: false
   ingress:
     enabled: true
-    className: nginx
+    className: contour
     tls:
       enabled: true
       # A wildcard certificate will be used.
     annotations:
+      projectcontour.io/websocket-routes: "/modeler-ws"
+      projectcontour.io/response-timeout: "300s"
       external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
       external-dns.alpha.kubernetes.io/ttl: "60"
   identity:
