@@ -5422,7 +5422,7 @@
                         "tag": {
                             "type": "string",
                             "description": "can be set to overwrite the global tag, which should be used in that chart",
-                            "default": "8.8.28"
+                            "default": "8.8.29"
                         },
                         "digest": {
                             "type": "string",
