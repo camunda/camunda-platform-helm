@@ -15,9 +15,98 @@
 package kube
 
 import (
+	"context"
+	"os"
 	"path/filepath"
+	"slices"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
+
+func TestApplyExternalSecretsOtherAppliesAfterStaleCredentialsAreGone(t *testing.T) {
+	t.Parallel()
+
+	const name = "camunda-helm-existing-secrets-8-7"
+	chart := t.TempDir()
+	dir := filepath.Join(chart, "test", "integration", "external-secrets")
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	manifest := "apiVersion: external-secrets.io/v1\nkind: ExternalSecret\nmetadata:\n  name: " + name + "\nspec:\n  target:\n    name: integration-test-credentials\n"
+	if err := os.WriteFile(filepath.Join(dir, "external-secret-integration-test-credentials.yaml"), []byte(manifest), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	mapper := meta.NewDefaultRESTMapper([]schema.GroupVersion{externalSecretGVR.GroupVersion()})
+	mapper.Add(externalSecretGVR.GroupVersion().WithKind("ExternalSecret"), meta.RESTScopeNamespace)
+	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{externalSecretGVR: "ExternalSecretList"},
+		externalSecret(name, "integration-test-credentials"),
+		externalSecret("external-secret-certificates", "aws-camunda-cloud-tls"),
+	)
+	terminatingGets := map[string]int{}
+	dynamicClient.PrependReactor("delete", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		terminatingGets[action.(k8stesting.DeleteAction).GetName()] = 1
+		return true, nil, nil
+	})
+	dynamicClient.PrependReactor("get", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		got := action.(k8stesting.GetAction).GetName()
+		left, terminating := terminatingGets[got]
+		if !terminating {
+			return false, nil, nil
+		}
+		if left > 0 {
+			terminatingGets[got] = left - 1
+			return true, externalSecret(got, "integration-test-credentials"), nil
+		}
+		delete(terminatingGets, got)
+		if err := dynamicClient.Tracker().Delete(externalSecretGVR, "ns", got); err != nil {
+			return true, nil, err
+		}
+		return false, nil, nil
+	})
+	var applied, appliedWhileTerminating []string
+	dynamicClient.PrependReactor("patch", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		patched := action.(k8stesting.PatchAction).GetName()
+		applied = append(applied, patched)
+		if _, terminating := terminatingGets[patched]; terminating {
+			appliedWhileTerminating = append(appliedWhileTerminating, patched)
+		}
+		return true, &unstructured.Unstructured{}, nil
+	})
+	client := &Client{dynamicClient: dynamicClient, restMapper: mapper}
+
+	if err := applyExternalSecretsOther(context.Background(), client, t.TempDir(), chart, "ns", "", ""); err != nil {
+		t.Fatalf("applyExternalSecretsOther() error = %v", err)
+	}
+
+	if len(appliedWhileTerminating) > 0 {
+		t.Fatalf("applied ExternalSecrets %v while the deleted one was still terminating", appliedWhileTerminating)
+	}
+	if !slices.Equal(applied, []string{name}) {
+		t.Fatalf("applied ExternalSecrets = %v, want [%s]", applied, name)
+	}
+
+	list, err := dynamicClient.Resource(externalSecretGVR).Namespace("ns").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		t.Fatalf("List() error = %v", err)
+	}
+	var left []string
+	for _, item := range list.Items {
+		left = append(left, item.GetName())
+	}
+	if !slices.Equal(left, []string{"external-secret-certificates"}) {
+		t.Fatalf("remaining ExternalSecrets = %v, want [external-secret-certificates]", left)
+	}
+}
 
 func TestIntegrationCredentialsManifest(t *testing.T) {
 	chart := "/repo/charts/camunda-platform-8.10"
