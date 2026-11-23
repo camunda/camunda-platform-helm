@@ -22,6 +22,7 @@ import (
 	"net/http/httptest"
 	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -57,6 +58,64 @@ func jsonResponse(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(body)
+}
+
+// noRedirectVerifyWait removes the wait before the redirect URI read-back.
+func noRedirectVerifyWait(t *testing.T) {
+	t.Helper()
+	origDelay, origJitter := redirectVerifyDelay, redirectVerifyJitter
+	redirectVerifyDelay, redirectVerifyJitter = 0, 0
+	t.Cleanup(func() { redirectVerifyDelay, redirectVerifyJitter = origDelay, origJitter })
+}
+
+// fakeRedirectApp is a Graph application whose GET returns what the last
+// PATCH wrote. afterPatch, when set, runs after each PATCH is stored.
+type fakeRedirectApp struct {
+	mu         sync.Mutex
+	app        redirectURIApp
+	patches    int
+	afterPatch func(f *fakeRedirectApp)
+}
+
+func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
+	return map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			jsonResponse(w, 200, f.app)
+		},
+		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			var patch redirectURIApp
+			_ = json.NewDecoder(r.Body).Decode(&patch)
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			f.app.Web, f.app.Spa = patch.Web, patch.Spa
+			f.patches++
+			if f.afterPatch != nil {
+				f.afterPatch(f)
+			}
+			w.WriteHeader(204)
+		},
+	}
+}
+
+func runUpdateRedirectURIs(t *testing.T, f *fakeRedirectApp, host string) error {
+	t.Helper()
+	noRedirectVerifyWait(t)
+	srv := newTestServer(t, f.handlers())
+	t.Cleanup(srv.Close)
+	origGraph, origLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = srv.URL, srv.URL
+	t.Cleanup(func() { graphBaseURL, loginBaseURL = origGraph, origLogin })
+	return UpdateRedirectURIs(context.Background(), RedirectURIOptions{
+		ObjectID:     "parent-obj-id",
+		IngressHost:  host,
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	})
 }
 
 // tokenHandler returns a handler that responds with a valid access token.
@@ -1226,13 +1285,13 @@ func TestFilterRedirectURIs(t *testing.T) {
 func TestCapRedirectURIs_SharedBudgetWithPublicClient(t *testing.T) {
 	host := "new-ns" + ciDomainSuffix
 	var web, spa []string
-	for i := 0; i < 120; i++ {
+	for i := range 120 {
 		web = append(web, fmt.Sprintf("https://web-%d%s/callback", i, ciDomainSuffix))
 	}
-	for i := 0; i < 118; i++ {
+	for i := range 118 {
 		spa = append(spa, fmt.Sprintf("https://spa-%d%s/callback", i, ciDomainSuffix))
 	}
-	for i := 0; i < 17; i++ {
+	for i := range 17 {
 		web = append(web, fmt.Sprintf("https://prod-%d.example.com/callback", i))
 	}
 	newWeb, newSpa := buildRedirectURIs(host)
@@ -1250,7 +1309,7 @@ func TestCapRedirectURIs_SharedBudgetWithPublicClient(t *testing.T) {
 			t.Errorf("current host URI dropped: %s", uri)
 		}
 	}
-	for i := 0; i < 17; i++ {
+	for i := range 17 {
 		if uri := fmt.Sprintf("https://prod-%d.example.com/callback", i); !slices.Contains(web, uri) {
 			t.Errorf("non-CI URI dropped: %s", uri)
 		}
@@ -1299,7 +1358,7 @@ func TestCapRedirectURIs_MatchesOnParsedHostname(t *testing.T) {
 	queryOnly := "https://old-ns" + ciDomainSuffix + "?flow=oidc"
 	pathMention := "https://production.example.com/auth" + ciDomainSuffix + "/callback"
 	web := []string{queryOnly, pathMention}
-	for i := 0; i < maxRedirectURIs; i++ {
+	for i := range maxRedirectURIs {
 		web = append(web, fmt.Sprintf("https://keep-%d.example.com/cb", i))
 	}
 	newWeb, newSpa := buildRedirectURIs(host)
@@ -1435,11 +1494,16 @@ func TestResolveRedirectOpts_EnvFallback(t *testing.T) {
 }
 
 func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
+	noRedirectVerifyWait(t)
 	var patchReceived map[string]any
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			if patchReceived != nil {
+				jsonResponse(w, 200, patchReceived)
+				return
+			}
 			jsonResponse(w, 200, map[string]any{
 				"web": map[string]any{
 					"redirectUris": []string{
@@ -1555,12 +1619,12 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 
 func TestUpdateRedirectURIs_OverLimitReservesPublicClient(t *testing.T) {
 	var web, spa []string
-	for i := 0; i < 36; i++ {
+	for i := range 36 {
 		w, sp := buildRedirectURIs(fmt.Sprintf("ns-%d%s", i, ciDomainSuffix))
 		web = append(web, w...)
 		spa = append(spa, sp...)
 	}
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		web = append(web, fmt.Sprintf("https://prod-%d.example.com/callback", i))
 	}
 	publicClient := []string{"https://login.microsoftonline.com/common/oauth2/nativeclient"}
@@ -1573,9 +1637,14 @@ func TestUpdateRedirectURIs_OverLimitReservesPublicClient(t *testing.T) {
 		} `json:"spa"`
 	}
 
+	noRedirectVerifyWait(t)
+	patched := false
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			if patched {
+				web, spa = patchReceived.Web.RedirectURIs, patchReceived.Spa.RedirectURIs
+			}
 			jsonResponse(w, 200, map[string]any{
 				"web":          map[string]any{"redirectUris": web},
 				"spa":          map[string]any{"redirectUris": spa},
@@ -1584,6 +1653,7 @@ func TestUpdateRedirectURIs_OverLimitReservesPublicClient(t *testing.T) {
 		},
 		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
 			_ = json.NewDecoder(r.Body).Decode(&patchReceived)
+			patched = true
 			w.WriteHeader(204)
 		},
 	})
@@ -1624,6 +1694,48 @@ func TestUpdateRedirectURIs_OverLimitReservesPublicClient(t *testing.T) {
 	oldWeb, _ := buildRedirectURIs("ns-0" + ciDomainSuffix)
 	if slices.Contains(patchReceived.Web.RedirectURIs, oldWeb[0]) {
 		t.Error("oldest CI deployment was not evicted")
+	}
+}
+
+func TestUpdateRedirectURIs_RewritesAfterConcurrentOverwrite(t *testing.T) {
+	host := "new-ns" + ciDomainSuffix
+	otherWeb, otherSpa := buildRedirectURIs("other-ns" + ciDomainSuffix)
+	f := &fakeRedirectApp{}
+	f.afterPatch = func(f *fakeRedirectApp) {
+		if f.patches == 1 {
+			f.app.Web.RedirectURIs = slices.Clone(otherWeb)
+			f.app.Spa.RedirectURIs = slices.Clone(otherSpa)
+		}
+	}
+
+	if err := runUpdateRedirectURIs(t, f, host); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if f.patches != 2 {
+		t.Errorf("PATCH count = %d, want 2", f.patches)
+	}
+	if !hasHostRedirectURIs(f.app, host) {
+		t.Error("current host URIs missing after rewrite")
+	}
+	if !hasHostRedirectURIs(f.app, "other-ns"+ciDomainSuffix) {
+		t.Error("concurrent writer's URIs dropped by the rewrite")
+	}
+}
+
+func TestUpdateRedirectURIs_FailsWhenOverwrittenEveryAttempt(t *testing.T) {
+	f := &fakeRedirectApp{}
+	f.afterPatch = func(f *fakeRedirectApp) {
+		f.app.Web.RedirectURIs, f.app.Spa.RedirectURIs = nil, nil
+	}
+
+	err := runUpdateRedirectURIs(t, f, "new-ns"+ciDomainSuffix)
+
+	if err == nil || !strings.Contains(err.Error(), "concurrent update") {
+		t.Fatalf("error = %v, want concurrent update failure", err)
+	}
+	if f.patches != redirectVerifyAttempts {
+		t.Errorf("PATCH count = %d, want %d", f.patches, redirectVerifyAttempts)
 	}
 }
 
