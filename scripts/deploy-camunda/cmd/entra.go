@@ -103,10 +103,9 @@ Environment variables (or set in .env file):
 }
 
 // newEntraUpdateRedirectURIsCommand creates the "entra update-redirect-uris" subcommand.
-// It replaces the bash-based Taskfile task that was accumulating redirect URIs
-// unboundedly. This Go implementation prunes stale CI URIs before adding the
-// current deployment's URIs, preventing the Microsoft Graph API limit from
-// being exceeded.
+// It replaces the current host's redirect URIs, keeps other deployments' URIs,
+// and evicts the oldest CI deployments only when the app would exceed Entra's
+// redirect URI limit.
 func newEntraUpdateRedirectURIsCommand() *cobra.Command {
 	var (
 		ingressHost string
@@ -123,10 +122,12 @@ func newEntraUpdateRedirectURIsCommand() *cobra.Command {
 This command:
 1. Authenticates to Microsoft Graph API using parent app credentials.
 2. Fetches the current web and SPA redirect URIs from the app registration.
-3. Removes stale CI redirect URIs (those matching *.ci.distro.ultrawombat.com).
+3. Replaces the current host's redirect URIs; other deployments' URIs are kept.
 4. Removes malformed URIs (e.g., trailing commas from data corruption).
 5. Adds the redirect URIs for the current deployment's ingress host.
-6. PATCHes the updated URI lists back to the app registration.
+6. If web, SPA and public-client URIs together exceed Entra's 256-URI limit,
+   evicts whole CI deployments (*.ci.distro.ultrawombat.com), oldest first.
+7. PATCHes the updated URI lists back to the app registration.
 
 Environment variables (or set in .env file):
   ENTRA_APP_DIRECTORY_ID  - Entra tenant/directory ID
