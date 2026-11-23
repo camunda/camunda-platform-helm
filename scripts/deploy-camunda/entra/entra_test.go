@@ -1314,6 +1314,37 @@ func TestCapRedirectURIs_EvictsOldestDeploymentWhole(t *testing.T) {
 	}
 }
 
+func TestCapRedirectURIs_MatchesOnParsedHostname(t *testing.T) {
+	host := "new-ns" + ciDomainSuffix
+	queryOnly := "https://old-ns" + ciDomainSuffix + "?flow=oidc"
+	pathMention := "https://production.example.com/auth" + ciDomainSuffix + "/callback"
+	web := []string{queryOnly, pathMention}
+	for i := 0; i < maxRedirectURIs; i++ {
+		web = append(web, fmt.Sprintf("https://keep-%d.example.com/cb", i))
+	}
+	newWeb, newSpa := buildRedirectURIs(host)
+	web = filterRedirectURIs(web, newWeb, host)
+	spa := filterRedirectURIs(nil, newSpa, host)
+
+	done := make(chan struct{})
+	go func() {
+		web, spa = capRedirectURIs(web, spa, 0, host)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("capRedirectURIs did not terminate")
+	}
+
+	if slices.Contains(web, queryOnly) {
+		t.Errorf("query-only CI URI was not evicted: %s", queryOnly)
+	}
+	if !slices.Contains(web, pathMention) {
+		t.Errorf("non-CI host with CI domain in its path was evicted: %s", pathMention)
+	}
+}
+
 func TestCapRedirectURIs_UnderLimitUnchanged(t *testing.T) {
 	web := []string{"https://a" + ciDomainSuffix + "/cb"}
 	spa := []string{"https://b" + ciDomainSuffix + "/cb"}

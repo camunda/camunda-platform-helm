@@ -928,10 +928,19 @@ func isValidURI(uri string) bool {
 	return true
 }
 
-// isHostURI returns true if the URI's authority is exactly the given host.
+// uriHost returns the lowercased hostname of uri, or "" if it has none.
+func uriHost(uri string) string {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(u.Hostname())
+}
+
+// isHostURI returns true if the URI's hostname is exactly the given host.
 func isHostURI(uri, host string) bool {
-	base := "https://" + host
-	return uri == base || strings.HasPrefix(uri, base+"/")
+	h := uriHost(uri)
+	return h != "" && h == strings.ToLower(host)
 }
 
 // maxRedirectURIs is Entra's limit on redirect URIs per app registration,
@@ -939,9 +948,9 @@ func isHostURI(uri, host string) bool {
 // https://learn.microsoft.com/en-us/entra/identity-platform/reply-url#maximum-number-of-redirect-uris
 const maxRedirectURIs = 256
 
-// isPrunableURI reports whether uri is a CI URI of a host other than host.
+// isPrunableURI reports whether uri's hostname is a CI host other than host.
 func isPrunableURI(uri, host string) bool {
-	return isCIDomainURI(uri) && !isHostURI(uri, host)
+	return strings.HasSuffix(uriHost(uri), ciDomainSuffix) && !isHostURI(uri, host)
 }
 
 // oldestPrunableHost returns the host of the first prunable URI in web, then
@@ -949,11 +958,8 @@ func isPrunableURI(uri, host string) bool {
 func oldestPrunableHost(web, spa []string, host string) string {
 	for _, list := range [][]string{web, spa} {
 		for _, uri := range list {
-			if !isPrunableURI(uri, host) {
-				continue
-			}
-			if u, err := url.Parse(uri); err == nil && u.Host != "" {
-				return u.Host
+			if isPrunableURI(uri, host) {
+				return uriHost(uri)
 			}
 		}
 	}
