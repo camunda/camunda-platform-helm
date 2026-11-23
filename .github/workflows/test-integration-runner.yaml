@@ -601,7 +601,6 @@ jobs:
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
-          TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
@@ -615,10 +614,6 @@ jobs:
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             ${{ steps.setup.outputs.legacy-ingress-arg }}
             --set global.host=${{ steps.setup.outputs.ingress-host }}
-          ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
-          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
-          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
-          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
           echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
 
@@ -1034,7 +1029,6 @@ jobs:
         timeout-minutes: 5
         env:
           TEST_CHART_FLOW: ${{ inputs.flow }}
-          TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
           TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
           TEST_AUTH_TYPE: ${{ inputs.auth }}
           INFRA_TYPE: ${{ inputs.infra-type }}
@@ -1048,10 +1042,6 @@ jobs:
             ${{ env.TEST_HELM_EXTRA_ARGS }}
             ${{ steps.setup.outputs.legacy-ingress-arg }}
             --set global.host=${{ steps.setup.outputs.ingress-host }}
-          ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
-          ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
-          ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
-          ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
           echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
 
