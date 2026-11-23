@@ -1,0 +1,65 @@
+---
+# Source: camunda-platform/templates/web-modeler/networkpolicy-websockets.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: camunda-platform-test-web-modeler-websockets
+  namespace: camunda-platform-test
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: websockets
+spec:
+  podSelector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: web-modeler
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: websockets
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8060
+  egress:
+    - to:
+        - podSelector: {}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "camunda-platform-test-allowed"
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              camunda.io/tenant-of: camunda-platform-test
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: hub-server
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "elastic-system"
+      ports:
+        - port: 9200
+          protocol: TCP

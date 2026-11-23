@@ -1206,6 +1206,43 @@
                                     "description": "can be used to append NetworkPolicyIngressRule entries to every rendered NetworkPolicy, for example to allow an ingress controller namespace.",
                                     "default": [],
                                     "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": "array",
+                                    "description": "can be used to allow other namespaces to reach the client ports of every component, one ingress rule per entry, added before the extraRules. An entry is a namespace name, or an object with either name or namespaceSelector, plus an optional podSelector and ports that replace the default client ports. Strings support templating (e.g., {{ .Release.Namespace }}).",
+                                    "default": [],
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true, adds egress rules to the rendered NetworkPolicies that allow traffic to pods in the release namespace, DNS if global.networkPolicy.egress.allowDNS is true, plus the egress extraRules; all other egress, such as an external database or OIDC provider, is blocked.",
+                                    "default": false
+                                },
+                                "allowDNS": {
+                                    "type": "boolean",
+                                    "description": "if true, allows egress to the kube-dns pods in the kube-system namespace on port 53 over UDP and TCP.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to every rendered NetworkPolicy, for example to allow an external database.",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": "array",
+                                    "description": "can be used to allow every component to reach pods in other namespaces, one egress rule per entry, added after the DNS rule and before the extraRules. An entry is a namespace name, or an object with either name or namespaceSelector, plus an optional podSelector and ports. An entry without ports allows every port. Strings support templating (e.g., {{ .Release.Namespace }}).",
+                                    "default": [],
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
                                 }
                             }
                         }
@@ -2193,6 +2230,51 @@
                             "type": "boolean",
                             "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Identity pods.",
                             "default": true
+                        },
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Identity NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Identity NetworkPolicy.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to the Identity NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.egress.allowedNamespaces for the Identity NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -2409,10 +2491,56 @@
                             "default": {},
                             "additionalProperties": true,
                             "properties": {
+                                "ingress": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
+                                        }
+                                    }
+                                },
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub restapi pods.",
                                     "default": true
+                                },
+                                "egress": {
+                                    "type": "object",
+                                    "description": "configuration of the egress rules of the Camunda Hub restapi NetworkPolicy.",
+                                    "default": {},
+                                    "additionalProperties": true,
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Camunda Hub restapi NetworkPolicy.",
+                                            "default": true
+                                        },
+                                        "extraRules": {
+                                            "type": "array",
+                                            "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub restapi NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                            "default": [],
+                                            "items": {}
+                                        },
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -2448,10 +2576,56 @@
                             "default": {},
                             "additionalProperties": true,
                             "properties": {
+                                "ingress": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
+                                        }
+                                    }
+                                },
                                 "enabled": {
                                     "type": "boolean",
                                     "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Camunda Hub websockets pods.",
                                     "default": true
+                                },
+                                "egress": {
+                                    "type": "object",
+                                    "description": "configuration of the egress rules of the Camunda Hub websockets NetworkPolicy.",
+                                    "default": {},
+                                    "additionalProperties": true,
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Camunda Hub websockets NetworkPolicy.",
+                                            "default": true
+                                        },
+                                        "extraRules": {
+                                            "type": "array",
+                                            "description": "can be used to append NetworkPolicyEgressRule entries to the Camunda Hub websockets NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                            "default": [],
+                                            "items": {}
+                                        },
+                                        "allowedNamespaces": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "default": null,
+                                            "nullable": true,
+                                            "items": {
+                                                "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -4555,6 +4729,51 @@
                             "type": "boolean",
                             "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Connectors pods.",
                             "default": true
+                        },
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Connectors NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Connectors NetworkPolicy.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to the Connectors NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.egress.allowedNamespaces for the Connectors NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -5531,6 +5750,51 @@
                             "type": "boolean",
                             "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Orchestration Cluster pods.",
                             "default": true
+                        },
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Orchestration Cluster NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Orchestration Cluster NetworkPolicy.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to the Orchestration Cluster NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.egress.allowedNamespaces for the Orchestration Cluster NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -7152,6 +7416,51 @@
                             "type": "boolean",
                             "description": "if true and global.networkPolicy.enabled is true, renders an ingress NetworkPolicy for the Optimize pods.",
                             "default": true
+                        },
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.ingress.allowedNamespaces for the Optimize NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
+                        },
+                        "egress": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "if true and global.networkPolicy.egress.enabled is true, adds egress rules to the Optimize NetworkPolicy.",
+                                    "default": true
+                                },
+                                "extraRules": {
+                                    "type": "array",
+                                    "description": "can be used to append NetworkPolicyEgressRule entries to the Optimize NetworkPolicy only, after global.networkPolicy.egress.extraRules.",
+                                    "default": [],
+                                    "items": {}
+                                },
+                                "allowedNamespaces": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "description": "can be used to replace global.networkPolicy.egress.allowedNamespaces for the Optimize NetworkPolicy only. When unset, the global list is used; an empty list allows no other namespace.",
+                                    "default": null,
+                                    "nullable": true,
+                                    "items": {
+                                        "$ref": "#/$defs/networkPolicyAllowedNamespace"
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -7950,6 +8259,49 @@
         }
     },
     "$defs": {
+        "networkPolicyAllowedNamespace": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "minLength": 1
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "namespaceSelector": {
+                            "type": "object",
+                            "minProperties": 1
+                        },
+                        "podSelector": {
+                            "type": "object"
+                        },
+                        "ports": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "oneOf": [
+                        {
+                            "required": [
+                                "name"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "namespaceSelector"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
         "topologySecret": {
             "type": "object",
             "additionalProperties": false,
