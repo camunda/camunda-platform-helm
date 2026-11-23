@@ -215,33 +215,43 @@ func acquireBearerToken(ctx context.Context, opts *Options) (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-// graphGet performs a GET request to the Graph API.
+// graphGet performs a GET request to the Graph API and rejects non-2xx responses.
 func graphGet(ctx context.Context, client *http.Client, token, path string) ([]byte, error) {
+	body, statusCode, err := graphGetStatus(ctx, client, token, path)
+	if err != nil {
+		return nil, err
+	}
+	if statusCode < 200 || statusCode >= 300 {
+		return nil, fmt.Errorf("GET %s failed (status=%d): %s", path, statusCode, string(body))
+	}
+	return body, nil
+}
+
+// graphGetStatus performs a GET request to the Graph API and returns the
+// response whatever its status.
+func graphGetStatus(ctx context.Context, client *http.Client, token, path string) ([]byte, int, error) {
 	reqURL := graphBaseURL + path
 	logging.Logger.Debug().Str("method", "GET").Str("url", reqURL).Msg("Graph API request")
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Int("bodyLen", len(body)).Msg("Graph API GET response")
 	if err != nil {
-		return nil, err
+		return nil, resp.StatusCode, err
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("GET %s failed (status=%d): %s", path, resp.StatusCode, string(body))
-	}
-	return body, nil
+	return body, resp.StatusCode, nil
 }
 
 // retryPredicate decides whether to retry a Graph response. statusCode and
@@ -525,7 +535,10 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 	logging.Logger.Debug().Str("objectId", objectID).Msg("Fetching existing password credentials")
 
 	// Fetch existing credentials.
-	body, err := graphGet(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
+	appPath := fmt.Sprintf("/applications/%s", objectID)
+	body, _, err := withGraphRetry(ctx, "getAppCredentials", nil, func() ([]byte, int, error) {
+		return graphGetStatus(ctx, client, token, appPath)
+	})
 	if err != nil {
 		return "", fmt.Errorf("get app credentials: %w", err)
 	}

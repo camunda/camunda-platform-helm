@@ -470,6 +470,49 @@ func TestRotateCredentials_RetriesOn404ThenSucceeds(t *testing.T) {
 	}
 }
 
+// TestRotateCredentials_RetriesCredentialGetOn404 verifies that the initial
+// credential read is retried while a newly-created app returns 404.
+func TestRotateCredentials_RetriesCredentialGetOn404(t *testing.T) {
+	shrinkRetryTimings(t)
+
+	var getAttempts atomic.Int32
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-new": func(w http.ResponseWriter, r *http.Request) {
+			if getAttempts.Add(1) == 1 {
+				jsonResponse(w, 404, map[string]any{
+					"error": map[string]string{"code": "Request_ResourceNotFound"},
+				})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{
+				"passwordCredentials": []map[string]string{{"keyId": "old-key"}},
+			})
+		},
+		"POST /applications/obj-new/removePassword": func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(204)
+		},
+		"POST /applications/obj-new/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 201, map[string]string{"secretText": "fresh-secret"})
+		},
+	})
+	defer srv.Close()
+
+	origGraph := graphBaseURL
+	graphBaseURL = srv.URL
+	defer func() { graphBaseURL = origGraph }()
+
+	secret, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-new")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if secret != "fresh-secret" {
+		t.Errorf("secret = %q, want %q", secret, "fresh-secret")
+	}
+	if got := getAttempts.Load(); got != 2 {
+		t.Errorf("credential GET attempts = %d, want 2", got)
+	}
+}
+
 // TestRotateCredentials_GivesUpAfterMaxAttempts verifies the retry loop
 // terminates with an error that references the last status and body when
 // Graph persistently returns 404.
