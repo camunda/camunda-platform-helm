@@ -235,7 +235,13 @@ func graphGet(ctx context.Context, client *http.Client, token, path string) ([]b
 
 	body, err := io.ReadAll(resp.Body)
 	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Int("bodyLen", len(body)).Msg("Graph API GET response")
-	return body, err
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("GET %s failed (status=%d): %s", path, resp.StatusCode, string(body))
+	}
+	return body, nil
 }
 
 // retryPredicate decides whether to retry a Graph response. statusCode and
