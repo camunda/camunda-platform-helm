@@ -29,9 +29,6 @@ func newTopologyCommand() *cobra.Command {
 		Short: "Multi-namespace topology utilities",
 	}
 	c.AddCommand(newTopologyNamespaceCommand())
-	c.AddCommand(newTopologyNamespacesCommand())
-	c.AddCommand(newTopologyStatusCommand())
-	c.AddCommand(newTopologyUninstallCommand())
 	return c
 }
 
