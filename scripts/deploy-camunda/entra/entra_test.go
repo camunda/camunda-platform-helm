@@ -1146,26 +1146,6 @@ func TestIsValidURI(t *testing.T) {
 	}
 }
 
-func TestIsCIDomainURI(t *testing.T) {
-	tests := []struct {
-		uri  string
-		want bool
-	}{
-		{"https://my-ns.ci.distro.ultrawombat.com/identity/auth/login-callback", true},
-		{"https://other.ci.distro.ultrawombat.com/operate/identity-callback", true},
-		{"https://production.example.com/callback", false},
-		{"https://staging.distribution.aws.camunda.cloud/callback", false},
-		{"", false},
-	}
-	for _, tc := range tests {
-		t.Run(tc.uri, func(t *testing.T) {
-			if got := isCIDomainURI(tc.uri); got != tc.want {
-				t.Errorf("isCIDomainURI(%q) = %v, want %v", tc.uri, got, tc.want)
-			}
-		})
-	}
-}
-
 func TestBuildRedirectURIs(t *testing.T) {
 	web, spa := buildRedirectURIs("my-ns.ci.distro.ultrawombat.com")
 
@@ -1570,6 +1550,80 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 			spaStrings[i] = u.(string)
 		}
 		t.Errorf("spa URI count = %d, want 4, got: %v", len(spaURIs), spaStrings)
+	}
+}
+
+func TestUpdateRedirectURIs_OverLimitReservesPublicClient(t *testing.T) {
+	var web, spa []string
+	for i := 0; i < 36; i++ {
+		w, sp := buildRedirectURIs(fmt.Sprintf("ns-%d%s", i, ciDomainSuffix))
+		web = append(web, w...)
+		spa = append(spa, sp...)
+	}
+	for i := 0; i < 4; i++ {
+		web = append(web, fmt.Sprintf("https://prod-%d.example.com/callback", i))
+	}
+	publicClient := []string{"https://login.microsoftonline.com/common/oauth2/nativeclient"}
+	var patchReceived struct {
+		Web struct {
+			RedirectURIs []string `json:"redirectUris"`
+		} `json:"web"`
+		Spa struct {
+			RedirectURIs []string `json:"redirectUris"`
+		} `json:"spa"`
+	}
+
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{
+				"web":          map[string]any{"redirectUris": web},
+				"spa":          map[string]any{"redirectUris": spa},
+				"publicClient": map[string]any{"redirectUris": publicClient},
+			})
+		},
+		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewDecoder(r.Body).Decode(&patchReceived)
+			w.WriteHeader(204)
+		},
+	})
+	defer srv.Close()
+
+	origGraph, origLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = srv.URL, srv.URL
+	defer func() { graphBaseURL, loginBaseURL = origGraph, origLogin }()
+
+	host := "new-ns" + ciDomainSuffix
+	err := UpdateRedirectURIs(context.Background(), RedirectURIOptions{
+		ObjectID:     "parent-obj-id",
+		IngressHost:  host,
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := len(patchReceived.Web.RedirectURIs) + len(patchReceived.Spa.RedirectURIs) + len(publicClient)
+	if got > maxRedirectURIs {
+		t.Errorf("web+spa+publicClient = %d, want <= %d", got, maxRedirectURIs)
+	}
+	newWeb, newSpa := buildRedirectURIs(host)
+	for _, uri := range newWeb {
+		if !slices.Contains(patchReceived.Web.RedirectURIs, uri) {
+			t.Errorf("current host web URI missing from PATCH: %s", uri)
+		}
+	}
+	for _, uri := range newSpa {
+		if !slices.Contains(patchReceived.Spa.RedirectURIs, uri) {
+			t.Errorf("current host SPA URI missing from PATCH: %s", uri)
+		}
+	}
+	oldWeb, _ := buildRedirectURIs("ns-0" + ciDomainSuffix)
+	if slices.Contains(patchReceived.Web.RedirectURIs, oldWeb[0]) {
+		t.Error("oldest CI deployment was not evicted")
 	}
 }
 
