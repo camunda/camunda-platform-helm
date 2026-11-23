@@ -1,0 +1,68 @@
+name: "Test - NetworkPolicy enforcement"
+
+on:
+  pull_request:
+    paths:
+      - "charts/camunda-platform-8.11/templates/*/networkpolicy*.yaml"
+      - "charts/camunda-platform-8.11/templates/common/_helpers.tpl"
+      - "charts/camunda-platform-8.11/templates/common/constraints.tpl"
+      - "charts/camunda-platform-8.11/values.yaml"
+      - "charts/camunda-platform-8.11/test/integration/scenarios/networkpolicy/**"
+      - "scripts/networkpolicy-enforcement/**"
+      - ".github/workflows/test-networkpolicy-enforcement.yaml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  networkpolicy-enforcement:
+    name: NetworkPolicy enforcement - KIND + Calico 8.11
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      chartPath: charts/camunda-platform-8.11
+      clusterName: networkpolicy-enforcement
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install tools
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+
+      - name: Create KIND cluster without the default CNI
+        run: kind create cluster --name "$clusterName" --config "$chartPath/test/integration/scenarios/networkpolicy/kind-calico.yaml"
+
+      - name: Add helm repos
+        run: make helm.repos-add
+
+      - name: Get Helm dependency
+        run: make helm.dependency-update chartPath="$chartPath"
+
+      - name: Run the NetworkPolicy enforcement scenarios
+        run: make test.networkpolicy-enforcement networkPolicyArgs=-install-calico
+
+      - name: Collect diagnostics
+        if: failure()
+        run: make diagnostics.print namespace=netpol
+
+      - name: Delete KIND cluster
+        if: always()
+        run: kind delete cluster --name "$clusterName"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
