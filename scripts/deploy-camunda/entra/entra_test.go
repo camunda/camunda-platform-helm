@@ -1243,7 +1243,7 @@ func TestFilterRedirectURIs(t *testing.T) {
 	}
 }
 
-func TestCapRedirectURIs_SharedBudgetAcrossTypes(t *testing.T) {
+func TestCapRedirectURIs_SharedBudgetWithPublicClient(t *testing.T) {
 	host := "new-ns" + ciDomainSuffix
 	var web, spa []string
 	for i := 0; i < 120; i++ {
@@ -1258,11 +1258,12 @@ func TestCapRedirectURIs_SharedBudgetAcrossTypes(t *testing.T) {
 	newWeb, newSpa := buildRedirectURIs(host)
 	web = filterRedirectURIs(web, newWeb, host)
 	spa = filterRedirectURIs(spa, newSpa, host)
+	const publicClient = 1
 
-	web, spa = capRedirectURIs(web, spa, host)
+	web, spa = capRedirectURIs(web, spa, publicClient, host)
 
-	if got := len(web) + len(spa); got != maxRedirectURIs {
-		t.Errorf("total redirect URIs = %d, want %d", got, maxRedirectURIs)
+	if got := len(web) + len(spa) + publicClient; got > maxRedirectURIs {
+		t.Errorf("total redirect URIs = %d, want <= %d", got, maxRedirectURIs)
 	}
 	for _, uri := range append(newWeb, newSpa...) {
 		if !slices.Contains(web, uri) && !slices.Contains(spa, uri) {
@@ -1279,10 +1280,44 @@ func TestCapRedirectURIs_SharedBudgetAcrossTypes(t *testing.T) {
 	}
 }
 
+func TestCapRedirectURIs_EvictsOldestDeploymentWhole(t *testing.T) {
+	var web, spa []string
+	for i := 1; i <= 40; i++ {
+		host := fmt.Sprintf("ns-%d%s", i, ciDomainSuffix)
+		newWeb, newSpa := buildRedirectURIs(host)
+		web = filterRedirectURIs(web, newWeb, host)
+		spa = filterRedirectURIs(spa, newSpa, host)
+		web, spa = capRedirectURIs(web, spa, 0, host)
+	}
+
+	if got := len(web) + len(spa); got > maxRedirectURIs {
+		t.Fatalf("total redirect URIs = %d, want <= %d", got, maxRedirectURIs)
+	}
+	perHost := len(webRedirectPaths) + len(spaRedirectPaths)
+	keep := maxRedirectURIs / perHost
+	for i := 1; i <= 40; i++ {
+		host := fmt.Sprintf("ns-%d%s", i, ciDomainSuffix)
+		wantWeb, wantSpa := buildRedirectURIs(host)
+		n := 0
+		for _, uri := range append(wantWeb, wantSpa...) {
+			if slices.Contains(web, uri) || slices.Contains(spa, uri) {
+				n++
+			}
+		}
+		retained := i > 40-keep
+		if retained && n != perHost {
+			t.Errorf("host %d kept %d of %d URIs, want all", i, n, perHost)
+		}
+		if !retained && n != 0 {
+			t.Errorf("host %d kept %d URIs, want it evicted whole", i, n)
+		}
+	}
+}
+
 func TestCapRedirectURIs_UnderLimitUnchanged(t *testing.T) {
 	web := []string{"https://a" + ciDomainSuffix + "/cb"}
 	spa := []string{"https://b" + ciDomainSuffix + "/cb"}
-	gotWeb, gotSpa := capRedirectURIs(web, spa, "new-ns"+ciDomainSuffix)
+	gotWeb, gotSpa := capRedirectURIs(web, spa, 0, "new-ns"+ciDomainSuffix)
 	if !slices.Equal(gotWeb, web) || !slices.Equal(gotSpa, spa) {
 		t.Errorf("lists changed under the limit: web=%v spa=%v", gotWeb, gotSpa)
 	}
