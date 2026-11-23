@@ -259,11 +259,6 @@ func (t *topologyRun) prepareRelease(ctx context.Context, i int) (preparedTopolo
 		return release, fmt.Errorf("topology release %s/%s (namespace-suffix %q): build flags: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
 	}
 
-	removeManifest, err := applyTopologyCredentialsManifest(release.flags, t.opts.RepoRoot, entry.Topology.CredentialsManifest, t.baseNamespace)
-	if err != nil {
-		return release, fmt.Errorf("topology release %s/%s (namespace-suffix %q): %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
-	}
-	t.removers = append(t.removers, removeManifest)
 	if err := registerDeclarativePostInfraHook(release.flags, releaseEntry.PostInfra, t.opts.RepoRoot, releaseEntry.Version, releaseEntry.Scenario); err != nil {
 		return release, fmt.Errorf("topology release %s/%s (namespace-suffix %q): register post-infra hook: %w", entry.Scenario, rel.Role, rel.NamespaceSuffix, err)
 	}

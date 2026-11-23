@@ -15,58 +15,10 @@
 package matrix
 
 import (
-	"fmt"
 	"maps"
-	"os"
 	"path/filepath"
 	"scripts/deploy-camunda/config"
 )
-
-// applyTopologyCredentialsManifest points a topology release's deploy at the
-// topology's credentials-manifest (repository-relative), rendered for the base
-// namespace, so the deployer applies it instead of the CI-wide
-// integration-test credentials. With no manifest declared the flags are left
-// unchanged. The returned function removes the rendered file.
-func applyTopologyCredentialsManifest(flags *config.RuntimeFlags, repoRoot, manifest, base string) (func(), error) {
-	if manifest == "" {
-		return func() {}, nil
-	}
-	path, remove, err := renderTopologyCredentialsManifest(filepath.Join(repoRoot, manifest), base)
-	if err != nil {
-		return func() {}, err
-	}
-	flags.Secrets.CredentialsManifest = path
-	return remove, nil
-}
-
-// renderTopologyCredentialsManifest writes the topology's credentials-manifest,
-// with the base namespace substituted, to a temporary file the deployer can
-// apply, and returns a function that removes it.
-func renderTopologyCredentialsManifest(path, base string) (string, func(), error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return "", func() {}, fmt.Errorf("read credentials manifest: %w", err)
-	}
-	rendered, err := RenderCredentialsManifest(content, base)
-	if err != nil {
-		return "", func() {}, err
-	}
-	f, err := os.CreateTemp("", "credentials-manifest-*.yaml")
-	if err != nil {
-		return "", func() {}, err
-	}
-	remove := func() { _ = os.Remove(f.Name()) }
-	if _, err := f.Write(rendered); err != nil {
-		f.Close()
-		remove()
-		return "", func() {}, err
-	}
-	if err := f.Close(); err != nil {
-		remove()
-		return "", func() {}, err
-	}
-	return f.Name(), remove, nil
-}
 
 func (t *topologyRun) releaseFlags(rel TopologyRelease, namespace string) (preparedTopologyRelease, Entry, error) {
 	releaseEntry := synthesizeReleaseEntry(t.opts.RepoRoot, t.entry, rel, t.platform)
