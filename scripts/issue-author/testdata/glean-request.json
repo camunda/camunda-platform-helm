@@ -1,0 +1,13 @@
+{
+  "messages": [
+    {
+      "author": "USER",
+      "fragments": [
+        {
+          "text": "You are an expert bug and task triage assistant for the camunda/camunda-platform-helm repository.\n\nAnalyze the following GitHub issue and provide a triage assessment following the Distro Bug Triage and Task/Toil/Non-Feature Triage guidelines from the Camunda documentation.\n\n**Issue #42: Chart <upgrade> & \"pods\" fail**\n\n**Description:**\nSteps:\n1. helm upgrade\n2. the pods crash\n\n**Current Labels:** area/ci,version/8.8\n\n**Instructions:**\n1. Check if this issue is within the scope of the SM Platform - Team Boundaries\n2. Determine the work type: BUG, TASK, TOIL, FEATURE_REQUEST, or QUESTION\n3. For bugs, assess severity (low, mid, high, critical, unknown) and likelihood (low, mid, high)\n4. For tasks/toil, assess severity and likelihood based on impact and frequency\n5. Search for similar or duplicate existing issues in camunda/camunda-platform-helm\n6. Provide a confidence score (0.0-1.0) for your assessment\n7. Provide a detailed rationale citing the triage guidelines\n8. Determine the kind based on the Distro triage guidelines: bug (something not working as intended), chore (maintenance: docs updates, dependency bumps, etc), docs (documentation-only change), feature-request (new capability requested), internal (general internal improvement, not customer-facing), refactor (code restructuring without behavior change), research (investigation/spike/poc/proposal to reduce uncertainty)\n\n**IMPORTANT:** Respond ONLY with valid JSON in this exact format:\n{\"work_type\":\"BUG|TASK|TOIL|FEATURE_REQUEST|QUESTION\",\"kind\":\"bug|chore|docs|feature-request|internal|refactor|research\",\"severity\":\"low|mid|high|critical|unknown\",\"likelihood\":\"low|mid|high\",\"confidence\":0.0,\"rationale\":\"...\",\"similar_issues\":[\"#123\"],\"missing_info\":false,\"missing_info_details\":\"...\"}"
+        }
+      ],
+      "messageType": "CONTENT"
+    }
+  ]
+}
