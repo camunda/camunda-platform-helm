@@ -13,7 +13,7 @@ jobs:
       id-token: write
       issues: read
       pull-requests: write
-    uses: camunda/infraex-common-config/.github/workflows/copilot-review-global.yml@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+    uses: camunda/infraex-common-config/.github/workflows/copilot-review-global.yml@ab4b2b3604eea14f2b41b77bbc9a66bbf2e51df4 # 3.0.13
     with:
       vault-secret-path: secret/data/products/qa/ci/common
       vault-slack-token-key: SLACK_BOT_USER_OAUTH_TOKEN
