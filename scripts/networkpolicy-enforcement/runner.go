@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 )
 
 const (
@@ -36,6 +37,8 @@ const (
 	inside source = iota
 	outsider
 	allowed
+	router
+	dnsHost
 )
 
 type reach struct {
@@ -45,11 +48,39 @@ type reach struct {
 	want      bool
 }
 
+type target int
+
+const (
+	targetInside target = iota
+	targetOutsider
+	targetAllowed
+	targetConnectors
+	targetDNS
+	targetExternal
+)
+
+const probePort = 8080
+
+func (t target) String() string {
+	return [...]string{"inside-probe", "outsider-probe", "allowed-probe", "connectors", "dns", "external"}[t]
+}
+
+type egress struct {
+	to   target
+	want bool
+}
+
 type step struct {
-	name     string
-	action   func(context.Context) error
-	policies []string
-	reaches  []reach
+	name          string
+	action        func(context.Context) error
+	policies      []string
+	splitPolicies []string
+	reaches       []reach
+	egress        []egress
+	cross         []crossReach
+	foreign       []string
+	checks        []func(context.Context) error
+	finding       string
 }
 
 type runner struct {
@@ -63,7 +94,11 @@ func newRunner(cfg config, command commandFunc) runner {
 }
 
 func (r runner) namespaces() []string {
-	return []string{r.cfg.namespace, r.cfg.namespace + "-outsider", r.cfg.namespace + "-allowed"}
+	names := []string{r.cfg.namespace, r.cfg.namespace + "-outsider", r.cfg.namespace + "-allowed"}
+	if r.cfg.env == envOpenShift {
+		names = append(names, r.cfg.namespace+"-router", r.cfg.namespace+"-dns")
+	}
+	return names
 }
 
 func (r runner) sourceNamespace(s source) string {
@@ -85,11 +120,19 @@ func (r runner) run(ctx context.Context) error {
 			return err
 		}
 	}
+	if r.cfg.env == envOpenShift {
+		if err := r.prepareOpenShift(ctx); err != nil {
+			return err
+		}
+	}
 	for _, s := range r.steps() {
 		if err := r.runStep(ctx, s); err != nil {
 			return fmt.Errorf("%s: %w", s.name, err)
 		}
 		r.log("PASS %s", s.name)
+		if s.finding != "" {
+			r.log("  FINDING %s", s.finding)
+		}
 	}
 	return nil
 }
@@ -108,6 +151,7 @@ func (r runner) refuseExisting(ctx context.Context) error {
 }
 
 func (r runner) cleanup(ctx context.Context) {
+	_ = r.helm(ctx, "uninstall", r.cfg.release2, "--namespace", r.cfg.namespace2, "--ignore-not-found", "--wait")
 	_ = r.helm(ctx, "uninstall", r.cfg.release, "--namespace", r.cfg.namespace, "--ignore-not-found", "--wait")
 	for _, namespace := range r.namespaces() {
 		_, _ = r.kubectl(ctx, "delete", "namespace", namespace, "--ignore-not-found", "--wait=false")
@@ -118,11 +162,38 @@ func (r runner) runStep(ctx context.Context, s step) error {
 	if err := s.action(ctx); err != nil {
 		return err
 	}
-	if err := r.assertPolicies(ctx, s.policies); err != nil {
+	if err := r.assertPolicies(ctx, r.cfg.namespace, r.cfg.release, s.policies, s.foreign); err != nil {
 		return err
 	}
+	if s.splitPolicies != nil {
+		if err := r.assertPolicies(ctx, r.cfg.namespace2, r.cfg.release2, s.splitPolicies, nil); err != nil {
+			return err
+		}
+	}
+	if err := r.checkReaches(ctx, s); err != nil {
+		return err
+	}
+	for _, c := range s.cross {
+		if err := r.expectCross(ctx, c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r runner) checkReaches(ctx context.Context, s step) error {
 	for _, c := range s.reaches {
 		if err := r.checkReach(ctx, c); err != nil {
+			return err
+		}
+	}
+	for _, e := range s.egress {
+		if err := r.expectEgress(ctx, e); err != nil {
+			return err
+		}
+	}
+	for _, check := range s.checks {
+		if err := check(ctx); err != nil {
 			return err
 		}
 	}
@@ -176,7 +247,18 @@ func all(from source, want bool) []reach {
 	}
 }
 
+func egressOpen() []egress {
+	return []egress{{targetConnectors, true}, {targetDNS, true}, {targetOutsider, true}, {targetAllowed, true}, {targetExternal, true}}
+}
+
 func (r runner) steps() []step {
+	if r.cfg.env == envOpenShift {
+		return r.openshiftSteps()
+	}
+	return slices.Concat(r.ingressSteps(), r.egressSteps(), r.allowedNamespaceSteps(), r.splitSteps())
+}
+
+func (r runner) ingressSteps() []step {
 	both := []string{"zeebe", "connectors"}
 	enforced := append(all(inside, true), all(outsider, false)...)
 	return []step{
@@ -192,6 +274,55 @@ func (r runner) steps() []step {
 			{from: outsider, component: connectors, ports: componentPorts[connectors], want: true},
 		}},
 		{name: "S5 rollback to the first revision deletes the policies", action: r.rollback, reaches: all(outsider, true)},
-		{name: "S6 fresh install with policies on", action: r.reinstall, policies: both, reaches: enforced},
+	}
+}
+
+func (r runner) egressSteps() []step {
+	both := []string{"zeebe", "connectors"}
+	enforced := append(all(inside, true), all(outsider, false)...)
+	return []step{
+		{name: "S6 fresh install with policies on leaves egress open", action: r.reinstall, policies: both, reaches: enforced, egress: egressOpen()},
+		{name: "S7 egress blocks everything but the namespace and DNS", action: r.deploy("upgrade", r.values("values-egress.yaml")...), policies: both, reaches: enforced, egress: []egress{
+			{targetConnectors, true}, {targetDNS, true}, {targetOutsider, false}, {targetAllowed, false}, {targetExternal, false},
+		}},
+		{name: "S8 egress extraRules open the allowed namespace on 8080", action: r.deploy("upgrade", r.values("values-egress.yaml", "values-egress-extrarules.yaml")...), policies: both, reaches: enforced, egress: []egress{
+			{targetConnectors, true}, {targetDNS, true}, {targetAllowed, true}, {targetOutsider, false}, {targetExternal, false},
+		}},
+		{name: "S9 rollback removes the egress rules", action: r.rollback, policies: both, reaches: enforced, egress: egressOpen()},
+	}
+}
+
+func (r runner) allowedNamespaceSteps() []step {
+	both := []string{"zeebe", "connectors"}
+	clientPorts := []int{8080, 26500}
+	internalPorts := []int{9600, 26501, 26502}
+	tenantLabel := "camunda.io/tenant-of=" + r.cfg.namespace
+	return []step{
+		{name: "S10 allowedNamespaces opens the client ports to the allowed namespace", action: r.deploy("upgrade", r.values("values-allowed-namespaces.yaml")...), policies: both, reaches: append(append(all(inside, true), all(outsider, false)...),
+			reach{from: allowed, component: zeebe, ports: clientPorts, want: true},
+			reach{from: allowed, component: zeebe, ports: internalPorts, want: false},
+			reach{from: allowed, component: connectors, ports: componentPorts[connectors], want: true},
+		)},
+		{name: "S11 a namespaceSelector entry follows the namespace label", action: r.then(r.labelNamespace(r.sourceNamespace(outsider), tenantLabel), r.deploy("upgrade", r.values("values-allowed-selector.yaml")...)), policies: both, reaches: []reach{
+			{from: outsider, component: zeebe, ports: clientPorts, want: true},
+			{from: outsider, component: zeebe, ports: internalPorts, want: false},
+			{from: allowed, component: zeebe, ports: clientPorts, want: false},
+		}},
+		{name: "S11 removing the namespace label blocks it again without an upgrade", action: r.labelNamespace(r.sourceNamespace(outsider), "camunda.io/tenant-of-"), policies: both, reaches: all(outsider, false)},
+		{name: "S12 an empty component list replaces the global list", action: r.deploy("upgrade", r.values("values-allowed-component-override.yaml")...), policies: both, reaches: []reach{
+			{from: allowed, component: zeebe, ports: clientPorts, want: true},
+			{from: allowed, component: connectors, ports: componentPorts[connectors], want: false},
+		}},
+	}
+}
+
+func (r runner) then(actions ...func(context.Context) error) func(context.Context) error {
+	return func(ctx context.Context) error {
+		for _, action := range actions {
+			if err := action(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 }

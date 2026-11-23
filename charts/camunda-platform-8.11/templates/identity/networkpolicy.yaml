@@ -4,5 +4,7 @@
       "labels" (include "identity.labels" .)
       "matchLabels" (include "identity.matchLabels" .)
       "ports" (list 8084 8082)
+      "publicPorts" (list 8084)
+      "networkPolicy" .Values.identity.networkPolicy
       "context" .) }}
 {{- end -}}

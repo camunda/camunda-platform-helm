@@ -1,0 +1,7 @@
+global:
+  networkPolicy:
+    enabled: true
+    egress:
+      enabled: true
+      allowedNamespaces:
+        - namespaceSelector: {}

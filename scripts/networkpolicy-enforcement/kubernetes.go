@@ -70,8 +70,17 @@ func (r runner) createProbeNamespace(ctx context.Context, namespace string) erro
 	return nil
 }
 
-func (r runner) policies(ctx context.Context) ([]string, error) {
-	out, err := r.kubectl(ctx, "get", "networkpolicy", "--namespace", r.cfg.namespace, "-o", "jsonpath={.items[*].metadata.name}")
+func (r runner) labelNamespace(namespace, label string) func(context.Context) error {
+	return func(ctx context.Context) error {
+		if _, err := r.kubectl(ctx, "label", "namespace", namespace, label, "--overwrite"); err != nil {
+			return fmt.Errorf("label namespace %s: %w", namespace, err)
+		}
+		return nil
+	}
+}
+
+func (r runner) policies(ctx context.Context, namespace string) ([]string, error) {
+	out, err := r.kubectl(ctx, "get", "networkpolicy", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
 	if err != nil {
 		return nil, fmt.Errorf("list NetworkPolicies: %w", err)
 	}
@@ -80,15 +89,16 @@ func (r runner) policies(ctx context.Context) ([]string, error) {
 	return names, nil
 }
 
-func (r runner) assertPolicies(ctx context.Context, want []string) error {
-	got, err := r.policies(ctx)
+func (r runner) assertPolicies(ctx context.Context, namespace, release string, want, foreign []string) error {
+	got, err := r.policies(ctx, namespace)
 	if err != nil {
 		return err
 	}
 	expected := make([]string, 0, len(want))
 	for _, name := range want {
-		expected = append(expected, r.cfg.release+"-"+name)
+		expected = append(expected, release+"-"+name)
 	}
+	expected = append(expected, foreign...)
 	slices.Sort(expected)
 	if !slices.Equal(got, expected) {
 		return fmt.Errorf("NetworkPolicies are %v, expected %v", got, expected)
@@ -97,8 +107,12 @@ func (r runner) assertPolicies(ctx context.Context, want []string) error {
 }
 
 func (r runner) podIP(ctx context.Context, component string) (string, error) {
-	selector := "app.kubernetes.io/instance=" + r.cfg.release + ",app.kubernetes.io/component=" + component
-	ip, err := r.kubectl(ctx, "get", "pod", "--namespace", r.cfg.namespace, "-l", selector, "-o", "jsonpath={.items[0].status.podIP}")
+	return r.podIPIn(ctx, r.cfg.namespace, r.cfg.release, component)
+}
+
+func (r runner) podIPIn(ctx context.Context, namespace, release, component string) (string, error) {
+	selector := "app.kubernetes.io/instance=" + release + ",app.kubernetes.io/component=" + component
+	ip, err := r.kubectl(ctx, "get", "pod", "--namespace", namespace, "-l", selector, "-o", "jsonpath={.items[0].status.podIP}")
 	if err != nil || ip == "" {
 		return "", errors.Join(fmt.Errorf("no pod IP for %s", component), err)
 	}
@@ -129,6 +143,87 @@ func (r runner) expectReach(ctx context.Context, from, component string, port in
 			return nil
 		}
 		lastErr = fmt.Errorf("%s -> %s:%d reachable=%t, expected %t", from, component, port, !want, want)
+	}
+	return lastErr
+}
+
+func (r runner) jsonpath(ctx context.Context, what string, args ...string) (string, error) {
+	out, err := r.kubectl(ctx, append([]string{"get"}, args...)...)
+	if err != nil || out == "" {
+		return "", errors.Join(fmt.Errorf("no %s", what), err)
+	}
+	return out, nil
+}
+
+func (r runner) componentPod(ctx context.Context, component string) (string, error) {
+	return r.componentPodIn(ctx, r.cfg.namespace, r.cfg.release, component)
+}
+
+func (r runner) componentPodIn(ctx context.Context, namespace, release, component string) (string, error) {
+	selector := "app.kubernetes.io/instance=" + release + ",app.kubernetes.io/component=" + component
+	return r.jsonpath(ctx, "pod for "+component, "pod", "--namespace", namespace, "-l", selector, "-o", "jsonpath={.items[0].metadata.name}")
+}
+
+func (r runner) egressTarget(ctx context.Context, t target) (string, int, error) {
+	switch t {
+	case targetConnectors:
+		ip, err := r.podIP(ctx, connectors)
+		return ip, componentPorts[connectors][0], err
+	case targetExternal:
+		return r.externalTarget(ctx)
+	default:
+		ip, err := r.jsonpath(ctx, "probe IP", "pod", "netpol-probe", "--namespace", r.sourceNamespace(source(t-targetInside)), "-o", "jsonpath={.status.podIP}")
+		return ip, probePort, err
+	}
+}
+
+// externalTarget resolves the destination of the external egress probe. An
+// EXTERNAL_TARGET host overrides the default, the first node's InternalIP.
+func (r runner) externalTarget(ctx context.Context) (string, int, error) {
+	if r.cfg.externalHost != "" {
+		return r.cfg.externalHost, r.cfg.externalPort, nil
+	}
+	ip, err := r.jsonpath(ctx, "node InternalIP", "nodes", "-o", `jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}`)
+	return ip, r.cfg.externalPort, err
+}
+
+func (r runner) egressReachable(ctx context.Context, pod string, t target) (bool, error) {
+	if t == targetDNS {
+		_, err := r.kubectl(ctx, "exec", pod, "--namespace", r.cfg.namespace, "--", "nslookup", "-timeout=2", "kubernetes.default.svc.cluster.local")
+		return err == nil, nil
+	}
+	ip, port, err := r.egressTarget(ctx, t)
+	if err != nil {
+		return false, err
+	}
+	_, err = r.kubectl(ctx, "exec", pod, "--namespace", r.cfg.namespace, "--", "nc", "-z", "-w", "2", ip, strconv.Itoa(port))
+	return err == nil, nil
+}
+
+func (r runner) expectEgress(ctx context.Context, e egress) error {
+	var lastErr error
+	for attempt := 0; attempt < r.cfg.retries; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return errors.Join(lastErr, ctx.Err())
+			case <-time.After(r.cfg.retryInterval):
+			}
+		}
+		pod, err := r.componentPod(ctx, zeebe)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		got, err := r.egressReachable(ctx, pod, e.to)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if got == e.want {
+			return nil
+		}
+		lastErr = fmt.Errorf("egress %s -> %s reachable=%t, expected %t", zeebe, e.to, got, e.want)
 	}
 	return lastErr
 }

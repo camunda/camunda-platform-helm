@@ -47,6 +47,8 @@ non-empty string such as global.identity.service.url.
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
+{{- include "camunda.constraints.networkPolicyAllowedNamespaces" . }}
+
 {{- if not (has $topologyMode (list "combined" "hub" "orchestration" "optimize")) }}
   {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, orchestration, or optimize; got %q." $topologyMode) }}
 {{- end }}
@@ -1039,6 +1041,7 @@ Usage:
   {{- include "camunda.constraints.secretWarnings" . }}
   {{- include "camunda.constraints.trustStoreWarnings" . }}
   {{- include "camunda.constraints.transportWarnings" . }}
+  {{- include "camunda.constraints.networkPolicyWarnings" . }}
 
   {{/* Warn when webModeler pusher secret is auto-generated */}}
   {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
@@ -1415,6 +1418,72 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
+  {{- end }}
+{{- end }}
+
+{{- define "camunda.constraints.networkPolicyAllowedNamespaces" }}
+  {{- $lists := dict }}
+  {{- range $direction := list "ingress" "egress" }}
+    {{- $_ := set $lists (printf "global.networkPolicy.%s.allowedNamespaces" $direction) (get ($.Values.global.networkPolicy | default dict) $direction | default dict).allowedNamespaces }}
+    {{- range $key := list "orchestration" "connectors" "identity" "optimize" }}
+      {{- $_ := set $lists (printf "%s.networkPolicy.%s.allowedNamespaces" $key $direction) (get ((get $.Values $key | default dict).networkPolicy | default dict) $direction | default dict).allowedNamespaces }}
+    {{- end }}
+    {{- if eq (include "camundaHub.webModelerEnabled" $) "true" }}
+      {{- $hub := include "camundaHub.values" $ | fromYaml }}
+      {{- range $key := list "restapi" "websockets" }}
+        {{- $_ := set $lists (printf "camundaHub.%s.networkPolicy.%s.allowedNamespaces" $key $direction) (get ((get $hub $key | default dict).networkPolicy | default dict) $direction | default dict).allowedNamespaces }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- range $key, $list := $lists }}
+    {{- range $entry := $list | default list }}
+      {{- if kindIs "map" $entry }}
+        {{- if eq (hasKey $entry "name") (hasKey $entry "namespaceSelector") }}
+          {{- fail (printf "[camunda][error] each object entry of %s must set exactly one of name or namespaceSelector." $key) }}
+        {{- end }}
+        {{- if and (hasKey $entry "namespaceSelector") (empty $entry.namespaceSelector) }}
+          {{- fail (printf "[camunda][error] %s has an entry with an empty namespaceSelector, which would allow every namespace; set matchLabels or matchExpressions." $key) }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- define "camunda.constraints.networkPolicyWarnings" }}
+  {{- $networkPolicy := .Values.global.networkPolicy | default dict }}
+  {{- $egress := $networkPolicy.egress | default dict }}
+  {{- $components := list .Values.orchestration .Values.connectors .Values.identity .Values.optimize }}
+  {{- if and $networkPolicy.enabled $egress.enabled (eq (include "camundaHub.webModelerEnabled" .) "true") }}
+    {{- $hub := include "camundaHub.values" . | fromYaml }}
+    {{- $components = concat $components (list $hub.restapi $hub.websockets) }}
+  {{- end }}
+  {{- $extraRules := $egress.extraRules | default list }}
+  {{- $allowedNamespaces := $egress.allowedNamespaces | default list }}
+  {{- range $component := $components }}
+    {{- $componentEgress := (($component.networkPolicy | default dict).egress | default dict) }}
+    {{- $extraRules = concat $extraRules ($componentEgress.extraRules | default list) }}
+    {{- $allowedNamespaces = concat $allowedNamespaces ($componentEgress.allowedNamespaces | default list) }}
+  {{- end }}
+  {{- if and $networkPolicy.enabled $egress.enabled (empty $extraRules) (empty $allowedNamespaces) }}
+    {{- $dependencies := list }}
+    {{- $secondaryStorage := .Values.orchestration.data.secondaryStorage.type | default "" }}
+    {{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (not .Values.global.noSecondaryStorage) $secondaryStorage }}
+      {{- $dependencies = append $dependencies (printf "secondary storage (%s)" $secondaryStorage) }}
+    {{- end }}
+    {{- if and (eq (include "camundaPlatform.optimizeEnabled" .) "true") (or .Values.optimize.database.elasticsearch.enabled .Values.optimize.database.opensearch.enabled) }}
+      {{- $dependencies = append $dependencies "the Optimize database" }}
+    {{- end }}
+    {{- if .Values.global.identity.auth.enabled }}
+      {{- $dependencies = append $dependencies "the OIDC provider" }}
+    {{- end }}
+    {{- if $dependencies }}
+      {{- $warningMessage := printf "%s %s %s"
+          "[camunda][warning]"
+          (printf "global.networkPolicy.egress.enabled=true blocks all egress except the release namespace and DNS, but no global.networkPolicy.egress.extraRules or egress allowedNamespaces are set. The release connects to %s, which is unreachable unless it runs in the release namespace." (join ", " $dependencies))
+          "Allow it with global.networkPolicy.egress.allowedNamespaces for in-cluster namespaces, or global.networkPolicy.egress.extraRules or the component networkPolicy.egress.extraRules; NetworkPolicies match IP blocks and labels, not hostnames."
+      -}}
+      {{ printf "\n%s" $warningMessage | trimSuffix "\n" }}
+    {{- end }}
   {{- end }}
 {{- end }}
 
