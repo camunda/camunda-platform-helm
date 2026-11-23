@@ -1893,6 +1893,7 @@ integration:
           persistence: elasticsearch
           features:
             - postgresql-companion
+            - qa-entra
           qa: true
           image-tags: true
           dependencies:
