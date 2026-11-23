@@ -20,7 +20,7 @@ global:
         # this existingSecret must be a string literal
         secret:
           inlineSecret: $ENTRA_APP_CLIENT_SECRET
-        initialClaimValue: $INITIAL_CLAIM_VALUE
+        initialClaimValue: ""
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.identity.contextPath }}"
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
@@ -83,17 +83,22 @@ console:
 # Mirrors the roles the Keycloak path seeds on identity.firstUser; the OIDC
 # path seeds only the Default rule, which grants the Identity UI alone.
 identity:
-  extraConfiguration:
-    - file: mapping-rules.yaml
-      content: |
-        identity:
-          mapping-rules:
-            - name: "QA E2E component access"
-              claim-name: oid
-              claim-value: $INITIAL_CLAIM_VALUE
-              operator: EQUALS
-              rule-type: ROLE
-              applied-role-names:
-                - "Hub"
-                - "Hub Admin"
-                - "Optimize"
+  env:
+    - name: IDENTITY_MAPPINGRULES_0_NAME
+      value: "QA E2E component access"
+    - name: IDENTITY_MAPPINGRULES_0_CLAIMNAME
+      value: "oid"
+    - name: IDENTITY_MAPPINGRULES_0_CLAIMVALUE
+      value: "$INITIAL_CLAIM_VALUE"
+    - name: IDENTITY_MAPPINGRULES_0_OPERATOR
+      value: "EQUALS"
+    - name: IDENTITY_MAPPINGRULES_0_RULETYPE
+      value: "ROLE"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_0
+      value: "ManagementIdentity"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_1
+      value: "Hub"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_2
+      value: "Hub Admin"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_3
+      value: "Optimize"
