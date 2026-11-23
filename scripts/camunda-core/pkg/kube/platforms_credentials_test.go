@@ -52,27 +52,32 @@ func TestApplyExternalSecretsOtherAppliesAfterStaleCredentialsAreGone(t *testing
 		externalSecret(name, "integration-test-credentials"),
 		externalSecret("external-secret-certificates", "aws-camunda-cloud-tls"),
 	)
-	terminating := map[string]bool{}
+	terminatingGets := map[string]int{}
 	dynamicClient.PrependReactor("delete", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		terminating[action.(k8stesting.DeleteAction).GetName()] = true
+		terminatingGets[action.(k8stesting.DeleteAction).GetName()] = 1
 		return true, nil, nil
 	})
 	dynamicClient.PrependReactor("get", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		got := action.(k8stesting.GetAction).GetName()
-		if !terminating[got] {
+		left, terminating := terminatingGets[got]
+		if !terminating {
 			return false, nil, nil
 		}
-		delete(terminating, got)
+		if left > 0 {
+			terminatingGets[got] = left - 1
+			return true, externalSecret(got, "integration-test-credentials"), nil
+		}
+		delete(terminatingGets, got)
 		if err := dynamicClient.Tracker().Delete(externalSecretGVR, "ns", got); err != nil {
 			return true, nil, err
 		}
-		return true, externalSecret(got, "integration-test-credentials"), nil
+		return false, nil, nil
 	})
 	var applied, appliedWhileTerminating []string
 	dynamicClient.PrependReactor("patch", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		patched := action.(k8stesting.PatchAction).GetName()
 		applied = append(applied, patched)
-		if terminating[patched] {
+		if _, terminating := terminatingGets[patched]; terminating {
 			appliedWhileTerminating = append(appliedWhileTerminating, patched)
 		}
 		return true, &unstructured.Unstructured{}, nil
