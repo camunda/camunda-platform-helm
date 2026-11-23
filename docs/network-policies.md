@@ -59,6 +59,21 @@ any pod in the release namespace on the pod ports:
 | Camunda Hub REST API | `templates/web-modeler/networkpolicy-restapi.yaml` | 8081, 8091 |
 | Camunda Hub WebSockets | `templates/web-modeler/networkpolicy-websockets.yaml` | 8060 |
 
+All six policies render together only in `combined` mode, and only when Identity,
+Optimize and Camunda Hub are enabled. `global.topology.mode` turns components off through
+the gates in `templates/common/_helpers.tpl`, and their policies go with them:
+
+| `global.topology.mode` | Policies rendered (when the component is enabled) |
+|---|---|
+| `combined` (default) | `zeebe`, `connectors`, `identity`, `optimize`, `web-modeler-restapi`, `web-modeler-websockets` |
+| `hub` | `identity`, `web-modeler-restapi`, `web-modeler-websockets` |
+| `orchestration` | `zeebe`, `connectors`, `optimize` |
+| `optimize` | `optimize` |
+
+The Camunda Hub policies follow `camundaHub.webModelerEnabled`, which is true for
+`camundaHub.enabled` or the legacy `webModeler.enabled`. The Optimize policy is also
+skipped when `global.noSecondaryStorage` is true.
+
 Traffic from outside the namespace, such as an ingress controller or Prometheus, is
 blocked unless it is allowed through `allowedNamespaces` or `extraRules`:
 
@@ -544,7 +559,9 @@ rolled back on its own:
 `helm rollback` to the revision of step 1 deletes the policies; rollback to the
 revision of step 3 removes only the egress rules. Both are covered by the enforcement
 scenarios in `scripts/networkpolicy-enforcement` (S5, rollback to the first revision
-deletes the policies; S9, rollback removes the egress rules).
+deletes the policies; S9, rollback removes the egress rules). The runner defines
+scenarios S1 to S15 as 16 steps, with S11 split into two steps (label added, label
+removed).
 
 ## Argo CD and GitOps
 
@@ -565,7 +582,9 @@ Application first, by hand or with an app-of-apps sync wave on the child Applica
 ## Service meshes and other CNIs
 
 This section is general guidance and has not been validated on a cluster. The
-enforcement scenarios run on kind with Calico only.
+enforcement scenarios run on kind with Calico only. No file in this repository records
+an enforcement run on Cilium or OpenShift; any such results exist only outside the
+repository.
 
 - **Istio**: with sidecar injection, the application traffic leaves the pod through the
   Envoy sidecar on the same ports, so the policies still apply. The sidecar also needs
