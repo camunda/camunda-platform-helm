@@ -45,6 +45,125 @@ type Topology struct {
 
 	// SharedStorageService is the Kubernetes Service name of the shared storage backend (defaults to SharedStorage/release name; elastic chart uses <clusterName>-master).
 	SharedStorageService string `yaml:"shared-storage-service,omitempty" json:"sharedStorageService,omitempty"`
+
+	// CredentialsManifest is a repo-root-relative ExternalSecret manifest applied
+	// to every release namespace in place of the chart's integration-test-credentials
+	// one, so a long-lived topology can source credentials that no CI namespace shares.
+	CredentialsManifest string `yaml:"credentials-manifest,omitempty" json:"credentialsManifest,omitempty"`
+
+	// CredentialStores lists the stateful services that keep the credential
+	// they were initialised with, so `topology reconcile-credentials` can set
+	// them to the credentials-manifest's current values. Requires CredentialsManifest.
+	CredentialStores *CredentialStores `yaml:"credential-stores,omitempty" json:"credentialStores,omitempty"`
+}
+
+// CredentialStores are the credential-holding services of one release namespace.
+// Every SecretKey names a key of Secret.
+type CredentialStores struct {
+	NamespaceSuffix string                    `yaml:"namespace-suffix" json:"namespaceSuffix"`
+	Secret          string                    `yaml:"secret" json:"secret"`
+	Postgres        []PostgresCredentialStore `yaml:"postgres,omitempty" json:"postgres,omitempty"`
+	Keycloak        *KeycloakCredentialStore  `yaml:"keycloak,omitempty" json:"keycloak,omitempty"`
+	Elasticsearch   *ElasticsearchCredential  `yaml:"elasticsearch,omitempty" json:"elasticsearch,omitempty"`
+}
+
+// ElasticsearchCredential is a native-realm user whose password lives in the
+// cluster's security index.
+type ElasticsearchCredential struct {
+	StatefulSet string `yaml:"statefulset" json:"statefulset"`
+	Container   string `yaml:"container" json:"container"`
+	URL         string `yaml:"url" json:"url"`
+	User        string `yaml:"user" json:"user"`
+	SecretKey   string `yaml:"secret-key" json:"secretKey"`
+}
+
+// PostgresCredentialStore is a PostgreSQL role whose password lives in the database.
+type PostgresCredentialStore struct {
+	StatefulSet string `yaml:"statefulset" json:"statefulset"`
+	User        string `yaml:"user" json:"user"`
+	Database    string `yaml:"database" json:"database"`
+	SecretKey   string `yaml:"secret-key" json:"secretKey"`
+}
+
+// KeycloakCredentialStore is a Keycloak whose master-realm admin and listed
+// users have their passwords stored in its database.
+type KeycloakCredentialStore struct {
+	Deployment     string                   `yaml:"deployment" json:"deployment"`
+	Container      string                   `yaml:"container" json:"container"`
+	URL            string                   `yaml:"url" json:"url"`
+	AdminUser      string                   `yaml:"admin-user" json:"adminUser"`
+	AdminSecretKey string                   `yaml:"admin-secret-key" json:"adminSecretKey"`
+	Users          []KeycloakUserCredential `yaml:"users,omitempty" json:"users,omitempty"`
+}
+
+// KeycloakUserCredential is a realm user whose password is set from SecretKey.
+type KeycloakUserCredential struct {
+	Realm     string `yaml:"realm" json:"realm"`
+	Username  string `yaml:"username" json:"username"`
+	SecretKey string `yaml:"secret-key" json:"secretKey"`
+}
+
+// credentialStoreProblems reports every missing required field of s.
+func credentialStoreProblems(s *CredentialStores, suffixes map[string]bool) []string {
+	var p []string
+	req := func(v, what string) {
+		if v == "" {
+			p = append(p, what+" is required")
+		}
+	}
+	req(s.NamespaceSuffix, "namespace-suffix")
+	if s.NamespaceSuffix != "" && !suffixes[s.NamespaceSuffix] {
+		p = append(p, fmt.Sprintf("namespace-suffix %q matches no release", s.NamespaceSuffix))
+	}
+	req(s.Secret, "secret")
+	for i, pg := range s.Postgres {
+		at := fmt.Sprintf("postgres[%d].", i)
+		req(pg.StatefulSet, at+"statefulset")
+		req(pg.User, at+"user")
+		req(pg.Database, at+"database")
+		req(pg.SecretKey, at+"secret-key")
+	}
+	if k := s.Keycloak; k != nil {
+		req(k.Deployment, "keycloak.deployment")
+		req(k.Container, "keycloak.container")
+		req(k.URL, "keycloak.url")
+		req(k.AdminUser, "keycloak.admin-user")
+		req(k.AdminSecretKey, "keycloak.admin-secret-key")
+		for i, u := range k.Users {
+			at := fmt.Sprintf("keycloak.users[%d].", i)
+			req(u.Realm, at+"realm")
+			req(u.Username, at+"username")
+			req(u.SecretKey, at+"secret-key")
+		}
+	}
+	if e := s.Elasticsearch; e != nil {
+		req(e.StatefulSet, "elasticsearch.statefulset")
+		req(e.Container, "elasticsearch.container")
+		req(e.URL, "elasticsearch.url")
+		req(e.User, "elasticsearch.user")
+		req(e.SecretKey, "elasticsearch.secret-key")
+	}
+	if len(s.Postgres) == 0 && s.Keycloak == nil && s.Elasticsearch == nil {
+		p = append(p, "at least one postgres, keycloak, or elasticsearch store is required")
+	}
+	return p
+}
+
+// CredentialsManifestBaseToken is replaced in a credentials-manifest by the
+// topology's base namespace, so each environment reads its own source Secret.
+const CredentialsManifestBaseToken = "${TOPOLOGY_BASE}"
+
+// RenderCredentialsManifest substitutes the base namespace into a
+// credentials-manifest. It fails when the manifest has the token but no base
+// is given, rather than read a source Secret literally named after the token.
+func RenderCredentialsManifest(content []byte, base string) ([]byte, error) {
+	if !strings.Contains(string(content), CredentialsManifestBaseToken) {
+		return content, nil
+	}
+	if strings.TrimSpace(base) == "" {
+		return nil, fmt.Errorf("credentials manifest uses %s but no base namespace was given", CredentialsManifestBaseToken)
+	}
+	return []byte(strings.ReplaceAll(string(content), CredentialsManifestBaseToken, base)), nil
 }
 
 // TopologyRelease is one namespace/release within a Topology. Each release
@@ -212,6 +331,15 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release is required", ctx, t.Name))
 	}
 
+	if m := t.CredentialsManifest; m != "" {
+		clean := filepath.Clean(m)
+		if filepath.IsAbs(m) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q must be a path inside the repository, relative to its root", ctx, t.Name, m))
+		} else if err := credentialsManifestInsideRepo(repoRoot, clean); err != nil {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credentials-manifest %q: %v", ctx, t.Name, m, err))
+		}
+	}
+
 	check := topologyValidation{
 		repoRoot: repoRoot, chartDir: chartDir, version: parentVersion, depsDir: depsDir,
 		roles: map[string]int{}, suffixes: map[string]bool{}, orchestrationSuffixes: map[string]bool{},
@@ -224,6 +352,14 @@ func (t *Topology) Validate(ctx string, chartDir string, depsDir string) error {
 
 	if check.roles["hub"] != 1 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: exactly one release with role \"hub\" is required, found %d", ctx, t.Name, check.roles["hub"]))
+	}
+	if s := t.CredentialStores; s != nil {
+		if t.CredentialsManifest == "" {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credential-stores requires credentials-manifest", ctx, t.Name))
+		}
+		for _, p := range credentialStoreProblems(s, check.suffixes) {
+			problems = append(problems, fmt.Sprintf("%s: topology %q: credential-stores: %s", ctx, t.Name, p))
+		}
 	}
 	if check.roles["orchestration"] == 0 {
 		problems = append(problems, fmt.Sprintf("%s: topology %q: at least one release with role \"orchestration\" is required", ctx, t.Name))
@@ -412,4 +548,24 @@ func TopologyEnvToken(value string) string {
 		}
 	}
 	return strings.Trim(token.String(), "_")
+}
+
+// credentialsManifestInsideRepo checks that rel exists and that, after
+// resolving symlinks, it still lives inside repoRoot. A lexical check alone
+// would accept a repository symlink pointing outside the repository, which the
+// deployer would then read and apply.
+func credentialsManifestInsideRepo(repoRoot, rel string) error {
+	root, err := filepath.EvalSymlinks(repoRoot)
+	if err != nil {
+		return err
+	}
+	target, err := filepath.EvalSymlinks(filepath.Join(repoRoot, rel))
+	if err != nil {
+		return err
+	}
+	inside, err := filepath.Rel(root, target)
+	if err != nil || inside == ".." || strings.HasPrefix(inside, ".."+string(filepath.Separator)) || filepath.IsAbs(inside) {
+		return fmt.Errorf("resolves outside the repository (%s)", target)
+	}
+	return nil
 }
