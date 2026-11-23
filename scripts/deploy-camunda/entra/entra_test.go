@@ -1243,34 +1243,48 @@ func TestFilterRedirectURIs(t *testing.T) {
 	}
 }
 
-func TestFilterRedirectURIs_CapsRetainedCIURIs(t *testing.T) {
-	var existing []string
-	for i := 0; i < maxCIRedirectURIs+10; i++ {
-		existing = append(existing, fmt.Sprintf("https://ns-%d%s/callback", i, ciDomainSuffix))
+func TestCapRedirectURIs_SharedBudgetAcrossTypes(t *testing.T) {
+	host := "new-ns" + ciDomainSuffix
+	var web, spa []string
+	for i := 0; i < 120; i++ {
+		web = append(web, fmt.Sprintf("https://web-%d%s/callback", i, ciDomainSuffix))
 	}
-	existing = append(existing, "https://production.example.com/callback")
+	for i := 0; i < 118; i++ {
+		spa = append(spa, fmt.Sprintf("https://spa-%d%s/callback", i, ciDomainSuffix))
+	}
+	for i := 0; i < 17; i++ {
+		web = append(web, fmt.Sprintf("https://prod-%d.example.com/callback", i))
+	}
+	newWeb, newSpa := buildRedirectURIs(host)
+	web = filterRedirectURIs(web, newWeb, host)
+	spa = filterRedirectURIs(spa, newSpa, host)
 
-	newURIs := []string{"https://new-ns" + ciDomainSuffix + "/callback"}
+	web, spa = capRedirectURIs(web, spa, host)
 
-	result := filterRedirectURIs(existing, newURIs, "new-ns"+ciDomainSuffix)
-
-	ciCount := 0
-	for _, uri := range result {
-		if isCIDomainURI(uri) {
-			ciCount++
+	if got := len(web) + len(spa); got != maxRedirectURIs {
+		t.Errorf("total redirect URIs = %d, want %d", got, maxRedirectURIs)
+	}
+	for _, uri := range append(newWeb, newSpa...) {
+		if !slices.Contains(web, uri) && !slices.Contains(spa, uri) {
+			t.Errorf("current host URI dropped: %s", uri)
 		}
 	}
-	if ciCount != maxCIRedirectURIs {
-		t.Errorf("retained CI URIs = %d, want %d", ciCount, maxCIRedirectURIs)
+	for i := 0; i < 17; i++ {
+		if uri := fmt.Sprintf("https://prod-%d.example.com/callback", i); !slices.Contains(web, uri) {
+			t.Errorf("non-CI URI dropped: %s", uri)
+		}
 	}
-	if result[0] != fmt.Sprintf("https://ns-%d%s/callback", 11, ciDomainSuffix) {
-		t.Errorf("oldest CI URIs were not dropped first, got %q", result[0])
+	if slices.Contains(web, "https://web-0"+ciDomainSuffix+"/callback") {
+		t.Error("oldest CI web URI was not pruned first")
 	}
-	if !slices.Contains(result, "https://production.example.com/callback") {
-		t.Error("non-CI URI was dropped by the cap")
-	}
-	if !slices.Contains(result, newURIs[0]) {
-		t.Error("new URI missing from result")
+}
+
+func TestCapRedirectURIs_UnderLimitUnchanged(t *testing.T) {
+	web := []string{"https://a" + ciDomainSuffix + "/cb"}
+	spa := []string{"https://b" + ciDomainSuffix + "/cb"}
+	gotWeb, gotSpa := capRedirectURIs(web, spa, "new-ns"+ciDomainSuffix)
+	if !slices.Equal(gotWeb, web) || !slices.Equal(gotSpa, spa) {
+		t.Errorf("lists changed under the limit: web=%v spa=%v", gotWeb, gotSpa)
 	}
 }
 
