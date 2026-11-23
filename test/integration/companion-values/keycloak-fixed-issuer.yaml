@@ -23,6 +23,11 @@ auth:
 httpRelativePath: "/auth/"
 proxy: edge
 
+# Keycloak 26.8.2 rejects Admin API tokens that lack the kc-admin-api client scope,
+# and the camunda-identity client has none yet (camunda/camunda#69230,
+# camunda/identity#5704). Remove once Identity ships that fix.
+extraStartupArgs: "--spi-admin--audience-check-enabled=false"
+
 extraEnv:
   - name: KC_HOSTNAME
     value: "https://${CAMUNDA_HOSTNAME}/auth"

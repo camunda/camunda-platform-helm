@@ -60,7 +60,7 @@ spec:
             - --health-enabled=true
             {{- range splitList " " (.Values.extraStartupArgs | default "") }}
             {{- if . }}
-            - {{ . }}
+            - {{ . | quote }}
             {{- end }}
             {{- end }}
           env:
