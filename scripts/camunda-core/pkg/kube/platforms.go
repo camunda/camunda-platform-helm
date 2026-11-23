@@ -210,6 +210,9 @@ const (
 
 	replicatedSecretInterval = 5 * time.Second
 	replicatedSecretTimeout  = 300 * time.Second
+
+	deletedExternalSecretInterval = time.Second
+	deletedExternalSecretTimeout  = 120 * time.Second
 )
 
 // The stub is applied with empty tls.crt/tls.key, so existence is not enough: the secret is
@@ -284,8 +287,26 @@ func deleteExternalSecretsTargeting(ctx context.Context, client *Client, namespa
 		if err != nil && !apierrors.IsNotFound(err) {
 			return fmt.Errorf("delete stale ExternalSecret %q in %q: %w", item.GetName(), namespace, err)
 		}
+		if err := waitExternalSecretDeleted(ctx, client, namespace, item.GetName()); err != nil {
+			return err
+		}
 	}
 
+	return nil
+}
+
+func waitExternalSecretDeleted(ctx context.Context, client *Client, namespace, name string) error {
+	err := wait.PollUntilContextTimeout(ctx, deletedExternalSecretInterval, deletedExternalSecretTimeout, true,
+		func(ctx context.Context) (bool, error) {
+			_, err := client.dynamicClient.Resource(externalSecretGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+			if apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		})
+	if err != nil {
+		return fmt.Errorf("wait for deleted ExternalSecret %q in %q to be gone: %w", name, namespace, err)
+	}
 	return nil
 }
 

@@ -30,15 +30,16 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 )
 
-func TestApplyExternalSecretsOtherDeletesStaleCredentialsBeforeApply(t *testing.T) {
+func TestApplyExternalSecretsOtherAppliesAfterStaleCredentialsAreGone(t *testing.T) {
 	t.Parallel()
 
+	const name = "camunda-helm-existing-secrets-8-7"
 	chart := t.TempDir()
 	dir := filepath.Join(chart, "test", "integration", "external-secrets")
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		t.Fatal(err)
 	}
-	manifest := "apiVersion: external-secrets.io/v1\nkind: ExternalSecret\nmetadata:\n  name: integration-test-credentials-8-8\nspec:\n  target:\n    name: integration-test-credentials\n"
+	manifest := "apiVersion: external-secrets.io/v1\nkind: ExternalSecret\nmetadata:\n  name: " + name + "\nspec:\n  target:\n    name: integration-test-credentials\n"
 	if err := os.WriteFile(filepath.Join(dir, "external-secret-integration-test-credentials.yaml"), []byte(manifest), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -48,12 +49,32 @@ func TestApplyExternalSecretsOtherDeletesStaleCredentialsBeforeApply(t *testing.
 	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
 		runtime.NewScheme(),
 		map[schema.GroupVersionResource]string{externalSecretGVR: "ExternalSecretList"},
-		externalSecret("integration-test-credentials-8-7", "integration-test-credentials"),
+		externalSecret(name, "integration-test-credentials"),
 		externalSecret("external-secret-certificates", "aws-camunda-cloud-tls"),
 	)
-	var applied []string
+	terminating := map[string]bool{}
+	dynamicClient.PrependReactor("delete", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		terminating[action.(k8stesting.DeleteAction).GetName()] = true
+		return true, nil, nil
+	})
+	dynamicClient.PrependReactor("get", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		got := action.(k8stesting.GetAction).GetName()
+		if !terminating[got] {
+			return false, nil, nil
+		}
+		delete(terminating, got)
+		if err := dynamicClient.Tracker().Delete(externalSecretGVR, "ns", got); err != nil {
+			return true, nil, err
+		}
+		return true, externalSecret(got, "integration-test-credentials"), nil
+	})
+	var applied, appliedWhileTerminating []string
 	dynamicClient.PrependReactor("patch", "externalsecrets", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		applied = append(applied, action.(k8stesting.PatchAction).GetName())
+		patched := action.(k8stesting.PatchAction).GetName()
+		applied = append(applied, patched)
+		if terminating[patched] {
+			appliedWhileTerminating = append(appliedWhileTerminating, patched)
+		}
 		return true, &unstructured.Unstructured{}, nil
 	})
 	client := &Client{dynamicClient: dynamicClient, restMapper: mapper}
@@ -62,15 +83,11 @@ func TestApplyExternalSecretsOtherDeletesStaleCredentialsBeforeApply(t *testing.
 		t.Fatalf("applyExternalSecretsOther() error = %v", err)
 	}
 
-	var verbs []string
-	for _, action := range dynamicClient.Actions() {
-		verbs = append(verbs, action.GetVerb())
+	if len(appliedWhileTerminating) > 0 {
+		t.Fatalf("applied ExternalSecrets %v while the deleted one was still terminating", appliedWhileTerminating)
 	}
-	if !slices.Equal(verbs, []string{"list", "delete", "patch"}) {
-		t.Fatalf("actions = %v, want [list delete patch]", verbs)
-	}
-	if !slices.Equal(applied, []string{"integration-test-credentials-8-8"}) {
-		t.Fatalf("applied ExternalSecrets = %v, want [integration-test-credentials-8-8]", applied)
+	if !slices.Equal(applied, []string{name}) {
+		t.Fatalf("applied ExternalSecrets = %v, want [%s]", applied, name)
 	}
 
 	list, err := dynamicClient.Resource(externalSecretGVR).Namespace("ns").List(context.Background(), metav1.ListOptions{})
