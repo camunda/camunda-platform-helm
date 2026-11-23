@@ -58,6 +58,11 @@ spec:
             - --http-management-relative-path=/
             - --proxy-headers=xforwarded
             - --health-enabled=true
+            {{- range splitList " " (.Values.extraStartupArgs | default "") }}
+            {{- if . }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
           env:
             - name: KC_PROXY
               value: {{ .Values.proxy | quote }}
