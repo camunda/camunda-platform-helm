@@ -56,6 +56,17 @@ var retryMaxAttempts = 15
 // creating a new app registration. Exposed as a variable so tests can set it to zero.
 var propagationSleepDuration = 2 * time.Second
 
+// redirectVerifyDelay and redirectVerifyJitter set the wait between writing the
+// redirect URIs and reading them back. Variables so tests can set them to zero.
+var (
+	redirectVerifyDelay  = 2 * time.Second
+	redirectVerifyJitter = 3 * time.Second
+)
+
+// redirectVerifyAttempts bounds how often UpdateRedirectURIs rewrites the URIs
+// when a concurrent registration removed them.
+const redirectVerifyAttempts = 3
+
 // loginBaseURL is the Microsoft identity platform base URL. It is a variable
 // so tests can override it with a local httptest server URL.
 var loginBaseURL = "https://login.microsoftonline.com"
@@ -1012,13 +1023,105 @@ func filterRedirectURIs(existing []string, newURIs []string, host string) []stri
 	return result
 }
 
+type redirectURIApp struct {
+	Web struct {
+		RedirectURIs []string `json:"redirectUris"`
+	} `json:"web"`
+	Spa struct {
+		RedirectURIs []string `json:"redirectUris"`
+	} `json:"spa"`
+	PublicClient struct {
+		RedirectURIs []string `json:"redirectUris"`
+	} `json:"publicClient"`
+}
+
+// graphTarget addresses one Graph resource with an authenticated client.
+type graphTarget struct {
+	client *http.Client
+	token  string
+	path   string
+}
+
+func fetchRedirectURIApp(ctx context.Context, g graphTarget) (redirectURIApp, error) {
+	var app redirectURIApp
+	body, err := graphGet(ctx, g.client, g.token, g.path)
+	if err != nil {
+		return app, fmt.Errorf("entra: fetch app registration: %w", err)
+	}
+	if err := json.Unmarshal(body, &app); err != nil {
+		return app, fmt.Errorf("entra: parse app registration: %w", err)
+	}
+	return app, nil
+}
+
+func patchRedirectURIs(ctx context.Context, g graphTarget, app redirectURIApp, host string) error {
+	newWebURIs, newSpaURIs := buildRedirectURIs(host)
+	web := filterRedirectURIs(app.Web.RedirectURIs, newWebURIs, host)
+	spa := filterRedirectURIs(app.Spa.RedirectURIs, newSpaURIs, host)
+	web, spa = capRedirectURIs(web, spa, len(app.PublicClient.RedirectURIs), host)
+
+	logging.Logger.Info().
+		Int("existingWebURIs", len(app.Web.RedirectURIs)).
+		Int("existingSpaURIs", len(app.Spa.RedirectURIs)).
+		Int("finalWebURIs", len(web)).
+		Int("finalSpaURIs", len(spa)).
+		Strs("newWebURIs", newWebURIs).
+		Strs("newSpaURIs", newSpaURIs).
+		Msg("Computed final redirect URI lists")
+
+	payload := map[string]any{
+		"web": map[string]any{"redirectUris": web},
+		"spa": map[string]any{"redirectUris": spa},
+	}
+	body, statusCode, err := graphPatch(ctx, g.client, g.token, g.path, payload, nil)
+	if err != nil {
+		return fmt.Errorf("entra: PATCH redirect URIs: %w", err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("entra: PATCH redirect URIs failed (status=%d): %s", statusCode, string(body))
+	}
+	return nil
+}
+
+// hasHostRedirectURIs reports whether app holds every redirect URI of host.
+func hasHostRedirectURIs(app redirectURIApp, host string) bool {
+	newWebURIs, newSpaURIs := buildRedirectURIs(host)
+	for _, uri := range newWebURIs {
+		if !slices.Contains(app.Web.RedirectURIs, uri) {
+			return false
+		}
+	}
+	for _, uri := range newSpaURIs {
+		if !slices.Contains(app.Spa.RedirectURIs, uri) {
+			return false
+		}
+	}
+	return true
+}
+
+func waitRedirectVerify(ctx context.Context) error {
+	wait := redirectVerifyDelay
+	if redirectVerifyJitter > 0 {
+		wait += time.Duration(rand.Int63n(int64(redirectVerifyJitter)))
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(wait):
+		return nil
+	}
+}
+
 // UpdateRedirectURIs updates the redirect URIs on the parent Entra app
 // registration. It:
-// 1. Authenticates to Graph API using the parent app credentials.
-// 2. Fetches the current web and SPA redirect URIs.
-// 3. Removes the current host's URIs and invalid/malformed URIs.
-// 4. Adds the redirect URIs for the current deployment's ingress host.
-// 5. PATCHes the updated URI lists back to the app registration.
+//  1. Authenticates to Graph API using the parent app credentials.
+//  2. Fetches the current web, SPA and public-client redirect URIs.
+//  3. Replaces the current host's URIs and removes invalid/malformed URIs.
+//  4. Adds the redirect URIs for the current deployment's ingress host.
+//  5. PATCHes the updated URI lists back to the app registration.
+//  6. Reads the app back after a jittered wait and repeats from step 3 when a
+//     concurrent registration removed this host's URIs, failing after
+//     redirectVerifyAttempts writes.
 func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 	if err := resolveRedirectOpts(&opts); err != nil {
 		return fmt.Errorf("entra: %w", err)
@@ -1034,7 +1137,6 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 		Str("ingressHost", opts.IngressHost).
 		Msg("Updating Entra app redirect URIs")
 
-	// Step 1: Acquire bearer token.
 	authOpts := &Options{
 		DirectoryID:  opts.DirectoryID,
 		ClientID:     opts.ClientID,
@@ -1047,72 +1149,36 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 		return fmt.Errorf("entra: %w", err)
 	}
 
-	// Step 2: Fetch current app registration.
-	appPath := fmt.Sprintf("/applications/%s", opts.ObjectID)
-	body, err := graphGet(ctx, client, token, appPath)
+	g := graphTarget{client: client, token: token, path: fmt.Sprintf("/applications/%s", opts.ObjectID)}
+	app, err := fetchRedirectURIApp(ctx, g)
 	if err != nil {
-		return fmt.Errorf("entra: fetch app registration: %w", err)
+		return err
 	}
 
-	var appData struct {
-		Web struct {
-			RedirectURIs []string `json:"redirectUris"`
-		} `json:"web"`
-		Spa struct {
-			RedirectURIs []string `json:"redirectUris"`
-		} `json:"spa"`
-		PublicClient struct {
-			RedirectURIs []string `json:"redirectUris"`
-		} `json:"publicClient"`
+	for attempt := 1; ; attempt++ {
+		if err := patchRedirectURIs(ctx, g, app, opts.IngressHost); err != nil {
+			return err
+		}
+		if err := waitRedirectVerify(ctx); err != nil {
+			return fmt.Errorf("entra: verify redirect URIs: %w", err)
+		}
+		if app, err = fetchRedirectURIApp(ctx, g); err != nil {
+			return err
+		}
+		if hasHostRedirectURIs(app, opts.IngressHost) {
+			logging.Logger.Info().
+				Str("objectId", opts.ObjectID).
+				Int("attempt", attempt).
+				Msg("Successfully updated Entra app redirect URIs")
+			return nil
+		}
+		if attempt == redirectVerifyAttempts {
+			return fmt.Errorf("entra: redirect URIs of %s were removed by a concurrent update %d times in a row",
+				opts.IngressHost, attempt)
+		}
+		logging.Logger.Warn().
+			Str("ingressHost", opts.IngressHost).
+			Int("attempt", attempt).
+			Msg("Redirect URIs removed by a concurrent update, rewriting")
 	}
-	if err := json.Unmarshal(body, &appData); err != nil {
-		return fmt.Errorf("entra: parse app registration: %w", err)
-	}
-
-	logging.Logger.Info().
-		Int("existingWebURIs", len(appData.Web.RedirectURIs)).
-		Int("existingSpaURIs", len(appData.Spa.RedirectURIs)).
-		Msg("Fetched current redirect URIs")
-
-	// Step 3: Build new URIs for the current deployment.
-	newWebURIs, newSpaURIs := buildRedirectURIs(opts.IngressHost)
-
-	// Step 4: Filter and merge.
-	finalWebURIs := filterRedirectURIs(appData.Web.RedirectURIs, newWebURIs, opts.IngressHost)
-	finalSpaURIs := filterRedirectURIs(appData.Spa.RedirectURIs, newSpaURIs, opts.IngressHost)
-	finalWebURIs, finalSpaURIs = capRedirectURIs(finalWebURIs, finalSpaURIs,
-		len(appData.PublicClient.RedirectURIs), opts.IngressHost)
-
-	logging.Logger.Info().
-		Int("finalWebURIs", len(finalWebURIs)).
-		Int("finalSpaURIs", len(finalSpaURIs)).
-		Strs("newWebURIs", newWebURIs).
-		Strs("newSpaURIs", newSpaURIs).
-		Msg("Computed final redirect URI lists")
-
-	// Step 5: PATCH the app registration.
-	patchPayload := map[string]any{
-		"web": map[string]any{
-			"redirectUris": finalWebURIs,
-		},
-		"spa": map[string]any{
-			"redirectUris": finalSpaURIs,
-		},
-	}
-
-	patchBody, statusCode, err := graphPatch(ctx, client, token, appPath, patchPayload, nil)
-	if err != nil {
-		return fmt.Errorf("entra: PATCH redirect URIs: %w", err)
-	}
-
-	if statusCode >= 300 {
-		return fmt.Errorf("entra: PATCH redirect URIs failed (status=%d): %s", statusCode, string(patchBody))
-	}
-
-	logging.Logger.Info().
-		Int("statusCode", statusCode).
-		Str("objectId", opts.ObjectID).
-		Msg("Successfully updated Entra app redirect URIs")
-
-	return nil
 }

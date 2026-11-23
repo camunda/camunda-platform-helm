@@ -128,6 +128,8 @@ This command:
 6. If web, SPA and public-client URIs together exceed Entra's 256-URI limit,
    evicts whole CI deployments (*.ci.distro.ultrawombat.com), oldest first.
 7. PATCHes the updated URI lists back to the app registration.
+8. Reads the app back after 2-5s; if a concurrent registration removed this
+   host's URIs, repeats from step 3, failing after 3 writes.
 
 Environment variables (or set in .env file):
   ENTRA_APP_DIRECTORY_ID  - Entra tenant/directory ID
