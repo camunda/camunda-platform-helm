@@ -70,11 +70,14 @@ func noRedirectVerifyWait(t *testing.T) {
 
 // fakeRedirectApp is a Graph application whose GET returns what the last
 // PATCH wrote. afterPatch, when set, runs after each PATCH is stored.
+// getStatusAfterPatch, when non-zero, is the status every GET returns once a
+// PATCH has been stored.
 type fakeRedirectApp struct {
-	mu         sync.Mutex
-	app        redirectURIApp
-	patches    int
-	afterPatch func(f *fakeRedirectApp)
+	mu                  sync.Mutex
+	app                 redirectURIApp
+	patches             int
+	afterPatch          func(f *fakeRedirectApp)
+	getStatusAfterPatch int
 }
 
 func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
@@ -83,6 +86,12 @@ func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
 		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
 			f.mu.Lock()
 			defer f.mu.Unlock()
+			if f.patches > 0 && f.getStatusAfterPatch != 0 {
+				jsonResponse(w, f.getStatusAfterPatch, map[string]any{
+					"error": map[string]string{"code": "serviceNotAvailable"},
+				})
+				return
+			}
 			jsonResponse(w, 200, f.app)
 		},
 		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
@@ -1736,6 +1745,19 @@ func TestUpdateRedirectURIs_FailsWhenOverwrittenEveryAttempt(t *testing.T) {
 	}
 	if f.patches != redirectVerifyAttempts {
 		t.Errorf("PATCH count = %d, want %d", f.patches, redirectVerifyAttempts)
+	}
+}
+
+func TestUpdateRedirectURIs_FailsWhenVerificationReadFails(t *testing.T) {
+	f := &fakeRedirectApp{getStatusAfterPatch: 503}
+
+	err := runUpdateRedirectURIs(t, f, "new-ns"+ciDomainSuffix)
+
+	if err == nil || !strings.Contains(err.Error(), "status=503") {
+		t.Fatalf("error = %v, want verification read failure with status=503", err)
+	}
+	if f.patches != 1 {
+		t.Errorf("PATCH count = %d, want 1", f.patches)
 	}
 }
 
