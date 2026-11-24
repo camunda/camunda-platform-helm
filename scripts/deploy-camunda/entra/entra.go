@@ -611,6 +611,95 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 	return secretResult.SecretText, nil
 }
 
+// graphAppID is the well-known application id of Microsoft Graph.
+const graphAppID = "00000003-0000-0000-c000-000000000000"
+
+// loginAppDelegatedScopes are the delegated permissions a sign-in needs: the
+// OIDC trio from Microsoft Graph, and the app's own scope, which every
+// component asks for as "<clientId>/.default".
+const (
+	graphSignInScopes = "openid profile email"
+	loginAppSelfScope = "user_impersonation"
+)
+
+// grantAdminConsent records tenant-wide consent for the login app.
+//
+// Consent is held on the service principal, not on the app registration, and a
+// run-created principal starts with an empty ledger -- so Entra asks the user,
+// and this tenant withholds consent from ordinary accounts, leaving the pool
+// users on "Need admin approval" with no button to press. Writing the grants
+// here puts a fresh app where the shared app has been since an admin consented
+// it by hand: consentType AllPrincipals, which covers every user in the tenant.
+//
+// This is the one call that needs DelegatedPermissionGrant.ReadWrite.All on the
+// parent app. Without it Graph answers 403 Authorization_RequestDenied, and the
+// deployment is better off failing here than at the first sign-in.
+func grantAdminConsent(ctx context.Context, client *http.Client, token, appID string) error {
+	clientSPID, err := servicePrincipalID(ctx, client, token, appID)
+	if err != nil {
+		return fmt.Errorf("grant admin consent: %w", err)
+	}
+	graphSPID, err := servicePrincipalID(ctx, client, token, graphAppID)
+	if err != nil {
+		return fmt.Errorf("grant admin consent: %w", err)
+	}
+
+	for _, grant := range []struct {
+		resourceID string
+		scope      string
+	}{
+		{graphSPID, graphSignInScopes},
+		{clientSPID, loginAppSelfScope},
+	} {
+		payload := map[string]any{
+			"clientId":    clientSPID,
+			"consentType": "AllPrincipals",
+			"resourceId":  grant.resourceID,
+			"scope":       grant.scope,
+		}
+		body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", nil, func() ([]byte, int, error) {
+			return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
+		})
+		if err != nil {
+			return fmt.Errorf("grant admin consent for %q: %w", grant.scope, err)
+		}
+		if statusCode >= 300 {
+			return fmt.Errorf("grant admin consent for %q failed (status=%d): %s", grant.scope, statusCode, string(body))
+		}
+	}
+
+	logging.Logger.Info().
+		Str("appId", appID).
+		Str("scopes", graphSignInScopes+" "+loginAppSelfScope).
+		Msg("Consented the login app for all principals")
+	return nil
+}
+
+// servicePrincipalID resolves an application id to its service principal object
+// id, retrying the 404 a principal created moments ago still answers with.
+func servicePrincipalID(ctx context.Context, client *http.Client, token, appID string) (string, error) {
+	path := fmt.Sprintf("/servicePrincipals(appId='%s')?$select=id", url.PathEscape(appID))
+	body, statusCode, err := withGraphRetry(ctx, "servicePrincipalID", servicePrincipalUpsertRetryable, func() ([]byte, int, error) {
+		return graphGetStatus(ctx, client, token, path)
+	})
+	if err != nil {
+		return "", fmt.Errorf("look up service principal for %s: %w", appID, err)
+	}
+	if statusCode >= 300 {
+		return "", fmt.Errorf("look up service principal for %s failed (status=%d): %s", appID, statusCode, string(body))
+	}
+	var sp struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(body, &sp); err != nil {
+		return "", fmt.Errorf("decode service principal for %s: %w", appID, err)
+	}
+	if sp.ID == "" {
+		return "", fmt.Errorf("service principal for %s has no id", appID)
+	}
+	return sp.ID, nil
+}
+
 // ensureServicePrincipal ensures a service principal exists for the given appId.
 func ensureServicePrincipal(ctx context.Context, client *http.Client, token, appID string) error {
 	path := fmt.Sprintf("/servicePrincipals(appId='%s')", url.PathEscape(appID))
@@ -1013,6 +1102,9 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := ensureServicePrincipal(ctx, client, token, appID); err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+	if err := grantAdminConsent(ctx, client, token, appID); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := awaitLoginAppResource(ctx, &opts, appID, secret); err != nil {

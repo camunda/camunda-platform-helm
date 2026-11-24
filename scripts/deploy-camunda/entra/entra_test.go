@@ -1934,6 +1934,7 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	const host = "gke-qaen-1234-8-10-qaen.ci.distro.ultrawombat.com"
 
 	patched := map[string]any{}
+	var grants []map[string]any
 	spCreated := false
 	created := false
 	srv := newTestServer(t, map[string]http.HandlerFunc{
@@ -1967,6 +1968,14 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 		},
 		"POST /applications/login-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, 200, map[string]string{"secretText": "login-secret"})
+		},
+		"POST /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			var grant map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&grant); err != nil {
+				t.Errorf("decode grant body: %v", err)
+			}
+			grants = append(grants, grant)
+			jsonResponse(w, 201, map[string]string{"id": "grant-id"})
 		},
 		"PATCH /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
 			spCreated = true
@@ -2041,6 +2050,24 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	}
 	if got, _ := access[0].(map[string]any); got["id"] != scopeID || got["type"] != "Scope" {
 		t.Errorf("resourceAccess[0] = %v, want the exposed scope id %s as a Scope", got, scopeID)
+	}
+
+	if len(grants) != 2 {
+		t.Fatalf("oauth2PermissionGrants = %v, want two; consent lives on the service principal, and a run-created one starts with an empty ledger", grants)
+	}
+	for _, grant := range grants {
+		if grant["consentType"] != "AllPrincipals" {
+			t.Errorf("consentType = %v, want AllPrincipals; a per-user grant leaves every other pool account prompted", grant["consentType"])
+		}
+		if grant["clientId"] != "sp-id" {
+			t.Errorf("clientId = %v, want sp-id", grant["clientId"])
+		}
+	}
+	if grants[0]["resourceId"] != "graph-sp-id" || grants[0]["scope"] != "openid profile email" {
+		t.Errorf("first grant = %v, want the Microsoft Graph sign-in scopes", grants[0])
+	}
+	if grants[1]["resourceId"] != "sp-id" || grants[1]["scope"] != "user_impersonation" {
+		t.Errorf("second grant = %v, want the app's own scope", grants[1])
 	}
 
 	wantWeb, wantSpa := buildRedirectURIs(host)
