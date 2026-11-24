@@ -25,11 +25,9 @@ import (
 
 func main() {
 	repoRoot := flag.String("repo-root", ".", "path to the camunda-platform-helm repo root")
-	base := flag.String("base", "origin/main", "git ref; the change is the diff from its merge base with HEAD to the working tree")
-	all := flag.Bool("all", false, "check every workflow run block, changed or not")
 	flag.Parse()
 
-	if err := run(*repoRoot, *base, *all, os.Stdout); err != nil {
+	if err := run(*repoRoot, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
 	}

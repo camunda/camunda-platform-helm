@@ -1,3 +1,3 @@
-# Complexity checks
+# Composite action shellcheck
 
-The default command checks changed workflow run blocks and runs shellcheck on every composite action run block.
+The command runs shellcheck on every composite action run block. actionlint does not check composite actions ([rhysd/actionlint#401](https://github.com/rhysd/actionlint/issues/401)).

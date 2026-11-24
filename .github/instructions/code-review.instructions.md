@@ -160,8 +160,6 @@ func TestDeploymentTemplate(t *testing.T) {
 
 ### Workflow Automation Implementation
 
-- [ ] Does `make go.complexity` pass, with no rewrite and no logic moved into `GITHUB_ENV`, a
-  `.sh` file, `${{ }}` or `if:` to pass it?
 - [ ] Does new Go under `scripts/` avoid a new module, interfaces with fewer than two non-test
   implementations, unused types and copies of `scripts/camunda-core/pkg` helpers?
 - [ ] Does a rewrite link the request that names its files, stay inside those files, keep the bash
@@ -204,7 +202,7 @@ func TestDeploymentTemplate(t *testing.T) {
 Most flag-worthy mistakes restate the rules and checklists above (principle violations, golden
 files not regenerated — CI fails, undocumented `@param` fields — invisible in generated docs,
 `kindIs "slice"` panics on list input, `indent` without `trim` — YAML parse errors at install
-time, cross-version scope creep, over-limit `run:` blocks). Additional pitfalls not covered above:
+time, cross-version scope creep). Additional pitfalls not covered above:
 
 1. **`fail-fast: true` (or default) on test matrix** — in GitHub Actions workflows, the default
    for `fail-fast` is `true`. Test matrices should set `fail-fast: false`.

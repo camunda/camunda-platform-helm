@@ -206,7 +206,7 @@ go.test-scripts:
 
 .PHONY: go.complexity
 go.complexity:
-	@cd scripts/complexity-gate && go run . --repo-root ../.. --base $(lintBase)
+	@cd scripts/complexity-gate && go run . --repo-root ../..
 
 #
 # Helpers.

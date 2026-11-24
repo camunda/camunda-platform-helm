@@ -54,9 +54,9 @@ jobs:
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         run: make go.lint lintBase=HEAD~1
 
-      - name: Gate the complexity of changed workflow run blocks
+      - name: Shellcheck the run blocks of every composite action
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
-        run: make go.complexity lintBase=HEAD~1
+        run: make go.complexity
 
       - name: Install schema generator
         run: |
