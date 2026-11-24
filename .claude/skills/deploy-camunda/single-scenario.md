@@ -158,7 +158,7 @@ These commands are **not on `main`**. The binary rejects them with `unknown comm
 | `deploy-camunda scenario deploy` | Not built. No open PR adds the command. Use the root command (section 6) or `matrix run`. | none yet |
 | `deploy-camunda doctor --format json` | Not on `main`. Text output only. | draft **#7983** |
 | Versioned config file `~/.config/deploy-camunda/config.yaml` (`apiVersion: deploy-camunda/v1`, `providers:` block) | Not on `main`. No open PR adds this file. Draft #7985 uses `apiVersion: deploy-camunda/v1` and `providers:` only for in-code `Recipe` objects, not for a user config file. | planned, no PR yet |
-| Separate `secrets.yaml` credentials file | Not on `main`. No open PR adds it. Use the keyring or env vars (section 3). | planned, no PR yet |
+| Separate `secrets.yaml` credentials file | Not on `main`. No open PR adds it. Use flags, env vars or the keyring (section 4). | planned, no PR yet |
 
 ### Config file that works on `main` today
 

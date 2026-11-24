@@ -139,7 +139,7 @@ Full resolution semantics per chart version: `docs/skills/integration-test-scena
 
 ## Configuration Profiles
 
-Create a config file at `.deploy-camunda.yaml` (project root) or `~/.config/camunda/deploy.yaml`:
+Create a config file at `.deploy-camunda.yaml` (current directory, then repo root) or `~/.config/camunda/deploy.yaml`; the first that exists wins (see `single-scenario.md` section 7):
 
 ```yaml
 current: dev
