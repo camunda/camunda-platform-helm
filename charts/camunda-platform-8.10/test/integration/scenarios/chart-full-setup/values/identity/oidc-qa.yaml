@@ -88,14 +88,16 @@ console:
 
 # Mirrors the roles the Keycloak path seeds on identity.firstUser; the OIDC
 # path seeds only the Default rule, which grants the Identity UI alone.
+# Keyed on tid so every account in this QA-only tenant matches, not just the
+# OID below: the E2E specs claim a slot from a pre-provisioned user pool.
 identity:
   env:
     - name: IDENTITY_MAPPINGRULES_0_NAME
       value: "QA E2E component access"
     - name: IDENTITY_MAPPINGRULES_0_CLAIMNAME
-      value: "oid"
+      value: "tid"
     - name: IDENTITY_MAPPINGRULES_0_CLAIMVALUE
-      value: "$INITIAL_CLAIM_VALUE"
+      value: "$ENTRA_APP_DIRECTORY_ID"
     - name: IDENTITY_MAPPINGRULES_0_OPERATOR
       value: "EQUALS"
     - name: IDENTITY_MAPPINGRULES_0_RULETYPE
