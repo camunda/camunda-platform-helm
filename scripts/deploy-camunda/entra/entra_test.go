@@ -2043,19 +2043,6 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 		t.Errorf("resourceAccess[0] = %v, want the exposed scope id %s as a Scope", got, scopeID)
 	}
 
-	preAuthorized, _ := api["preAuthorizedApplications"].([]any)
-	if len(preAuthorized) != 1 {
-		t.Fatalf("preAuthorizedApplications = %v, want the app itself; the tenant reserves consent for admins, so an un-preauthorized scope stops a pool account on \"Need admin approval\"", api["preAuthorizedApplications"])
-	}
-	preAuthClient, _ := preAuthorized[0].(map[string]any)
-	if preAuthClient["appId"] != "login-app-id" {
-		t.Errorf("preAuthorized appId = %v, want login-app-id", preAuthClient["appId"])
-	}
-	ids, _ := preAuthClient["delegatedPermissionIds"].([]any)
-	if len(ids) != 1 || ids[0] != scopeID {
-		t.Errorf("delegatedPermissionIds = %v, want [%s]", ids, scopeID)
-	}
-
 	wantWeb, wantSpa := buildRedirectURIs(host)
 	gotWeb := patchedURIs(t, patched, "web")
 	gotSpa := patchedURIs(t, patched, "spa")

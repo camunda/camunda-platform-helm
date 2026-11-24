@@ -828,16 +828,11 @@ type LoginApp struct {
 // comes back with no error on it. Hence the self scope and the matching self
 // entry.
 //
-// That pairing alone used to stop the pool accounts on "Need admin approval":
-// the tenant reserves consent for admins, so any permission in there raises a
-// prompt they cannot clear. preAuthorizedApplications is what settles it. An
-// app listed as a pre-authorized client of its own scope holds that delegated
-// permission implicitly, so no consent is asked of the signing-in user and no
-// grant has to be written -- which matters because the parent app cannot write
-// one (it has no DelegatedPermissionGrant.ReadWrite.All).
-//
-// It takes two PATCHes: preAuthorizedApplications can only reference a scope id
-// that already exists on the app, so the scope has to land first.
+// The scope is user-consentable, which is as far as this code can take it: the
+// tenant withholds consent from ordinary accounts, so the pool users land on
+// "Need admin approval" until the app carries an AllPrincipals grant -- the one
+// thing the shared app has that a fresh one does not. preAuthorizedApplications
+// was tried in that place and does not substitute for it.
 //
 // The permission entry createApp seeds is dropped on the way past: its all-zero
 // id is rejected by the authorize endpoint with AADSTS65006. openid, email and
@@ -870,19 +865,6 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 		}},
 	}
 	if err := patchLoginApp(ctx, client, token, path, "configureLoginApp", resource); err != nil {
-		return err
-	}
-
-	preAuthorized := map[string]any{
-		"api": map[string]any{
-			"requestedAccessTokenVersion": 2,
-			"preAuthorizedApplications": []map[string]any{{
-				"appId":                  appID,
-				"delegatedPermissionIds": []string{scopeID},
-			}},
-		},
-	}
-	if err := patchLoginApp(ctx, client, token, path, "preAuthorizeLoginApp", preAuthorized); err != nil {
 		return err
 	}
 
