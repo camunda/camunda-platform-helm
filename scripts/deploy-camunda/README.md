@@ -319,6 +319,13 @@ To add a scenario for a shape you frequently deploy:
    and orphan resources. Topology releases use the same values-layer checks;
    `TestTopologyValidate*` in `matrix/topology_test.go` covers their local
    requirements and cross-release references.
+4. Re-run `make go.update-catalogue-golden` (or
+   `cd scripts/deploy-camunda && go test ./catalogue/ -run TestBuiltinCatalogueGolden -update-golden`)
+   to refresh `catalogue/testdata/builtin_catalogue.golden`, the builtin
+   Recipe view of every chart version's registry. Adding, removing or
+   reordering a `manifest.yaml` row changes it. The file has no `.yaml`
+   suffix because `make go.update-golden-only-cleanup` deletes
+   `*golden*.yaml`.
 
 `deploy-camunda matrix run --shortname-filter my-scenario` now picks it
 up. When you're done iterating, if it's useful to more than one person,
