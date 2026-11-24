@@ -2011,17 +2011,17 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 		t.Error("expected a service principal for the login app")
 	}
 
-	selfConsented := false
+	graphConsented := false
 	for _, grant := range grants {
 		if grant["consentType"] != "AllPrincipals" {
 			t.Errorf("grant %v, want consentType AllPrincipals", grant)
 		}
-		if grant["resourceId"] == "sp-id" && grant["scope"] == "user_impersonation" {
-			selfConsented = true
+		if grant["resourceId"] == "graph-sp-id" {
+			graphConsented = true
 		}
 	}
-	if !selfConsented {
-		t.Errorf("grants = %v, want tenant-wide consent for user_impersonation; without it the first sign-in stops on the Entra consent screen", grants)
+	if !graphConsented {
+		t.Errorf("grants = %v, want tenant-wide consent on Microsoft Graph; the tenant blocks user consent, so an unconsented user is stopped by Entra's consent screen", grants)
 	}
 
 	if got, _ := patched["identifierUris"].([]any); len(got) != 1 || got[0] != "api://login-app-id" {
@@ -2034,32 +2034,16 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	if v := api["requestedAccessTokenVersion"]; v != float64(2) {
 		t.Errorf("requestedAccessTokenVersion = %v, want 2 (a v1 token's issuer fails validation)", v)
 	}
-
-	scopes, _ := api["oauth2PermissionScopes"].([]any)
-	if len(scopes) != 1 {
-		t.Fatalf("oauth2PermissionScopes = %v, want exactly one scope", api["oauth2PermissionScopes"])
+	if _, exists := api["oauth2PermissionScopes"]; exists {
+		t.Errorf("api = %v, want no exposed scope; the shared app that signs in today exposes none, and one of its own puts the first sign-in on Entra's consent screen", api)
 	}
-	scopeID := scopes[0].(map[string]any)["id"]
+
 	required, _ := patched["requiredResourceAccess"].([]any)
 	if len(required) != 1 {
-		t.Errorf("requiredResourceAccess = %v, want only the app's own scope; the seeded parent entry carries an all-zero permission id that authorize rejects with AADSTS65006", required)
+		t.Fatalf("requiredResourceAccess = %v, want only Microsoft Graph User.Read", required)
 	}
-	selfListed := false
-	for _, entry := range required {
-		e := entry.(map[string]any)
-		if e["resourceAppId"] != "login-app-id" {
-			continue
-		}
-		access := e["resourceAccess"].([]any)
-		if len(access) == 1 && access[0].(map[string]any)["id"] == scopeID {
-			selfListed = true
-		}
-	}
-	if !selfListed {
-		t.Errorf("requiredResourceAccess = %v, want an entry for the app's own API scope; without it Entra rejects <appId>/.default with AADSTS650057", patched["requiredResourceAccess"])
-	}
-	if scopes, _ := api["oauth2PermissionScopes"].([]any); len(scopes) != 1 {
-		t.Errorf("oauth2PermissionScopes = %v, want exactly one scope for .default", api["oauth2PermissionScopes"])
+	if entry := required[0].(map[string]any); entry["resourceAppId"] != graphAppID {
+		t.Errorf("requiredResourceAccess = %v, want Microsoft Graph; the entry createApp seeds carries an all-zero permission id that authorize rejects with AADSTS65006", required)
 	}
 
 	wantWeb, wantSpa := buildRedirectURIs(host)

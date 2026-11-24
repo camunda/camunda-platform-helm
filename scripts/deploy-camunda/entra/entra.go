@@ -32,8 +32,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 )
@@ -631,6 +629,9 @@ func ensureServicePrincipal(ctx context.Context, client *http.Client, token, app
 // graphAppID is Microsoft Graph's well-known application id.
 const graphAppID = "00000003-0000-0000-c000-000000000000"
 
+// graphUserReadScopeID is Microsoft Graph's User.Read delegated permission id.
+const graphUserReadScopeID = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"
+
 // servicePrincipalID resolves a service principal's object id from its app id.
 func servicePrincipalID(ctx context.Context, client *http.Client, token, appID string) (string, error) {
 	path := fmt.Sprintf("/servicePrincipals(appId='%s')?$select=id", url.PathEscape(appID))
@@ -668,43 +669,34 @@ func grantAdminConsent(ctx context.Context, client *http.Client, token, appID st
 		return err
 	}
 
-	grants := []struct {
-		resourceID string
-		scope      string
-	}{
-		{spID, "user_impersonation"},
-		{graphSPID, "openid profile email User.Read"},
+	payload := map[string]any{
+		"clientId":    spID,
+		"consentType": "AllPrincipals",
+		"resourceId":  graphSPID,
+		"scope":       "User.Read openid profile email",
 	}
-	for _, grant := range grants {
-		payload := map[string]any{
-			"clientId":    spID,
-			"consentType": "AllPrincipals",
-			"resourceId":  grant.resourceID,
-			"scope":       grant.scope,
-		}
-		body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", nil, func() ([]byte, int, error) {
-			return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
-		})
-		if err != nil {
-			return fmt.Errorf("grant admin consent for %q: %w", grant.scope, err)
-		}
-		if statusCode == http.StatusForbidden {
-			return fmt.Errorf("grant admin consent for %q was refused (status=403): the parent app registration needs the DelegatedPermissionGrant.ReadWrite.All application permission with admin consent granted: %s", grant.scope, string(body))
-		}
-		// A repeat deploy re-grants the same scopes; Graph reports the
-		// existing entry as a conflict, which leaves consent in place.
-		if statusCode >= 300 && statusCode != http.StatusConflict {
-			return fmt.Errorf("grant admin consent for %q failed (status=%d): %s", grant.scope, statusCode, string(body))
-		}
-		logging.Logger.Debug().
-			Str("scope", grant.scope).
-			Int("statusCode", statusCode).
-			Msg("Recorded tenant-wide consent for the login app")
+	body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", nil, func() ([]byte, int, error) {
+		return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
+	})
+	if err != nil {
+		return fmt.Errorf("grant admin consent: %w", err)
+	}
+	if statusCode == http.StatusForbidden {
+		logging.Logger.Warn().
+			Str("appId", appID).
+			Msg("Could not record tenant-wide consent: the parent app registration lacks DelegatedPermissionGrant.ReadWrite.All. Sign-in still works for users who already consented, but a user who has not will be stopped by Entra's consent screen")
+		return nil
+	}
+	// A repeat deploy re-grants the same scopes; Graph reports the existing
+	// entry as a conflict, which leaves consent in place.
+	if statusCode >= 300 && statusCode != http.StatusConflict {
+		return fmt.Errorf("grant admin consent failed (status=%d): %s", statusCode, string(body))
 	}
 
 	logging.Logger.Info().
 		Str("appId", appID).
-		Msg("Granted tenant-wide admin consent for the login app")
+		Int("statusCode", statusCode).
+		Msg("Recorded tenant-wide consent for the login app")
 	return nil
 }
 
@@ -890,32 +882,26 @@ type LoginApp struct {
 // A bare app registration has no identifierUris and no requestedAccessTokenVersion,
 // so Entra issues a v1 token whose iss is https://sts.windows.net/<tid>/ and the
 // cluster rejects it with 401. Setting the API block makes the app a v2 resource
-// with a scope for ".default" to resolve against.
+// so ".default" resolves against it.
 //
-// The PATCH also replaces requiredResourceAccess with a single entry for the
-// app's own scope. createApp seeds a parent-app entry whose permission id is
-// all zeros, which the authorize endpoint rejects with AADSTS65006 once the
-// app is a resource in its own right, and the login app never calls the parent
-// app's API anyway.
+// The shape mirrors the shared QA app registration, which signs in today:
+// identifierUris plus token version 2, no exposed scope, and Microsoft Graph
+// User.Read as the only requiredResourceAccess entry. Exposing a scope of its
+// own makes the app's first sign-in stop on Entra's consent screen, and the
+// parent entry createApp seeds carries an all-zero permission id the authorize
+// endpoint rejects with AADSTS65006, so the PATCH replaces both.
 func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) error {
 	web, spa := buildRedirectURIs(host)
-	scopeID := uuid.NewString()
 	payload := map[string]any{
 		"web":            map[string]any{"redirectUris": web},
 		"spa":            map[string]any{"redirectUris": spa},
 		"identifierUris": []string{"api://" + appID},
-		"api": map[string]any{
-			"requestedAccessTokenVersion": 2,
-			"oauth2PermissionScopes": []map[string]any{
-				{
-					"id":                      scopeID,
-					"value":                   "user_impersonation",
-					"type":                    "User",
-					"isEnabled":               true,
-					"adminConsentDisplayName": "Access Camunda",
-					"adminConsentDescription": "Allows the app to access Camunda on behalf of the signed-in user.",
-					"userConsentDisplayName":  "Access Camunda",
-					"userConsentDescription":  "Allows the app to access Camunda on your behalf.",
+		"api":            map[string]any{"requestedAccessTokenVersion": 2},
+		"requiredResourceAccess": []map[string]any{
+			{
+				"resourceAppId": graphAppID,
+				"resourceAccess": []map[string]any{
+					{"id": graphUserReadScopeID, "type": "Scope"},
 				},
 			},
 		},
@@ -930,26 +916,6 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 	if statusCode >= 300 {
 		return fmt.Errorf("configure login app failed (status=%d): %s", statusCode, string(body))
 	}
-	permissions := map[string]any{
-		"requiredResourceAccess": []map[string]any{
-			{
-				"resourceAppId": appID,
-				"resourceAccess": []map[string]any{
-					{"id": scopeID, "type": "Scope"},
-				},
-			},
-		},
-	}
-	body, statusCode, err = withGraphRetry(ctx, "configureLoginAppPermissions", nil, func() ([]byte, int, error) {
-		return graphPatch(ctx, client, token, path, permissions, nil)
-	})
-	if err != nil {
-		return fmt.Errorf("configure login app permissions: %w", err)
-	}
-	if statusCode >= 300 {
-		return fmt.Errorf("configure login app permissions failed (status=%d): %s", statusCode, string(body))
-	}
-
 	logging.Logger.Info().
 		Str("host", host).
 		Str("identifierUri", "api://"+appID).
