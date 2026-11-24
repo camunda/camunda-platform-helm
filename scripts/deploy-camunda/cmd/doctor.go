@@ -61,10 +61,7 @@ Exits non-zero if any required check fails.`,
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
-			if err := logging.Setup(logging.Options{
-				LevelString:  flags.LogLevel,
-				ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
-			}); err != nil {
+			if err := logging.Setup(doctorLogOptions(outputFormat)); err != nil {
 				return err
 			}
 
@@ -76,7 +73,7 @@ Exits non-zero if any required check fails.`,
 
 			_, cfgRes, err := config.LoadAndMerge(configFile, true, &flags)
 			if err != nil {
-				return err
+				return writeDoctorSetupError(os.Stdout, outputFormat, "config-load", err)
 			}
 			if flags.Chart.RepoRoot == "" {
 				if detected, _ := config.DetectRepoRoot(); detected != "" {
@@ -91,7 +88,7 @@ Exits non-zero if any required check fails.`,
 				logging.Logger.Warn().Err(err).Str("envFile", envFileToLoad).Msg("Failed to load environment file")
 			}
 			if err := resolveRegistryCredentials(&flags.Docker); err != nil {
-				return err
+				return writeDoctorSetupError(os.Stdout, outputFormat, "registry-credentials", err)
 			}
 
 			report := deploy.Preflight(ctx, &flags, deploy.PreflightOptions{

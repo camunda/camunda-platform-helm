@@ -18,8 +18,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
+	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/deploy"
 	"scripts/deploy-camunda/format"
 )
@@ -95,5 +97,31 @@ func writeDoctorReport(w io.Writer, report *deploy.Report, outputFormat string) 
 	var buf bytes.Buffer
 	report.Render(&buf)
 	_, err := io.WriteString(w, buf.String())
+	return err
+}
+
+func doctorLogOptions(outputFormat string) logging.Options {
+	opts := logging.Options{
+		LevelString:  flags.LogLevel,
+		ColorEnabled: logging.IsTerminal(os.Stdout.Fd()),
+	}
+	if outputFormat == format.OutputJSON {
+		opts.Writer = os.Stderr
+		opts.ColorEnabled = logging.IsTerminal(os.Stderr.Fd())
+	}
+	return opts
+}
+
+// writeDoctorSetupError writes err as a failed envelope to w under --format json and returns err in both modes.
+func writeDoctorSetupError(w io.Writer, outputFormat, code string, err error) error {
+	if outputFormat != format.OutputJSON {
+		return err
+	}
+	res := format.NewResult()
+	res.Status = format.StatusFail
+	res.Errors = append(res.Errors, format.Error{Code: code, Message: err.Error()})
+	if werr := format.WriteJSON(w, res); werr != nil {
+		return werr
+	}
 	return err
 }
