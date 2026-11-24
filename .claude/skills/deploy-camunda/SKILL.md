@@ -44,7 +44,7 @@ of wasted time (pods stuck in `ImagePullBackOff`, missing ingress, helm errors):
    pods will fail with `ImagePullBackOff` after deployment appears to succeed. Ask the user to
    confirm; do not attempt to extract credentials automatically.
    ```bash
-   # Harbor (required for all deployments)
+   # Harbor (required with --ensure-docker-registry, which matrix runs and Harbor-only images need)
    echo $TEST_DOCKER_USERNAME_CAMUNDA_CLOUD   # should be: ci-distribution
    echo $TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD   # should be non-empty
 
@@ -90,6 +90,8 @@ of wasted time (pods stuck in `ImagePullBackOff`, missing ingress, helm errors):
    the deployment before Helm creates the main release.
 
 ## Deploy a Single Scenario
+
+Step-by-step runbook with code citations covering ingress allow-list, registry credentials, deploying without ESO, and commands not yet available: [`single-scenario.md`](single-scenario.md).
 
 ```bash
 deploy-camunda \
