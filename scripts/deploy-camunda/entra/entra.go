@@ -632,12 +632,23 @@ const graphAppID = "00000003-0000-0000-c000-000000000000"
 // graphUserReadScopeID is Microsoft Graph's User.Read delegated permission id.
 const graphUserReadScopeID = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"
 
+// servicePrincipalCreationRetryable also retries the 404 Graph returns while a
+// service principal created moments earlier is still replicating.
+func servicePrincipalCreationRetryable(statusCode int, body []byte, err error) bool {
+	return defaultRetryable(statusCode, body, err) || statusCode == http.StatusNotFound
+}
+
 // servicePrincipalID resolves a service principal's object id from its app id.
 func servicePrincipalID(ctx context.Context, client *http.Client, token, appID string) (string, error) {
 	path := fmt.Sprintf("/servicePrincipals(appId='%s')?$select=id", url.PathEscape(appID))
-	body, err := graphGet(ctx, client, token, path)
+	body, statusCode, err := withGraphRetry(ctx, "getServicePrincipal", servicePrincipalCreationRetryable, func() ([]byte, int, error) {
+		return graphGetStatus(ctx, client, token, path)
+	})
 	if err != nil {
 		return "", fmt.Errorf("look up service principal for %s: %w", appID, err)
+	}
+	if statusCode >= 300 {
+		return "", fmt.Errorf("look up service principal for %s failed (status=%d): %s", appID, statusCode, string(body))
 	}
 	var result struct {
 		ID string `json:"id"`
@@ -659,14 +670,26 @@ func servicePrincipalID(ctx context.Context, client *http.Client, token, appID s
 // screen no test account can get past. Recording the grants here is what the
 // portal's "Grant admin consent" button does, so the consent screen never
 // appears for the deployment's own app.
+// consentUnavailable reports that the tenant-wide grant could not be recorded
+// without failing the deploy. The login app does not depend on it: it exposes
+// no scope of its own, so a user who has already consented signs in either
+// way. Only a user who never has is stopped by Entra's consent screen.
+func consentUnavailable(appID string, err error) error {
+	logging.Logger.Warn().
+		Err(err).
+		Str("appId", appID).
+		Msg("Could not record tenant-wide consent for the login app; a user who has not consented to it will be stopped by Entra's consent screen")
+	return nil
+}
+
 func grantAdminConsent(ctx context.Context, client *http.Client, token, appID string) error {
 	spID, err := servicePrincipalID(ctx, client, token, appID)
 	if err != nil {
-		return err
+		return consentUnavailable(appID, err)
 	}
 	graphSPID, err := servicePrincipalID(ctx, client, token, graphAppID)
 	if err != nil {
-		return err
+		return consentUnavailable(appID, err)
 	}
 
 	payload := map[string]any{
@@ -678,19 +701,15 @@ func grantAdminConsent(ctx context.Context, client *http.Client, token, appID st
 	body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", nil, func() ([]byte, int, error) {
 		return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
 	})
+	// withGraphRetry reports a 403 as an error rather than a status, and the
+	// parent app registration may lack DelegatedPermissionGrant.ReadWrite.All.
 	if err != nil {
-		return fmt.Errorf("grant admin consent: %w", err)
-	}
-	if statusCode == http.StatusForbidden {
-		logging.Logger.Warn().
-			Str("appId", appID).
-			Msg("Could not record tenant-wide consent: the parent app registration lacks DelegatedPermissionGrant.ReadWrite.All. Sign-in still works for users who already consented, but a user who has not will be stopped by Entra's consent screen")
-		return nil
+		return consentUnavailable(appID, err)
 	}
 	// A repeat deploy re-grants the same scopes; Graph reports the existing
 	// entry as a conflict, which leaves consent in place.
 	if statusCode >= 300 && statusCode != http.StatusConflict {
-		return fmt.Errorf("grant admin consent failed (status=%d): %s", statusCode, string(body))
+		return consentUnavailable(appID, fmt.Errorf("status=%d: %s", statusCode, string(body)))
 	}
 
 	logging.Logger.Info().

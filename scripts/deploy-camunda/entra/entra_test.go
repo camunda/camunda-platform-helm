@@ -2087,3 +2087,81 @@ func patchedURIs(t *testing.T, patched map[string]any, platform string) []string
 	}
 	return uris
 }
+
+func TestEnsureLoginApp_ToleratesServicePrincipalPropagation(t *testing.T) {
+	const host = "gke-qaen-9999-8-10-qaen.ci.distro.ultrawombat.com"
+
+	spLookups := 0
+	created := false
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			if !created {
+				jsonResponse(w, 200, map[string]any{"value": []any{}})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"appId": "login-app-id", "id": "login-obj-id"},
+			}})
+		},
+		"POST /applications": func(w http.ResponseWriter, r *http.Request) {
+			created = true
+			jsonResponse(w, 201, map[string]string{"appId": "login-app-id", "id": "login-obj-id"})
+		},
+		"GET /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []any{}})
+		},
+		"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		},
+		"POST /applications/login-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"secretText": "login-secret"})
+		},
+		"PATCH /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
+		},
+		// Graph serves the service principal it just created from a replica
+		// that has not caught up yet.
+		"GET /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			spLookups++
+			if spLookups == 1 {
+				jsonResponse(w, 404, map[string]any{"error": map[string]string{"code": "Request_ResourceNotFound"}})
+				return
+			}
+			jsonResponse(w, 200, map[string]string{"id": "sp-id"})
+		},
+		"GET /servicePrincipals(appId='00000003-0000-0000-c000-000000000000')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "graph-sp-id"})
+		},
+		// The parent app may lack DelegatedPermissionGrant.ReadWrite.All.
+		"POST /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 403, map[string]any{"error": map[string]string{"code": "Authorization_RequestDenied"}})
+		},
+	})
+	defer srv.Close()
+
+	origGraph, origLogin, origSleep := graphBaseURL, loginBaseURL, propagationSleepDuration
+	origBackoff := retryBaseBackoff
+	graphBaseURL, loginBaseURL, propagationSleepDuration, retryBaseBackoff = srv.URL, srv.URL, 0, time.Millisecond
+	defer func() {
+		graphBaseURL, loginBaseURL, propagationSleepDuration = origGraph, origLogin, origSleep
+		retryBaseBackoff = origBackoff
+	}()
+
+	app, err := EnsureLoginApp(context.Background(), Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client-id",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	}, host)
+	if err != nil {
+		t.Fatalf("provisioning must survive a replicating service principal and a refused consent grant: %v", err)
+	}
+	if app.AppID != "login-app-id" {
+		t.Errorf("app = %+v, want appId login-app-id", app)
+	}
+	if spLookups < 2 {
+		t.Errorf("service principal lookups = %d, want a retry after the 404", spLookups)
+	}
+}
