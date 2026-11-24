@@ -628,6 +628,86 @@ func ensureServicePrincipal(ctx context.Context, client *http.Client, token, app
 	return nil
 }
 
+// graphAppID is Microsoft Graph's well-known application id.
+const graphAppID = "00000003-0000-0000-c000-000000000000"
+
+// servicePrincipalID resolves a service principal's object id from its app id.
+func servicePrincipalID(ctx context.Context, client *http.Client, token, appID string) (string, error) {
+	path := fmt.Sprintf("/servicePrincipals(appId='%s')?$select=id", url.PathEscape(appID))
+	body, err := graphGet(ctx, client, token, path)
+	if err != nil {
+		return "", fmt.Errorf("look up service principal for %s: %w", appID, err)
+	}
+	var result struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("parse service principal for %s: %w", appID, err)
+	}
+	if result.ID == "" {
+		return "", fmt.Errorf("service principal for %s has no object id", appID)
+	}
+	return result.ID, nil
+}
+
+// grantAdminConsent consents to the login app's delegated scopes on behalf of
+// every user in the tenant.
+//
+// The tenant disables user consent, so the first sign-in to a freshly created
+// app stops on "Permissions requested" and then "Need admin approval" — a
+// screen no test account can get past. Recording the grants here is what the
+// portal's "Grant admin consent" button does, so the consent screen never
+// appears for the deployment's own app.
+func grantAdminConsent(ctx context.Context, client *http.Client, token, appID string) error {
+	spID, err := servicePrincipalID(ctx, client, token, appID)
+	if err != nil {
+		return err
+	}
+	graphSPID, err := servicePrincipalID(ctx, client, token, graphAppID)
+	if err != nil {
+		return err
+	}
+
+	grants := []struct {
+		resourceID string
+		scope      string
+	}{
+		{spID, "user_impersonation"},
+		{graphSPID, "openid profile email User.Read"},
+	}
+	for _, grant := range grants {
+		payload := map[string]any{
+			"clientId":    spID,
+			"consentType": "AllPrincipals",
+			"resourceId":  grant.resourceID,
+			"scope":       grant.scope,
+		}
+		body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", nil, func() ([]byte, int, error) {
+			return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
+		})
+		if err != nil {
+			return fmt.Errorf("grant admin consent for %q: %w", grant.scope, err)
+		}
+		if statusCode == http.StatusForbidden {
+			return fmt.Errorf("grant admin consent for %q was refused (status=403): the parent app registration needs the DelegatedPermissionGrant.ReadWrite.All application permission with admin consent granted: %s", grant.scope, string(body))
+		}
+		// A repeat deploy re-grants the same scopes; Graph reports the
+		// existing entry as a conflict, which leaves consent in place.
+		if statusCode >= 300 && statusCode != http.StatusConflict {
+			return fmt.Errorf("grant admin consent for %q failed (status=%d): %s", grant.scope, statusCode, string(body))
+		}
+		logging.Logger.Debug().
+			Str("scope", grant.scope).
+			Int("statusCode", statusCode).
+			Msg("Recorded tenant-wide consent for the login app")
+	}
+
+	logging.Logger.Info().
+		Str("appId", appID).
+		Msg("Granted tenant-wide admin consent for the login app")
+	return nil
+}
+
 // createVenomK8sSecretFunc is the function used to create the K8s secret.
 // It is a variable so tests can override it to avoid requiring a real cluster.
 var createVenomK8sSecretFunc = createVenomK8sSecret
@@ -1000,6 +1080,9 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := ensureServicePrincipal(ctx, client, token, appID); err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+	if err := grantAdminConsent(ctx, client, token, appID); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := awaitLoginAppResource(ctx, &opts, appID, secret); err != nil {

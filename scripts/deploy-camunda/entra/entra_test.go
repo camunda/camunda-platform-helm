@@ -1934,6 +1934,7 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	const host = "gke-qaen-1234-8-10-qaen.ci.distro.ultrawombat.com"
 
 	var patched map[string]any
+	var grants []map[string]any
 	spCreated := false
 	created := false
 	srv := newTestServer(t, map[string]http.HandlerFunc{
@@ -1970,6 +1971,20 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 			spCreated = true
 			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
 		},
+		"GET /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "sp-id"})
+		},
+		"GET /servicePrincipals(appId='00000003-0000-0000-c000-000000000000')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "graph-sp-id"})
+		},
+		"POST /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			var grant map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&grant); err != nil {
+				t.Errorf("decode grant body: %v", err)
+			}
+			grants = append(grants, grant)
+			jsonResponse(w, 201, map[string]string{"id": "grant-id"})
+		},
 	})
 	defer srv.Close()
 
@@ -1994,6 +2009,19 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	}
 	if !spCreated {
 		t.Error("expected a service principal for the login app")
+	}
+
+	selfConsented := false
+	for _, grant := range grants {
+		if grant["consentType"] != "AllPrincipals" {
+			t.Errorf("grant %v, want consentType AllPrincipals", grant)
+		}
+		if grant["resourceId"] == "sp-id" && grant["scope"] == "user_impersonation" {
+			selfConsented = true
+		}
+	}
+	if !selfConsented {
+		t.Errorf("grants = %v, want tenant-wide consent for user_impersonation; without it the first sign-in stops on the Entra consent screen", grants)
 	}
 
 	if got, _ := patched["identifierUris"].([]any); len(got) != 1 || got[0] != "api://login-app-id" {
