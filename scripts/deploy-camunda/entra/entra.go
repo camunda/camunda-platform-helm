@@ -622,6 +622,78 @@ const (
 	loginAppSelfScope = "user_impersonation"
 )
 
+// loginAppRoleValue is the app role every login app exposes to the parent app,
+// so that a client-credentials token minted with the parent app's own
+// credentials carries this deployment's app id as its audience -- which is what
+// the components validate.
+const loginAppRoleValue = "camunda.api.access"
+
+// loginAppRoleID derives the role id from the app id rather than minting a new
+// one: PATCH replaces the appRoles collection wholesale, and Entra rejects the
+// removal of an enabled role that an assignment still points at.
+func loginAppRoleID(appID string) string {
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("camunda-login-app-role:"+appID)).String()
+}
+
+// appRoleAssignRetryable keeps the duplicate-assignment answer off the retry
+// path: it is the steady state on every re-deploy, not a transient fault.
+func appRoleAssignRetryable(statusCode int, body []byte, err error) bool {
+	if isDuplicateAppRoleAssignment(statusCode, body) {
+		return false
+	}
+	return defaultRetryable(statusCode, body, err)
+}
+
+func isDuplicateAppRoleAssignment(statusCode int, body []byte) bool {
+	if statusCode != http.StatusBadRequest && statusCode != http.StatusConflict {
+		return false
+	}
+	return bytes.Contains(body, []byte("Permission being assigned already exists"))
+}
+
+// assignAPIAppRole assigns the login app's API role to the parent app's service
+// principal.
+//
+// Without it the parent app can authenticate, but Entra refuses to issue it a
+// token for "<loginAppID>/.default" -- so the E2E job's client-credentials
+// calls arrive with the shared app's audience and every component answers 401.
+func assignAPIAppRole(ctx context.Context, client *http.Client, token, appID, parentClientID, roleID string) error {
+	resourceSPID, err := servicePrincipalID(ctx, client, token, appID)
+	if err != nil {
+		return fmt.Errorf("assign api app role: %w", err)
+	}
+	principalSPID, err := servicePrincipalID(ctx, client, token, parentClientID)
+	if err != nil {
+		return fmt.Errorf("assign api app role: %w", err)
+	}
+
+	path := fmt.Sprintf("/servicePrincipals/%s/appRoleAssignedTo", resourceSPID)
+	payload := map[string]any{
+		"principalId": principalSPID,
+		"resourceId":  resourceSPID,
+		"appRoleId":   roleID,
+	}
+	body, statusCode, err := withGraphRetry(ctx, "assignAPIAppRole", appRoleAssignRetryable, func() ([]byte, int, error) {
+		return graphPost(ctx, client, token, path, payload)
+	})
+	if isDuplicateAppRoleAssignment(statusCode, body) {
+		logging.Logger.Debug().Str("appId", appID).Msg("API app role already assigned to the parent app")
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("assign api app role: %w", err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("assign api app role failed (status=%d): %s", statusCode, string(body))
+	}
+
+	logging.Logger.Info().
+		Str("appId", appID).
+		Str("role", loginAppRoleValue).
+		Msg("Assigned the login app's API role to the parent app")
+	return nil
+}
+
 // grantAdminConsent records tenant-wide consent for the login app.
 //
 // Consent is held on the service principal, not on the app registration, and a
@@ -926,15 +998,24 @@ type LoginApp struct {
 // The permission entry createApp seeds is dropped on the way past: its all-zero
 // id is rejected by the authorize endpoint with AADSTS65006. openid, email and
 // profile need no entry at all.
-func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) error {
+func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) (string, error) {
 	web, spa := buildRedirectURIs(host)
 	scopeID := uuid.NewString()
+	roleID := loginAppRoleID(appID)
 	path := fmt.Sprintf("/applications/%s", objectID)
 
 	resource := map[string]any{
 		"web":            map[string]any{"redirectUris": web},
 		"spa":            map[string]any{"redirectUris": spa},
 		"identifierUris": []string{"api://" + appID},
+		"appRoles": []map[string]any{{
+			"id":                 roleID,
+			"isEnabled":          true,
+			"allowedMemberTypes": []string{"Application"},
+			"value":              loginAppRoleValue,
+			"displayName":        "Call Camunda APIs",
+			"description":        "Allow an application to call this deployment's Camunda APIs.",
+		}},
 		"api": map[string]any{
 			"requestedAccessTokenVersion": 2,
 			"oauth2PermissionScopes": []map[string]any{{
@@ -954,7 +1035,7 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 		}},
 	}
 	if err := patchLoginApp(ctx, client, token, path, "configureLoginApp", resource); err != nil {
-		return err
+		return "", err
 	}
 
 	logging.Logger.Info().
@@ -963,7 +1044,7 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 		Int("webURIs", len(web)).
 		Int("spaURIs", len(spa)).
 		Msg("Configured the deployment's own login app")
-	return nil
+	return roleID, nil
 }
 
 // patchLoginApp applies one PATCH to the login app registration, failing on any
@@ -1093,7 +1174,8 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		}
 	}
 
-	if err := configureLoginApp(ctx, client, token, objectID, appID, ingressHost); err != nil {
+	roleID, err := configureLoginApp(ctx, client, token, objectID, appID, ingressHost)
+	if err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 
@@ -1105,6 +1187,9 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := grantAdminConsent(ctx, client, token, appID); err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+	if err := assignAPIAppRole(ctx, client, token, appID, opts.ClientID, roleID); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := awaitLoginAppResource(ctx, &opts, appID, secret); err != nil {

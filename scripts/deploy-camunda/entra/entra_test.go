@@ -1935,6 +1935,7 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 
 	patched := map[string]any{}
 	var grants []map[string]any
+	var roleAssignment map[string]any
 	spCreated := false
 	created := false
 	srv := newTestServer(t, map[string]http.HandlerFunc{
@@ -1986,6 +1987,15 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 		},
 		"GET /servicePrincipals(appId='00000003-0000-0000-c000-000000000000')": func(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, 200, map[string]string{"id": "graph-sp-id"})
+		},
+		"GET /servicePrincipals(appId='parent-client-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "parent-sp-id"})
+		},
+		"POST /servicePrincipals/sp-id/appRoleAssignedTo": func(w http.ResponseWriter, r *http.Request) {
+			if err := json.NewDecoder(r.Body).Decode(&roleAssignment); err != nil {
+				t.Errorf("decode app role assignment body: %v", err)
+			}
+			jsonResponse(w, 201, map[string]string{"id": "assignment-id"})
 		},
 	})
 	defer srv.Close()
@@ -2068,6 +2078,30 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	}
 	if grants[1]["resourceId"] != "sp-id" || grants[1]["scope"] != "user_impersonation" {
 		t.Errorf("second grant = %v, want the app's own scope", grants[1])
+	}
+
+	roles, ok := patched["appRoles"].([]any)
+	if !ok || len(roles) != 1 {
+		t.Fatalf("appRoles = %v, want exactly one; without it Entra refuses the parent app a token for this deployment", patched["appRoles"])
+	}
+	role, _ := roles[0].(map[string]any)
+	if role["value"] != loginAppRoleValue {
+		t.Errorf("app role value = %v, want %s", role["value"], loginAppRoleValue)
+	}
+	if members, _ := role["allowedMemberTypes"].([]any); len(members) != 1 || members[0] != "Application" {
+		t.Errorf("allowedMemberTypes = %v, want [Application]; a User role cannot back client credentials", role["allowedMemberTypes"])
+	}
+	if role["id"] != loginAppRoleID("login-app-id") {
+		t.Errorf("app role id = %v, want the id derived from the app id so re-deploys keep the assignment valid", role["id"])
+	}
+	if roleAssignment == nil {
+		t.Fatalf("no appRoleAssignedTo POST; the parent app would still mint tokens with its own audience")
+	}
+	if roleAssignment["principalId"] != "parent-sp-id" || roleAssignment["resourceId"] != "sp-id" {
+		t.Errorf("assignment = %v, want the parent app's principal on the login app", roleAssignment)
+	}
+	if roleAssignment["appRoleId"] != loginAppRoleID("login-app-id") {
+		t.Errorf("assignment appRoleId = %v, want the role configureLoginApp wrote", roleAssignment["appRoleId"])
 	}
 
 	wantWeb, wantSpa := buildRedirectURIs(host)
