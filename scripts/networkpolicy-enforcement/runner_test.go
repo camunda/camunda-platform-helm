@@ -43,6 +43,9 @@ type fakeCluster struct {
 func (f *fakeCluster) run(_ context.Context, name string, args ...string) (string, error) {
 	f.calls = append(f.calls, name+" "+strings.Join(args, " "))
 	if name == "helm" {
+		if slices.Contains(args, "--repo") {
+			return "", nil
+		}
 		f.helm(args)
 		return "", nil
 	}
@@ -81,6 +84,8 @@ func (f *fakeCluster) kubectl(args []string) (string, error) {
 		if strings.Contains(strings.Join(args, " "), "component=connectors") {
 			return "10.0.0.2", nil
 		}
+		return "10.0.0.1", nil
+	case args[0] == "get" && args[1] == "nodes":
 		return "10.0.0.1", nil
 	case args[0] == "exec":
 		return "", f.exec(args)
@@ -184,7 +189,8 @@ func TestRunRefusesExistingNamespace(t *testing.T) {
 func TestRunInstallsCalico(t *testing.T) {
 	f := &fakeCluster{enforcing: true}
 	r := testRunner(f)
-	r.cfg.installCalico = true
+	r.cfg.installCNI = true
+	r.cfg.cni = cniCalico
 	r.cfg.calicoManifest = "calico.yaml"
 	if err := r.run(context.Background()); err != nil {
 		t.Fatalf("run: %v", err)
@@ -194,13 +200,65 @@ func TestRunInstallsCalico(t *testing.T) {
 	}
 }
 
+func TestRunInstallsCilium(t *testing.T) {
+	f := &fakeCluster{enforcing: true}
+	r := testRunner(f)
+	r.cfg.installCNI = true
+	r.cfg.cni = cniCilium
+	r.cfg.ciliumVersion = "1.0.0"
+	r.cfg.ciliumPodCIDR = "10.244.0.0/16"
+	if err := r.run(context.Background()); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	install := slices.IndexFunc(f.calls, func(c string) bool { return strings.HasPrefix(c, "helm install cilium cilium --repo") })
+	if install < 0 {
+		t.Fatalf("Cilium not installed: %v", f.calls[:5])
+	}
+	for _, want := range []string{"--version 1.0.0", "kubeProxyReplacement=true", "k8sServiceHost=1", "clusterPoolIPv4PodCIDRList={10.244.0.0/16}"} {
+		if !strings.Contains(f.calls[install], want) {
+			t.Fatalf("Cilium install %q lacks %q", f.calls[install], want)
+		}
+	}
+	if slices.ContainsFunc(f.calls, func(c string) bool { return strings.Contains(c, "calico") }) {
+		t.Fatalf("Calico touched on a Cilium run: %v", f.calls)
+	}
+}
+
+func TestParseConfigCNI(t *testing.T) {
+	none := func(string) string { return "" }
+	for _, tc := range []struct {
+		args    []string
+		cni     string
+		install bool
+		wantErr bool
+	}{
+		{args: nil, cni: cniCalico},
+		{args: []string{"-install-calico"}, cni: cniCalico, install: true},
+		{args: []string{"-cni", "cilium", "-install-cni"}, cni: cniCilium, install: true},
+		{args: []string{"-cni", "cilium"}, cni: cniCilium},
+		{args: []string{"-cni", "cilium", "-install-calico"}, wantErr: true},
+		{args: []string{"-cni", "flannel"}, wantErr: true},
+	} {
+		cfg, err := parseConfig(tc.args, none, nil)
+		if tc.wantErr {
+			if err == nil {
+				t.Fatalf("%v: expected error", tc.args)
+			}
+			continue
+		}
+		if err != nil || cfg.cni != tc.cni || cfg.installCNI != tc.install {
+			t.Fatalf("%v: got cni=%s install=%t err=%v", tc.args, cfg.cni, cfg.installCNI, err)
+		}
+	}
+}
+
 func TestParseConfig(t *testing.T) {
 	env := map[string]string{"CHART_DIR": "/c", "RELEASE": "r"}
 	cfg, err := parseConfig([]string{"-install-calico", "ns"}, func(k string) string { return env[k] }, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cfg.installCalico || cfg.namespace != "ns" || cfg.release != "r" || cfg.scenarioDir != "/c/test/integration/scenarios/networkpolicy" || !strings.Contains(cfg.calicoManifest, calicoVersion) {
+	if !cfg.installCNI || cfg.cni != cniCalico || cfg.namespace != "ns" || cfg.release != "r" || cfg.scenarioDir != "/c/test/integration/scenarios/networkpolicy" || !strings.Contains(cfg.calicoManifest, calicoVersion) {
 		t.Fatalf("unexpected config %+v", cfg)
 	}
 	if _, err := parseConfig([]string{"a", "b"}, func(string) string { return "" }, nil); err == nil {
