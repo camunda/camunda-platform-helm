@@ -34,7 +34,7 @@ orchestration:
   # https://hub.docker.com/r/camunda/camunda/tags
   image:
     repository: camunda/camunda
-    tag: 8.10.10
+    tag: 8.10.11
 
 #
 # Identity
