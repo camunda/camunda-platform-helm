@@ -32,6 +32,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 )
@@ -788,31 +790,58 @@ type LoginApp struct {
 	ClientSecret string
 }
 
-// setLoginRedirectURIs replaces the app's web and SPA redirect URIs with
-// exactly the ones host needs. The app belongs to a single deployment, so the
-// write owns both arrays outright: nothing is read first, nothing is merged,
-// and no other writer can lose an update against it.
-func setLoginRedirectURIs(ctx context.Context, client *http.Client, token, objectID, host string) error {
+// configureLoginApp writes everything the deployment needs onto its own app
+// registration in one PATCH.
+//
+// The redirect URIs are set to exactly the ones host needs. The app belongs to
+// a single deployment, so the write owns both arrays outright: nothing is read
+// first, nothing is merged, and no other writer can lose an update against it.
+//
+// The app is also its own token resource: every component requests
+// "<clientId>/.default" and the orchestration cluster then validates the token
+// against the issuer in the values, https://login.microsoftonline.com/<tid>/v2.0.
+// A bare app registration has no identifierUris and no requestedAccessTokenVersion,
+// so Entra issues a v1 token whose iss is https://sts.windows.net/<tid>/ and the
+// cluster rejects it with 401. Setting the API block makes the app a v2 resource
+// with a scope for ".default" to resolve against.
+func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) error {
 	web, spa := buildRedirectURIs(host)
 	payload := map[string]any{
-		"web": map[string]any{"redirectUris": web},
-		"spa": map[string]any{"redirectUris": spa},
+		"web":            map[string]any{"redirectUris": web},
+		"spa":            map[string]any{"redirectUris": spa},
+		"identifierUris": []string{"api://" + appID},
+		"api": map[string]any{
+			"requestedAccessTokenVersion": 2,
+			"oauth2PermissionScopes": []map[string]any{
+				{
+					"id":                      uuid.NewString(),
+					"value":                   "user_impersonation",
+					"type":                    "User",
+					"isEnabled":               true,
+					"adminConsentDisplayName": "Access Camunda",
+					"adminConsentDescription": "Allows the app to access Camunda on behalf of the signed-in user.",
+					"userConsentDisplayName":  "Access Camunda",
+					"userConsentDescription":  "Allows the app to access Camunda on your behalf.",
+				},
+			},
+		},
 	}
 	path := fmt.Sprintf("/applications/%s", objectID)
-	body, statusCode, err := withGraphRetry(ctx, "setLoginRedirectURIs", nil, func() ([]byte, int, error) {
+	body, statusCode, err := withGraphRetry(ctx, "configureLoginApp", nil, func() ([]byte, int, error) {
 		return graphPatch(ctx, client, token, path, payload, nil)
 	})
 	if err != nil {
-		return fmt.Errorf("set login redirect URIs: %w", err)
+		return fmt.Errorf("configure login app: %w", err)
 	}
 	if statusCode >= 300 {
-		return fmt.Errorf("set login redirect URIs failed (status=%d): %s", statusCode, string(body))
+		return fmt.Errorf("configure login app failed (status=%d): %s", statusCode, string(body))
 	}
 	logging.Logger.Info().
 		Str("host", host).
+		Str("identifierUri", "api://"+appID).
 		Int("webURIs", len(web)).
 		Int("spaURIs", len(spa)).
-		Msg("Registered redirect URIs on the deployment's own login app")
+		Msg("Configured the deployment's own login app")
 	return nil
 }
 
@@ -874,7 +903,7 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		}
 	}
 
-	if err := setLoginRedirectURIs(ctx, client, token, objectID, ingressHost); err != nil {
+	if err := configureLoginApp(ctx, client, token, objectID, appID, ingressHost); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 

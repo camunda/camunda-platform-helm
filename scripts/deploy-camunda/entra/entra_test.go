@@ -1996,6 +1996,20 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 		t.Error("expected a service principal for the login app")
 	}
 
+	if got, _ := patched["identifierUris"].([]any); len(got) != 1 || got[0] != "api://login-app-id" {
+		t.Errorf("identifierUris = %v, want [api://login-app-id]", patched["identifierUris"])
+	}
+	api, ok := patched["api"].(map[string]any)
+	if !ok {
+		t.Fatalf("PATCH body has no api block: %v", patched)
+	}
+	if v := api["requestedAccessTokenVersion"]; v != float64(2) {
+		t.Errorf("requestedAccessTokenVersion = %v, want 2 (a v1 token's issuer fails validation)", v)
+	}
+	if scopes, _ := api["oauth2PermissionScopes"].([]any); len(scopes) != 1 {
+		t.Errorf("oauth2PermissionScopes = %v, want exactly one scope for .default", api["oauth2PermissionScopes"])
+	}
+
 	wantWeb, wantSpa := buildRedirectURIs(host)
 	gotWeb := patchedURIs(t, patched, "web")
 	gotSpa := patchedURIs(t, patched, "spa")
