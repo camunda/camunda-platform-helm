@@ -33,8 +33,7 @@ global:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.optimize.contextPath }}"
       webModeler:
         clientId: $ENTRA_APP_CLIENT_ID
@@ -47,8 +46,7 @@ global:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.console.contextPath }}"
 
@@ -77,8 +75,7 @@ connectors:
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
 console:

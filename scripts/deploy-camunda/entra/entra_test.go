@@ -1925,3 +1925,115 @@ func TestGraphPatch(t *testing.T) {
 		t.Errorf("body key = %q, want %q", receivedBody["key"], "value")
 	}
 }
+
+// TestEnsureLoginApp_ReplacesRedirectURIs asserts the deployment's own app is
+// created for the namespace and that its redirect URIs are written as a full
+// replacement holding only this host's URIs — the property that makes a
+// concurrent deployment unable to drop them.
+func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
+	const host = "gke-qaen-1234-8-10-qaen.ci.distro.ultrawombat.com"
+
+	var patched map[string]any
+	spCreated := false
+	created := false
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			if !created {
+				jsonResponse(w, 200, map[string]any{"value": []any{}})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"appId": "login-app-id", "id": "login-obj-id"},
+			}})
+		},
+		"POST /applications": func(w http.ResponseWriter, r *http.Request) {
+			created = true
+			jsonResponse(w, 201, map[string]string{
+				"appId": "login-app-id",
+				"id":    "login-obj-id",
+			})
+		},
+		"GET /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []any{}})
+		},
+		"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			if err := json.NewDecoder(r.Body).Decode(&patched); err != nil {
+				t.Errorf("decode PATCH body: %v", err)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		},
+		"POST /applications/login-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"secretText": "login-secret"})
+		},
+		"PATCH /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			spCreated = true
+			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
+		},
+	})
+	defer srv.Close()
+
+	origGraph, origLogin, origSleep := graphBaseURL, loginBaseURL, propagationSleepDuration
+	graphBaseURL, loginBaseURL, propagationSleepDuration = srv.URL, srv.URL, 0
+	defer func() {
+		graphBaseURL, loginBaseURL, propagationSleepDuration = origGraph, origLogin, origSleep
+	}()
+
+	app, err := EnsureLoginApp(context.Background(), Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client-id",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	}, host)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if app.AppID != "login-app-id" || app.ClientSecret != "login-secret" {
+		t.Errorf("app = %+v, want appId login-app-id and secret login-secret", app)
+	}
+	if !spCreated {
+		t.Error("expected a service principal for the login app")
+	}
+
+	wantWeb, wantSpa := buildRedirectURIs(host)
+	gotWeb := patchedURIs(t, patched, "web")
+	gotSpa := patchedURIs(t, patched, "spa")
+	if !slices.Equal(gotWeb, wantWeb) {
+		t.Errorf("web redirectUris = %v, want exactly %v", gotWeb, wantWeb)
+	}
+	if !slices.Equal(gotSpa, wantSpa) {
+		t.Errorf("spa redirectUris = %v, want exactly %v", gotSpa, wantSpa)
+	}
+}
+
+// TestEnsureLoginApp_RequiresIngressHost guards against provisioning an app
+// with no redirect URI, which would fail every sign-in with AADSTS50011.
+func TestEnsureLoginApp_RequiresIngressHost(t *testing.T) {
+	_, err := EnsureLoginApp(context.Background(), Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client-id",
+		ClientSecret: "parent-secret",
+	}, "")
+	if err == nil {
+		t.Fatal("expected an error when the ingress host is empty")
+	}
+}
+
+func patchedURIs(t *testing.T, patched map[string]any, platform string) []string {
+	t.Helper()
+	block, ok := patched[platform].(map[string]any)
+	if !ok {
+		t.Fatalf("PATCH body has no %q block: %v", platform, patched)
+	}
+	raw, ok := block["redirectUris"].([]any)
+	if !ok {
+		t.Fatalf("PATCH %q block has no redirectUris: %v", platform, block)
+	}
+	uris := make([]string, 0, len(raw))
+	for _, u := range raw {
+		uris = append(uris, u.(string))
+	}
+	return uris
+}

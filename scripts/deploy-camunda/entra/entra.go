@@ -748,6 +748,190 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	}, nil
 }
 
+// awaitAppPropagation polls Graph until a freshly created app registration is
+// returned by a lookup on its display name. Graph creates the app on one
+// replica and a PATCH against the other replicas 404s until it catches up.
+func awaitAppPropagation(ctx context.Context, client *http.Client, token, displayName string, appID, objectID *string) error {
+	for range 45 {
+		foundAppID, foundObjID, err := findApp(ctx, client, token, displayName)
+		if err != nil {
+			logging.Logger.Warn().Err(err).Msg("Error while checking for app registration propagation")
+		}
+		if foundAppID != "" && foundObjID != "" {
+			*appID = foundAppID
+			*objectID = foundObjID
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(propagationSleepDuration):
+		}
+	}
+	return fmt.Errorf("app registration %q did not propagate", displayName)
+}
+
+// loginAppDisplayName returns the deterministic Entra app display name of a
+// deployment's own OIDC login app.
+func loginAppDisplayName(namespace string) string {
+	return "camunda-oidc-" + namespace
+}
+
+// LoginApp holds the result of provisioning a deployment's own Entra app
+// registration for user sign-in and component M2M tokens.
+type LoginApp struct {
+	// AppID is the Entra application (client) ID of the login app.
+	AppID string
+	// ObjectID is the Entra object ID of the login app registration.
+	ObjectID string
+	// ClientSecret is the generated client secret for the login app.
+	ClientSecret string
+}
+
+// setLoginRedirectURIs replaces the app's web and SPA redirect URIs with
+// exactly the ones host needs. The app belongs to a single deployment, so the
+// write owns both arrays outright: nothing is read first, nothing is merged,
+// and no other writer can lose an update against it.
+func setLoginRedirectURIs(ctx context.Context, client *http.Client, token, objectID, host string) error {
+	web, spa := buildRedirectURIs(host)
+	payload := map[string]any{
+		"web": map[string]any{"redirectUris": web},
+		"spa": map[string]any{"redirectUris": spa},
+	}
+	path := fmt.Sprintf("/applications/%s", objectID)
+	body, statusCode, err := withGraphRetry(ctx, "setLoginRedirectURIs", nil, func() ([]byte, int, error) {
+		return graphPatch(ctx, client, token, path, payload, nil)
+	})
+	if err != nil {
+		return fmt.Errorf("set login redirect URIs: %w", err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("set login redirect URIs failed (status=%d): %s", statusCode, string(body))
+	}
+	logging.Logger.Info().
+		Str("host", host).
+		Int("webURIs", len(web)).
+		Int("spaURIs", len(spa)).
+		Msg("Registered redirect URIs on the deployment's own login app")
+	return nil
+}
+
+// EnsureLoginApp provisions a deployment's own Entra app registration for
+// OIDC sign-in, named "camunda-oidc-<namespace>". The caller substitutes its
+// appId and secret for ENTRA_APP_CLIENT_ID / ENTRA_APP_CLIENT_SECRET so every
+// component of this deployment authenticates against it.
+//
+// It exists because the shared QA app registration holds one redirectUris
+// array for every CI deployment at once. Graph offers no conditional write on
+// /applications, so two deployments registering concurrently both read the
+// array, both write their own version, and the later write silently drops the
+// earlier deployment's URIs — which then fails every sign-in with AADSTS50011.
+// A per-namespace app has an array only this deployment writes.
+func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*LoginApp, error) {
+	if err := resolveOpts(&opts); err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+	if ingressHost == "" {
+		return nil, fmt.Errorf("entra: ingress host is required to provision the login app")
+	}
+
+	displayName := loginAppDisplayName(opts.Namespace)
+	client := httpClient(&opts)
+
+	logging.Logger.Info().
+		Str("namespace", opts.Namespace).
+		Str("displayName", displayName).
+		Str("ingressHost", ingressHost).
+		Msg("Ensuring the deployment's own Entra login app")
+
+	token, err := acquireBearerToken(ctx, &opts)
+	if err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+
+	appID, objectID, err := findApp(ctx, client, token, displayName)
+	if err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+	if appID != "" {
+		logging.Logger.Info().
+			Str("appId", appID).
+			Str("objectId", objectID).
+			Str("portalURL", entraPortalAppURL(appID)).
+			Msg("Reusing the existing login app for this namespace")
+	} else {
+		appID, objectID, err = createApp(ctx, client, token, displayName, opts.ClientID)
+		if err != nil {
+			return nil, fmt.Errorf("entra: %w", err)
+		}
+		logging.Logger.Info().
+			Str("appId", appID).
+			Str("objectId", objectID).
+			Str("portalURL", entraPortalAppURL(appID)).
+			Msg("Created the deployment's login app in Entra")
+		if err := awaitAppPropagation(ctx, client, token, displayName, &appID, &objectID); err != nil {
+			return nil, fmt.Errorf("entra: %w", err)
+		}
+	}
+
+	if err := setLoginRedirectURIs(ctx, client, token, objectID, ingressHost); err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+
+	secret, err := rotateCredentials(ctx, client, token, objectID)
+	if err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+	if err := ensureServicePrincipal(ctx, client, token, appID); err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+
+	logging.Logger.Info().
+		Str("ENTRA_APP_CLIENT_ID", appID).
+		Msg("Login app provisioned — callers should override ENTRA_APP_CLIENT_ID/SECRET via ExtraEnv")
+
+	return &LoginApp{AppID: appID, ObjectID: objectID, ClientSecret: secret}, nil
+}
+
+// CleanupLoginApp deletes a deployment's own Entra login app registration.
+// Errors are logged but not returned — cleanup is best-effort.
+func CleanupLoginApp(ctx context.Context, opts Options) {
+	if err := resolveOpts(&opts); err != nil {
+		logging.Logger.Warn().Err(err).Msg("entra login cleanup: invalid options, skipping")
+		return
+	}
+
+	displayName := loginAppDisplayName(opts.Namespace)
+	client := httpClient(&opts)
+
+	token, err := acquireBearerToken(ctx, &opts)
+	if err != nil {
+		logging.Logger.Warn().Err(err).Msg("entra login cleanup: failed to obtain bearer token")
+		return
+	}
+
+	_, objectID, err := findApp(ctx, client, token, displayName)
+	if err != nil {
+		logging.Logger.Warn().Err(err).Msg("entra login cleanup: failed to search for app")
+		return
+	}
+	if objectID == "" {
+		logging.Logger.Info().Str("displayName", displayName).Msg("No login app found, nothing to clean up")
+		return
+	}
+
+	statusCode, err := graphDelete(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
+	if err != nil {
+		logging.Logger.Warn().Err(err).Str("objectId", objectID).Msg("entra login cleanup: delete request failed")
+		return
+	}
+	if statusCode == 204 || statusCode == 404 {
+		logging.Logger.Info().Str("displayName", displayName).Int("status", statusCode).Msg("Successfully deleted the login app")
+	} else {
+		logging.Logger.Warn().Str("displayName", displayName).Int("status", statusCode).Msg("Unexpected status when deleting the login app")
+	}
+}
+
 // CleanupVenomApp deletes the venom Entra app registration for a namespace.
 // Errors are logged but not returned — cleanup is best-effort.
 func CleanupVenomApp(ctx context.Context, opts Options) {
