@@ -157,4 +157,15 @@ These commands are **not on `main`**. The binary rejects them with `unknown comm
 | `deploy-camunda scenario list` | Not built. No open PR adds the command. The nearest is draft **#7985**, which adds an internal `Recipe` catalogue built from the registry, with no CLI wiring. Use `deploy-camunda matrix list --repo-root . --versions <v>` or `ls charts/<v>/test/ci/registry/scenarios/` instead. | none yet (#7985 is groundwork) |
 | `deploy-camunda scenario deploy` | Not built. No open PR adds the command. Use the root command (section 6) or `matrix run`. | none yet |
 | `deploy-camunda doctor --format json` | Not on `main`. Text output only. | draft **#7983** |
-| The target-design config file (versioned `deploy-camunda/v1`) | Not built. No open PR adds it. Today's `.deploy-camunda.yaml` / `~/.config/camunda/deploy.yaml` profile file **does** work (`--config`/`-F`, `root.go:84`; `deploy-camunda config ...`). | none yet |
+| Versioned config file `~/.config/deploy-camunda/config.yaml` (`apiVersion: deploy-camunda/v1`, `providers:` block) | Not on `main`. No open PR adds this file. Draft #7985 uses `apiVersion: deploy-camunda/v1` and `providers:` only for in-code `Recipe` objects, not for a user config file. | planned, no PR yet |
+| Separate `secrets.yaml` credentials file | Not on `main`. No open PR adds it. Use the keyring or env vars (section 3). | planned, no PR yet |
+
+### Config file that works on `main` today
+
+An unversioned profile file, written by `deploy-camunda config init|create|set|use` (`cmd/config.go`, `cmd/config_init.go`). `--config`/`-F` names it explicitly (`cmd/root.go:84`). Without the flag, the first existing file wins (`config/config.go:213-255`):
+
+1. `./.deploy-camunda.yaml` in the current directory
+2. `.deploy-camunda.yaml` at the repo root
+3. `~/.config/camunda/deploy.yaml`
+
+Example profiles are in `scripts/deploy-camunda/examples/*.deploy-camunda.yaml`.
