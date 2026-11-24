@@ -1612,7 +1612,7 @@
                         "tag": {
                             "type": "string",
                             "description": "defines which image tag to use",
-                            "default": "8.10.5"
+                            "default": "8.10.6"
                         },
                         "digest": {
                             "type": "string",
@@ -6570,7 +6570,7 @@
                         "tag": {
                             "type": "string",
                             "description": "defines which image tag to use",
-                            "default": "8.10.10"
+                            "default": "8.10.11"
                         },
                         "digest": {
                             "type": "string",
