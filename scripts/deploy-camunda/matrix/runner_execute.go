@@ -433,10 +433,10 @@ func prepareEntraEntry(ctx context.Context, flags *config.RuntimeFlags, namespac
 	if err != nil {
 		return nil, nil, fmt.Errorf("entra: provision venom app: %w", err)
 	}
-	audience := opts.ClientID
-	if audience == "" {
-		audience = os.Getenv("ENTRA_APP_CLIENT_ID")
+	if opts.ClientID == "" {
+		opts.ClientID = os.Getenv("ENTRA_APP_CLIENT_ID")
 	}
+	audience := opts.ClientID
 	if flags.ExtraEnv == nil {
 		flags.ExtraEnv = make(map[string]string)
 	}
