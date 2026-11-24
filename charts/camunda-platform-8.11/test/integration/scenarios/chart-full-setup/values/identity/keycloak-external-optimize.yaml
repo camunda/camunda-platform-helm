@@ -26,23 +26,8 @@
 
 global:
   host: "$CAMUNDA_HOSTNAME"
-  # Every release of a multi-namespace topology serves one shared host, so all of them must use
-  # the same ingress class (Contour, like base.yaml). Mixed classes split DNS across two controllers
-  # and about half the requests 404. These releases render no ExternalName Service.
-  compatibility:
-    nginx:
-      renderAnnotations: false
   ingress:
-    enabled: true
     className: contour
-    tls:
-      enabled: true
-      # A wildcard certificate will be used.
-    annotations:
-      projectcontour.io/websocket-routes: "/modeler-ws"
-      projectcontour.io/response-timeout: "300s"
-      external-dns.alpha.kubernetes.io/hostname: "{{ .Values.global.host }}"
-      external-dns.alpha.kubernetes.io/ttl: "60"
 
 optimize:
   identity:
