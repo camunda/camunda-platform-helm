@@ -1,5 +1,16 @@
 # Changelog
 
+## [13.14.7](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.14.6...camunda-platform-8.8-13.14.7) (2026-11-24)
+
+
+### Dependencies
+
+* sync 8.7 image tags with the released 12.14.4 chart ([#7975](https://github.com/camunda/camunda-platform-helm/issues/7975)) ([dfe8375](https://github.com/camunda/camunda-platform-helm/commit/dfe8375113be1777b8a2c725bf0f4e458d804e0d))
+* update camunda-platform-images (patch) ([#7957](https://github.com/camunda/camunda-platform-helm/issues/7957)) ([b9a82fd](https://github.com/camunda/camunda-platform-helm/commit/b9a82fd8725e98e561b8d712f684ba5acd95b33c))
+* update camunda-platform-images (patch) ([#7998](https://github.com/camunda/camunda-platform-helm/issues/7998)) ([1e78d6c](https://github.com/camunda/camunda-platform-helm/commit/1e78d6c622d211863f9d72fa1754a0073eb5733a))
+* update camunda-platform-images (patch) ([#8003](https://github.com/camunda/camunda-platform-helm/issues/8003)) ([ba73670](https://github.com/camunda/camunda-platform-helm/commit/ba73670536d764f35a009ad45d2d3ec145ccc9ef))
+* update patch-grouped (patch) ([#7820](https://github.com/camunda/camunda-platform-helm/issues/7820)) ([61002c6](https://github.com/camunda/camunda-platform-helm/commit/61002c6000b144199bb0179def746c3c6aceb2b3))
+
 ## [13.14.6](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.14.5...camunda-platform-8.8-13.14.6) (2026-11-19)
 
 
