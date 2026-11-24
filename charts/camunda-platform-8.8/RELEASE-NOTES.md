@@ -15,7 +15,7 @@ Supported versions:
 Camunda images:
 
 - docker.io/camunda/camunda:8.8.48
-- docker.io/camunda/connectors-bundle:8.8.28
+- docker.io/camunda/connectors-bundle:8.8.29
 - docker.io/camunda/console:8.8.150
 - docker.io/camunda/identity:8.8.23
 - docker.io/camunda/optimize:8.8.48
