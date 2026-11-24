@@ -811,7 +811,13 @@ type LoginApp struct {
 // so Entra issues a v1 token whose iss is https://sts.windows.net/<tid>/ and the
 // cluster rejects it with 401. Setting the API block makes the app a v2 resource
 // with a scope for ".default" to resolve against.
-func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, parentClientID, host string) error {
+//
+// The PATCH also replaces requiredResourceAccess with a single entry for the
+// app's own scope. createApp seeds a parent-app entry whose permission id is
+// all zeros, which the authorize endpoint rejects with AADSTS65006 once the
+// app is a resource in its own right, and the login app never calls the parent
+// app's API anyway.
+func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) error {
 	web, spa := buildRedirectURIs(host)
 	scopeID := uuid.NewString()
 	payload := map[string]any{
@@ -846,12 +852,6 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 	}
 	permissions := map[string]any{
 		"requiredResourceAccess": []map[string]any{
-			{
-				"resourceAppId": parentClientID,
-				"resourceAccess": []map[string]any{
-					{"id": "00000000-0000-0000-0000-000000000000", "type": "Scope"},
-				},
-			},
 			{
 				"resourceAppId": appID,
 				"resourceAccess": []map[string]any{
@@ -991,7 +991,7 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		}
 	}
 
-	if err := configureLoginApp(ctx, client, token, objectID, appID, opts.ClientID, ingressHost); err != nil {
+	if err := configureLoginApp(ctx, client, token, objectID, appID, ingressHost); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 

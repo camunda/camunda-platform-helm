@@ -2013,6 +2013,9 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	}
 	scopeID := scopes[0].(map[string]any)["id"]
 	required, _ := patched["requiredResourceAccess"].([]any)
+	if len(required) != 1 {
+		t.Errorf("requiredResourceAccess = %v, want only the app's own scope; the seeded parent entry carries an all-zero permission id that authorize rejects with AADSTS65006", required)
+	}
 	selfListed := false
 	for _, entry := range required {
 		e := entry.(map[string]any)
