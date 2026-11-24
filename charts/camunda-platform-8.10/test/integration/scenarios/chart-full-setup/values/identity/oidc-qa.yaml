@@ -125,3 +125,7 @@ optimize:
       value: "email"
     - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_3
       value: "$ENTRA_APP_CLIENT_ID/.default"
+    # Unset, Optimize classifies the client-credentials token as a user's and
+    # denies the Optimize API. Entra v2 carries the client id in azp.
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTIDCLAIM
+      value: "azp"
