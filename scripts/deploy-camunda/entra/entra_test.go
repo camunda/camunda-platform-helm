@@ -1933,7 +1933,7 @@ func TestGraphPatch(t *testing.T) {
 func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	const host = "gke-qaen-1234-8-10-qaen.ci.distro.ultrawombat.com"
 
-	var patched map[string]any
+	patched := map[string]any{}
 	spCreated := false
 	created := false
 	srv := newTestServer(t, map[string]http.HandlerFunc{
@@ -1958,9 +1958,11 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 			jsonResponse(w, 200, map[string]any{"passwordCredentials": []any{}})
 		},
 		"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			if err := json.NewDecoder(r.Body).Decode(&patched); err != nil {
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				t.Errorf("decode PATCH body: %v", err)
 			}
+			mergePatch(patched, body)
 			w.WriteHeader(http.StatusNoContent)
 		},
 		"POST /applications/login-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
@@ -2012,13 +2014,46 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	if v := api["requestedAccessTokenVersion"]; v != float64(2) {
 		t.Errorf("requestedAccessTokenVersion = %v, want 2 (a v1 token's issuer fails validation)", v)
 	}
-	if _, exists := api["oauth2PermissionScopes"]; exists {
-		t.Errorf("api = %v, want no exposed scope; the shared app that signs in today exposes none, and one of its own puts the first sign-in on Entra's consent screen", api)
+	scopes, _ := api["oauth2PermissionScopes"].([]any)
+	if len(scopes) != 1 {
+		t.Fatalf("oauth2PermissionScopes = %v, want exactly one; without a scope of its own the app is not a valid resource for \"<clientId>/.default\" and authorize fails with AADSTS650057", api["oauth2PermissionScopes"])
+	}
+	scope, _ := scopes[0].(map[string]any)
+	scopeID, _ := scope["id"].(string)
+	if scopeID == "" {
+		t.Fatalf("scope = %v, want an id", scope)
+	}
+	if scope["type"] != "User" {
+		t.Errorf("scope type = %v, want User", scope["type"])
 	}
 
 	required, _ := patched["requiredResourceAccess"].([]any)
-	if len(required) != 0 {
-		t.Errorf("requiredResourceAccess = %v, want none; the tenant reserves consent for admins, so anything left here stops a pool account on \"Need admin approval\"", required)
+	if len(required) != 1 {
+		t.Fatalf("requiredResourceAccess = %v, want the app's own scope; authorize reads the valid-resource list off the client, not off the resource", required)
+	}
+	entry, _ := required[0].(map[string]any)
+	if entry["resourceAppId"] != "login-app-id" {
+		t.Errorf("resourceAppId = %v, want login-app-id", entry["resourceAppId"])
+	}
+	access, _ := entry["resourceAccess"].([]any)
+	if len(access) != 1 {
+		t.Fatalf("resourceAccess = %v, want one entry", access)
+	}
+	if got, _ := access[0].(map[string]any); got["id"] != scopeID || got["type"] != "Scope" {
+		t.Errorf("resourceAccess[0] = %v, want the exposed scope id %s as a Scope", got, scopeID)
+	}
+
+	preAuthorized, _ := api["preAuthorizedApplications"].([]any)
+	if len(preAuthorized) != 1 {
+		t.Fatalf("preAuthorizedApplications = %v, want the app itself; the tenant reserves consent for admins, so an un-preauthorized scope stops a pool account on \"Need admin approval\"", api["preAuthorizedApplications"])
+	}
+	preAuthClient, _ := preAuthorized[0].(map[string]any)
+	if preAuthClient["appId"] != "login-app-id" {
+		t.Errorf("preAuthorized appId = %v, want login-app-id", preAuthClient["appId"])
+	}
+	ids, _ := preAuthClient["delegatedPermissionIds"].([]any)
+	if len(ids) != 1 || ids[0] != scopeID {
+		t.Errorf("delegatedPermissionIds = %v, want [%s]", ids, scopeID)
 	}
 
 	wantWeb, wantSpa := buildRedirectURIs(host)
@@ -2043,6 +2078,20 @@ func TestEnsureLoginApp_RequiresIngressHost(t *testing.T) {
 	}, "")
 	if err == nil {
 		t.Fatal("expected an error when the ingress host is empty")
+	}
+}
+
+// mergePatch applies one PATCH body the way Graph does: a complex type such as
+// api keeps the members the body leaves out, so successive writes accumulate.
+func mergePatch(into, body map[string]any) {
+	for key, value := range body {
+		nested, isMap := value.(map[string]any)
+		existing, wasMap := into[key].(map[string]any)
+		if isMap && wasMap {
+			mergePatch(existing, nested)
+			continue
+		}
+		into[key] = value
 	}
 }
 

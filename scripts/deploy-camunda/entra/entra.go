@@ -32,6 +32,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
 )
@@ -804,7 +806,7 @@ type LoginApp struct {
 }
 
 // configureLoginApp writes everything the deployment needs onto its own app
-// registration in one PATCH.
+// registration.
 //
 // The redirect URIs are set to exactly the ones host needs. The app belongs to
 // a single deployment, so the write owns both arrays outright: nothing is read
@@ -818,38 +820,93 @@ type LoginApp struct {
 // cluster rejects it with 401. Setting the API block makes the app a v2 resource
 // so ".default" resolves against it.
 //
-// The app asks for nothing that needs consent: no scope of its own, and an
-// empty requiredResourceAccess. The tenant reserves consent for admins, so
-// anything left in there stops the pool accounts on "Need admin approval",
-// with no button they can press -- Microsoft Graph User.Read did exactly that,
-// and the login app never calls Graph. The entry createApp seeds is dropped
-// for a second reason: its all-zero permission id is rejected by the authorize
-// endpoint with AADSTS65006. openid, email and profile need no entry.
+// Being the resource is not enough on its own. The authorize endpoint reads the
+// list of valid resources off the CLIENT's requiredResourceAccess, so an app
+// that points ".default" at itself and lists nothing is refused with
+// AADSTS650057 ("List of valid resources from app registration:" and then
+// nothing) before the browser is ever redirected -- the sign-in page simply
+// comes back with no error on it. Hence the self scope and the matching self
+// entry.
+//
+// That pairing alone used to stop the pool accounts on "Need admin approval":
+// the tenant reserves consent for admins, so any permission in there raises a
+// prompt they cannot clear. preAuthorizedApplications is what settles it. An
+// app listed as a pre-authorized client of its own scope holds that delegated
+// permission implicitly, so no consent is asked of the signing-in user and no
+// grant has to be written -- which matters because the parent app cannot write
+// one (it has no DelegatedPermissionGrant.ReadWrite.All).
+//
+// It takes two PATCHes: preAuthorizedApplications can only reference a scope id
+// that already exists on the app, so the scope has to land first.
+//
+// The permission entry createApp seeds is dropped on the way past: its all-zero
+// id is rejected by the authorize endpoint with AADSTS65006. openid, email and
+// profile need no entry at all.
 func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) error {
 	web, spa := buildRedirectURIs(host)
-	payload := map[string]any{
-		"web":                    map[string]any{"redirectUris": web},
-		"spa":                    map[string]any{"redirectUris": spa},
-		"identifierUris":         []string{"api://" + appID},
-		"api":                    map[string]any{"requestedAccessTokenVersion": 2},
-		"requiredResourceAccess": []map[string]any{},
-	}
+	scopeID := uuid.NewString()
 	path := fmt.Sprintf("/applications/%s", objectID)
-	body, statusCode, err := withGraphRetry(ctx, "configureLoginApp", nil, func() ([]byte, int, error) {
-		return graphPatch(ctx, client, token, path, payload, nil)
-	})
-	if err != nil {
-		return fmt.Errorf("configure login app: %w", err)
+
+	resource := map[string]any{
+		"web":            map[string]any{"redirectUris": web},
+		"spa":            map[string]any{"redirectUris": spa},
+		"identifierUris": []string{"api://" + appID},
+		"api": map[string]any{
+			"requestedAccessTokenVersion": 2,
+			"oauth2PermissionScopes": []map[string]any{{
+				"id":                      scopeID,
+				"isEnabled":               true,
+				"type":                    "User",
+				"value":                   "user_impersonation",
+				"adminConsentDisplayName": "Access Camunda",
+				"adminConsentDescription": "Allow the application to access Camunda on behalf of the signed-in user.",
+				"userConsentDisplayName":  "Access Camunda",
+				"userConsentDescription":  "Allow the application to access Camunda on your behalf.",
+			}},
+		},
+		"requiredResourceAccess": []map[string]any{{
+			"resourceAppId":  appID,
+			"resourceAccess": []map[string]any{{"id": scopeID, "type": "Scope"}},
+		}},
 	}
-	if statusCode >= 300 {
-		return fmt.Errorf("configure login app failed (status=%d): %s", statusCode, string(body))
+	if err := patchLoginApp(ctx, client, token, path, "configureLoginApp", resource); err != nil {
+		return err
 	}
+
+	preAuthorized := map[string]any{
+		"api": map[string]any{
+			"requestedAccessTokenVersion": 2,
+			"preAuthorizedApplications": []map[string]any{{
+				"appId":                  appID,
+				"delegatedPermissionIds": []string{scopeID},
+			}},
+		},
+	}
+	if err := patchLoginApp(ctx, client, token, path, "preAuthorizeLoginApp", preAuthorized); err != nil {
+		return err
+	}
+
 	logging.Logger.Info().
 		Str("host", host).
 		Str("identifierUri", "api://"+appID).
 		Int("webURIs", len(web)).
 		Int("spaURIs", len(spa)).
 		Msg("Configured the deployment's own login app")
+	return nil
+}
+
+// patchLoginApp applies one PATCH to the login app registration, failing on any
+// status withGraphRetry does not treat as transient.
+func patchLoginApp(ctx context.Context, client *http.Client, token, path, step string, payload map[string]any) error {
+	body, statusCode, err := withGraphRetry(ctx, step, nil, func() ([]byte, int, error) {
+		return graphPatch(ctx, client, token, path, payload, nil)
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", step, err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("%s failed (status=%d): %s", step, statusCode, string(body))
+	}
 	return nil
 }
 
