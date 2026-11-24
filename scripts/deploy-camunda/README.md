@@ -792,8 +792,13 @@ depends on which subcommand you're using:
   either both fields, or `ingressHostname` as a full FQDN override.
 
 Set the base domain to the DNS zone your cluster's ingress controller
-serves — for example `ci.distro.ultrawombat.com` in Camunda CI or
-`apps.mycompany.example` in your own cluster.
+serves. `--ingress-base-domain`, `--ingress-base-domain-gke` and
+`--ingress-base-domain-eks` only accept the entries of
+[`config.ValidIngressBaseDomains`](config/config.go)
+(`ci.distro.ultrawombat.com`, `distribution.aws.camunda.cloud`); any other
+value is rejected by `config.Validate` in [`config/merge.go`](config/merge.go)
+and by the matrix flag check in [`cmd/matrix.go`](cmd/matrix.go). For a
+zone of your own cluster, set `ingressHostname` to the full FQDN instead.
 
 ### Operator CRDs missing
 
@@ -903,6 +908,19 @@ For a full command reference and operational patterns, see
 | `deploy-camunda config env [--show-origin] [--unmask]` | Show effective env variables with provenance. |
 | `deploy-camunda config set/get/list/use/create/show` | Manage deployment profiles. |
 | `deploy-camunda watch --namespace <ns> --kube-context <ctx>` | Poll a running deploy and diagnose CrashLoopBackOff / ImagePullBackOff live. Use the same explicit context as the deploy. |
+
+### Output format and strict flags
+
+The flags below are not shared across commands: each exists only where
+listed, with its own values and default.
+
+| Flag | Command | Values | Default | Code |
+| --- | --- | --- | --- | --- |
+| `--format` | `matrix list` | `table`, `json` | `table` | `newMatrixListCommand` in [`cmd/matrix.go`](cmd/matrix.go), validated by `matrix.Print` in [`matrix/matrix.go`](matrix/matrix.go) |
+| `--strict-secrets` | root `deploy-camunda` (single deploy) | boolean | `false` | [`cmd/root.go`](cmd/root.go) |
+| `--strict` | `watch replay` | boolean | `true` | [`cmd/watch.go`](cmd/watch.go) |
+
+`doctor` has no `--format` flag.
 
 ### Matrix flags reference
 
