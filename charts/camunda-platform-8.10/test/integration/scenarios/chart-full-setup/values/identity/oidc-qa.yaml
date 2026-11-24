@@ -57,6 +57,10 @@ orchestration:
       oidc:
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.orchestration.contextPath }}"
         usernameClaim: oid
+        # The chart default, client_id, is absent from Entra v2 access tokens,
+        # so a client-credentials token is read as a user's and resolved
+        # against usernameClaim instead -- same gotcha as Optimize below.
+        clientIdClaim: azp
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
@@ -66,6 +70,8 @@ orchestration:
         admin:
           users:
             - $INITIAL_CLAIM_VALUE
+          clients:
+            - $ENTRA_PARENT_CLIENT_ID
 
 connectors:
   security:

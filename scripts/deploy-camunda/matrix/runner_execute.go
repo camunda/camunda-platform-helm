@@ -460,6 +460,7 @@ func prepareEntraEntry(ctx context.Context, flags *config.RuntimeFlags, namespac
 		loginOpts = &opts
 	}
 
+	flags.ExtraEnv["ENTRA_PARENT_CLIENT_ID"] = opts.ClientID
 	flags.ExtraEnv["VENOM_CLIENT_ID"] = app.AppID
 	flags.ExtraEnv["CONNECTORS_CLIENT_ID"] = audience
 	flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
