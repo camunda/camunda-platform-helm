@@ -179,7 +179,7 @@ jobs:
           exportEnv: false
 
       - name: Install tools
-        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@ab4b2b3604eea14f2b41b77bbc9a66bbf2e51df4 # 3.0.13
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@f9cb6ee788ce74f87effda9aeb0a3aa2612ea6c1 # 3.0.14
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3

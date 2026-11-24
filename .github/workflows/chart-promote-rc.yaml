@@ -97,7 +97,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install tools for tooling
-        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@ab4b2b3604eea14f2b41b77bbc9a66bbf2e51df4 # 3.0.13
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@f9cb6ee788ce74f87effda9aeb0a3aa2612ea6c1 # 3.0.14
 
       - name: Build release-tools
         run: cd scripts/release-tools && go build -o /tmp/release-tools .
@@ -179,7 +179,7 @@ jobs:
           harbor_login
 
       - name: Install tools
-        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@ab4b2b3604eea14f2b41b77bbc9a66bbf2e51df4 # 3.0.13
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@f9cb6ee788ce74f87effda9aeb0a3aa2612ea6c1 # 3.0.14
 
       - name: Pull and validate dev package
         id: package
