@@ -1934,7 +1934,6 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	const host = "gke-qaen-1234-8-10-qaen.ci.distro.ultrawombat.com"
 
 	var patched map[string]any
-	var grants []map[string]any
 	spCreated := false
 	created := false
 	srv := newTestServer(t, map[string]http.HandlerFunc{
@@ -1977,14 +1976,6 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 		"GET /servicePrincipals(appId='00000003-0000-0000-c000-000000000000')": func(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, 200, map[string]string{"id": "graph-sp-id"})
 		},
-		"POST /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
-			var grant map[string]any
-			if err := json.NewDecoder(r.Body).Decode(&grant); err != nil {
-				t.Errorf("decode grant body: %v", err)
-			}
-			grants = append(grants, grant)
-			jsonResponse(w, 201, map[string]string{"id": "grant-id"})
-		},
 	})
 	defer srv.Close()
 
@@ -2011,19 +2002,6 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 		t.Error("expected a service principal for the login app")
 	}
 
-	graphConsented := false
-	for _, grant := range grants {
-		if grant["consentType"] != "AllPrincipals" {
-			t.Errorf("grant %v, want consentType AllPrincipals", grant)
-		}
-		if grant["resourceId"] == "graph-sp-id" {
-			graphConsented = true
-		}
-	}
-	if !graphConsented {
-		t.Errorf("grants = %v, want tenant-wide consent on Microsoft Graph; the tenant blocks user consent, so an unconsented user is stopped by Entra's consent screen", grants)
-	}
-
 	if got, _ := patched["identifierUris"].([]any); len(got) != 1 || got[0] != "api://login-app-id" {
 		t.Errorf("identifierUris = %v, want [api://login-app-id]", patched["identifierUris"])
 	}
@@ -2039,11 +2017,8 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	}
 
 	required, _ := patched["requiredResourceAccess"].([]any)
-	if len(required) != 1 {
-		t.Fatalf("requiredResourceAccess = %v, want only Microsoft Graph User.Read", required)
-	}
-	if entry := required[0].(map[string]any); entry["resourceAppId"] != graphAppID {
-		t.Errorf("requiredResourceAccess = %v, want Microsoft Graph; the entry createApp seeds carries an all-zero permission id that authorize rejects with AADSTS65006", required)
+	if len(required) != 0 {
+		t.Errorf("requiredResourceAccess = %v, want none; the tenant reserves consent for admins, so anything left here stops a pool account on \"Need admin approval\"", required)
 	}
 
 	wantWeb, wantSpa := buildRedirectURIs(host)
@@ -2086,82 +2061,4 @@ func patchedURIs(t *testing.T, patched map[string]any, platform string) []string
 		uris = append(uris, u.(string))
 	}
 	return uris
-}
-
-func TestEnsureLoginApp_ToleratesServicePrincipalPropagation(t *testing.T) {
-	const host = "gke-qaen-9999-8-10-qaen.ci.distro.ultrawombat.com"
-
-	spLookups := 0
-	created := false
-	srv := newTestServer(t, map[string]http.HandlerFunc{
-		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
-		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
-			if !created {
-				jsonResponse(w, 200, map[string]any{"value": []any{}})
-				return
-			}
-			jsonResponse(w, 200, map[string]any{"value": []any{
-				map[string]string{"appId": "login-app-id", "id": "login-obj-id"},
-			}})
-		},
-		"POST /applications": func(w http.ResponseWriter, r *http.Request) {
-			created = true
-			jsonResponse(w, 201, map[string]string{"appId": "login-app-id", "id": "login-obj-id"})
-		},
-		"GET /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]any{"passwordCredentials": []any{}})
-		},
-		"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		},
-		"POST /applications/login-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]string{"secretText": "login-secret"})
-		},
-		"PATCH /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
-		},
-		// Graph serves the service principal it just created from a replica
-		// that has not caught up yet.
-		"GET /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
-			spLookups++
-			if spLookups == 1 {
-				jsonResponse(w, 404, map[string]any{"error": map[string]string{"code": "Request_ResourceNotFound"}})
-				return
-			}
-			jsonResponse(w, 200, map[string]string{"id": "sp-id"})
-		},
-		"GET /servicePrincipals(appId='00000003-0000-0000-c000-000000000000')": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]string{"id": "graph-sp-id"})
-		},
-		// The parent app may lack DelegatedPermissionGrant.ReadWrite.All.
-		"POST /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 403, map[string]any{"error": map[string]string{"code": "Authorization_RequestDenied"}})
-		},
-	})
-	defer srv.Close()
-
-	origGraph, origLogin, origSleep := graphBaseURL, loginBaseURL, propagationSleepDuration
-	origBackoff := retryBaseBackoff
-	graphBaseURL, loginBaseURL, propagationSleepDuration, retryBaseBackoff = srv.URL, srv.URL, 0, time.Millisecond
-	defer func() {
-		graphBaseURL, loginBaseURL, propagationSleepDuration = origGraph, origLogin, origSleep
-		retryBaseBackoff = origBackoff
-	}()
-
-	app, err := EnsureLoginApp(context.Background(), Options{
-		Namespace:    "test-ns",
-		DirectoryID:  "test-tenant",
-		ClientID:     "parent-client-id",
-		ClientSecret: "parent-secret",
-		HTTPClient:   srv.Client(),
-	}, host)
-	if err != nil {
-		t.Fatalf("provisioning must survive a replicating service principal and a refused consent grant: %v", err)
-	}
-	if app.AppID != "login-app-id" {
-		t.Errorf("app = %+v, want appId login-app-id", app)
-	}
-	if spLookups < 2 {
-		t.Errorf("service principal lookups = %d, want a retry after the 404", spLookups)
-	}
 }

@@ -626,42 +626,6 @@ func ensureServicePrincipal(ctx context.Context, client *http.Client, token, app
 	return nil
 }
 
-// graphAppID is Microsoft Graph's well-known application id.
-const graphAppID = "00000003-0000-0000-c000-000000000000"
-
-// graphUserReadScopeID is Microsoft Graph's User.Read delegated permission id.
-const graphUserReadScopeID = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"
-
-// servicePrincipalCreationRetryable also retries the 404 Graph returns while a
-// service principal created moments earlier is still replicating.
-func servicePrincipalCreationRetryable(statusCode int, body []byte, err error) bool {
-	return defaultRetryable(statusCode, body, err) || statusCode == http.StatusNotFound
-}
-
-// servicePrincipalID resolves a service principal's object id from its app id.
-func servicePrincipalID(ctx context.Context, client *http.Client, token, appID string) (string, error) {
-	path := fmt.Sprintf("/servicePrincipals(appId='%s')?$select=id", url.PathEscape(appID))
-	body, statusCode, err := withGraphRetry(ctx, "getServicePrincipal", servicePrincipalCreationRetryable, func() ([]byte, int, error) {
-		return graphGetStatus(ctx, client, token, path)
-	})
-	if err != nil {
-		return "", fmt.Errorf("look up service principal for %s: %w", appID, err)
-	}
-	if statusCode >= 300 {
-		return "", fmt.Errorf("look up service principal for %s failed (status=%d): %s", appID, statusCode, string(body))
-	}
-	var result struct {
-		ID string `json:"id"`
-	}
-	if err := json.Unmarshal(body, &result); err != nil {
-		return "", fmt.Errorf("parse service principal for %s: %w", appID, err)
-	}
-	if result.ID == "" {
-		return "", fmt.Errorf("service principal for %s has no object id", appID)
-	}
-	return result.ID, nil
-}
-
 // grantAdminConsent consents to the login app's delegated scopes on behalf of
 // every user in the tenant.
 //
@@ -670,55 +634,6 @@ func servicePrincipalID(ctx context.Context, client *http.Client, token, appID s
 // screen no test account can get past. Recording the grants here is what the
 // portal's "Grant admin consent" button does, so the consent screen never
 // appears for the deployment's own app.
-// consentUnavailable reports that the tenant-wide grant could not be recorded
-// without failing the deploy. The login app does not depend on it: it exposes
-// no scope of its own, so a user who has already consented signs in either
-// way. Only a user who never has is stopped by Entra's consent screen.
-func consentUnavailable(appID string, err error) error {
-	logging.Logger.Warn().
-		Err(err).
-		Str("appId", appID).
-		Msg("Could not record tenant-wide consent for the login app; a user who has not consented to it will be stopped by Entra's consent screen")
-	return nil
-}
-
-func grantAdminConsent(ctx context.Context, client *http.Client, token, appID string) error {
-	spID, err := servicePrincipalID(ctx, client, token, appID)
-	if err != nil {
-		return consentUnavailable(appID, err)
-	}
-	graphSPID, err := servicePrincipalID(ctx, client, token, graphAppID)
-	if err != nil {
-		return consentUnavailable(appID, err)
-	}
-
-	payload := map[string]any{
-		"clientId":    spID,
-		"consentType": "AllPrincipals",
-		"resourceId":  graphSPID,
-		"scope":       "User.Read openid profile email",
-	}
-	body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", nil, func() ([]byte, int, error) {
-		return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
-	})
-	// withGraphRetry reports a 403 as an error rather than a status, and the
-	// parent app registration may lack DelegatedPermissionGrant.ReadWrite.All.
-	if err != nil {
-		return consentUnavailable(appID, err)
-	}
-	// A repeat deploy re-grants the same scopes; Graph reports the existing
-	// entry as a conflict, which leaves consent in place.
-	if statusCode >= 300 && statusCode != http.StatusConflict {
-		return consentUnavailable(appID, fmt.Errorf("status=%d: %s", statusCode, string(body)))
-	}
-
-	logging.Logger.Info().
-		Str("appId", appID).
-		Int("statusCode", statusCode).
-		Msg("Recorded tenant-wide consent for the login app")
-	return nil
-}
-
 // createVenomK8sSecretFunc is the function used to create the K8s secret.
 // It is a variable so tests can override it to avoid requiring a real cluster.
 var createVenomK8sSecretFunc = createVenomK8sSecret
@@ -903,27 +818,21 @@ type LoginApp struct {
 // cluster rejects it with 401. Setting the API block makes the app a v2 resource
 // so ".default" resolves against it.
 //
-// The shape mirrors the shared QA app registration, which signs in today:
-// identifierUris plus token version 2, no exposed scope, and Microsoft Graph
-// User.Read as the only requiredResourceAccess entry. Exposing a scope of its
-// own makes the app's first sign-in stop on Entra's consent screen, and the
-// parent entry createApp seeds carries an all-zero permission id the authorize
-// endpoint rejects with AADSTS65006, so the PATCH replaces both.
+// The app asks for nothing that needs consent: no scope of its own, and an
+// empty requiredResourceAccess. The tenant reserves consent for admins, so
+// anything left in there stops the pool accounts on "Need admin approval",
+// with no button they can press -- Microsoft Graph User.Read did exactly that,
+// and the login app never calls Graph. The entry createApp seeds is dropped
+// for a second reason: its all-zero permission id is rejected by the authorize
+// endpoint with AADSTS65006. openid, email and profile need no entry.
 func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) error {
 	web, spa := buildRedirectURIs(host)
 	payload := map[string]any{
-		"web":            map[string]any{"redirectUris": web},
-		"spa":            map[string]any{"redirectUris": spa},
-		"identifierUris": []string{"api://" + appID},
-		"api":            map[string]any{"requestedAccessTokenVersion": 2},
-		"requiredResourceAccess": []map[string]any{
-			{
-				"resourceAppId": graphAppID,
-				"resourceAccess": []map[string]any{
-					{"id": graphUserReadScopeID, "type": "Scope"},
-				},
-			},
-		},
+		"web":                    map[string]any{"redirectUris": web},
+		"spa":                    map[string]any{"redirectUris": spa},
+		"identifierUris":         []string{"api://" + appID},
+		"api":                    map[string]any{"requestedAccessTokenVersion": 2},
+		"requiredResourceAccess": []map[string]any{},
 	}
 	path := fmt.Sprintf("/applications/%s", objectID)
 	body, statusCode, err := withGraphRetry(ctx, "configureLoginApp", nil, func() ([]byte, int, error) {
@@ -1065,9 +974,6 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := ensureServicePrincipal(ctx, client, token, appID); err != nil {
-		return nil, fmt.Errorf("entra: %w", err)
-	}
-	if err := grantAdminConsent(ctx, client, token, appID); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := awaitLoginAppResource(ctx, &opts, appID, secret); err != nil {
