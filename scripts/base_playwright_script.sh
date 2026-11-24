@@ -297,7 +297,7 @@ _wait_for_dns_resolution() {
       if ! nslookup "$hostname" >/dev/null 2>&1; then
         # Public DNS resolved but local resolver has stale NXDOMAIN.
         # Wait for the local negative cache to expire (SOA minimum = 300s)
-        # so that non-Node.js tools (zbctl, curl without --resolve, etc.)
+        # so that non-Node.js tools (curl without --resolve, etc.)
         # can resolve the hostname via the normal OS resolver.
         info "${COLOR_YELLOW}WARNING:${COLOR_RESET} Resolved via public DNS (-> ${ip}) but local resolver still returns NXDOMAIN."
         info "  Flushing local DNS cache and waiting for system resolver (negative TTL ≤ 300s)..."
@@ -332,7 +332,7 @@ _wait_for_dns_resolution() {
         if [[ "$local_resolved" != "true" ]]; then
           _NEEDS_DNS_FALLBACK=true
           info "${COLOR_YELLOW}WARNING:${COLOR_RESET} System resolver did not catch up after ${local_timeout}s."
-          info "  Will inject Node.js DNS fallback for Playwright (non-Node tools like zbctl may still fail)."
+          info "  Will inject Node.js DNS fallback for Playwright (non-Node tools may still fail)."
         fi
       fi
       break

@@ -269,10 +269,6 @@ tools.asdf-install: .tools.asdf-plugins-add
 tools.update-values-file-image-tag:
 	@bash scripts/update-values-file-image-tag.sh
 
-.PHONY: tools.zbctl-topology
-tools.zbctl-topology:
-	kubectl exec svc/$(releaseName)-zeebe-gateway -- zbctl --insecure status
-
 #########################################################
 ######### MCP
 #########################################################

@@ -148,7 +148,6 @@ ARG JQ_VERSION=1.8.1
 ARG YQ_VERSION=4.50.1
 ARG KUSTOMIZE_VERSION=5.8.0
 ARG KIND_VERSION=0.31.0
-ARG ZBCTL_VERSION=v8.6.0
 ARG ORAS_VERSION=1.3.0
 ARG HELM_CT_VERSION=3.11.0
 ARG HELM_CR_VERSION=1.7.0
@@ -193,12 +192,6 @@ RUN curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/k
 RUN curl -fsSL -o kind "https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-linux-amd64" \
     && chmod +x kind
 
-# zbctl - Zeebe CLI
-# Used for: Interacting with Camunda Zeebe
-# Note: Downloaded from npm CDN because GitHub releases stopped including zbctl from 8.6.0+
-RUN curl -fsSL "https://unpkg.com/zbctl@${ZBCTL_VERSION#v}/bin/zbctl-cli.linux" -o zbctl \
-    && chmod +x zbctl
-
 # oras - OCI Registry As Storage
 # Used for: Pushing/pulling artifacts to OCI registries
 # hadolint ignore=DL4006 # no PR job builds this image, so a fix cannot be proven
@@ -238,7 +231,7 @@ RUN echo "=== Original binary sizes ===" && ls -lhS /tools/
 # - Anti-tampering measures
 # We continue on failure to avoid breaking the build.
 # ------------------------------------------------------------------------------
-RUN for bin in helm kubectl yq kustomize kind oras ct cr oc zbctl; do \
+RUN for bin in helm kubectl yq kustomize kind oras ct cr oc; do \
         echo "Compressing $bin..." && upx --best "$bin" || echo "Warning: UPX failed for $bin, keeping original"; \
     done \
     # jq sometimes fails with UPX on certain versions
