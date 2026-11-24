@@ -58,6 +58,13 @@ var retryMaxAttempts = 15
 // creating a new app registration. Exposed as a variable so tests can set it to zero.
 var propagationSleepDuration = 2 * time.Second
 
+// loginAppResourceTimeout / loginAppResourceInterval bound the wait for the
+// token service to serve the login app as its own resource.
+var (
+	loginAppResourceTimeout  = 10 * time.Minute
+	loginAppResourceInterval = 10 * time.Second
+)
+
 // redirectVerifyDelay and redirectVerifyJitter set the wait between writing the
 // redirect URIs and reading them back. Variables so tests can set them to zero.
 var (
@@ -804,8 +811,9 @@ type LoginApp struct {
 // so Entra issues a v1 token whose iss is https://sts.windows.net/<tid>/ and the
 // cluster rejects it with 401. Setting the API block makes the app a v2 resource
 // with a scope for ".default" to resolve against.
-func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) error {
+func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, parentClientID, host string) error {
 	web, spa := buildRedirectURIs(host)
+	scopeID := uuid.NewString()
 	payload := map[string]any{
 		"web":            map[string]any{"redirectUris": web},
 		"spa":            map[string]any{"redirectUris": spa},
@@ -814,7 +822,7 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 			"requestedAccessTokenVersion": 2,
 			"oauth2PermissionScopes": []map[string]any{
 				{
-					"id":                      uuid.NewString(),
+					"id":                      scopeID,
 					"value":                   "user_impersonation",
 					"type":                    "User",
 					"isEnabled":               true,
@@ -836,6 +844,32 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 	if statusCode >= 300 {
 		return fmt.Errorf("configure login app failed (status=%d): %s", statusCode, string(body))
 	}
+	permissions := map[string]any{
+		"requiredResourceAccess": []map[string]any{
+			{
+				"resourceAppId": parentClientID,
+				"resourceAccess": []map[string]any{
+					{"id": "00000000-0000-0000-0000-000000000000", "type": "Scope"},
+				},
+			},
+			{
+				"resourceAppId": appID,
+				"resourceAccess": []map[string]any{
+					{"id": scopeID, "type": "Scope"},
+				},
+			},
+		},
+	}
+	body, statusCode, err = withGraphRetry(ctx, "configureLoginAppPermissions", nil, func() ([]byte, int, error) {
+		return graphPatch(ctx, client, token, path, permissions, nil)
+	})
+	if err != nil {
+		return fmt.Errorf("configure login app permissions: %w", err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("configure login app permissions failed (status=%d): %s", statusCode, string(body))
+	}
+
 	logging.Logger.Info().
 		Str("host", host).
 		Str("identifierUri", "api://"+appID).
@@ -843,6 +877,60 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 		Int("spaURIs", len(spa)).
 		Msg("Configured the deployment's own login app")
 	return nil
+}
+
+// awaitLoginAppResource blocks until Entra's token service resolves the app as
+// its own token resource. The Graph PATCH that adds identifierUris, the
+// user_impersonation scope and the self requiredResourceAccess entry lands on
+// Graph immediately, but login.microsoftonline.com serves it from a separate
+// replica. Until that replica catches up every sign-in redirect fails with
+// AADSTS650057 ("Invalid resource ... List of valid resources from app
+// registration: <parent>"), which the browser sees as a bounce back to the
+// component's own login page. Probing the same token service the browser hits
+// is the only check that proves the resource is live.
+func awaitLoginAppResource(ctx context.Context, opts *Options, appID, secret string) error {
+	tokenURL := fmt.Sprintf("%s/%s/oauth2/v2.0/token", loginBaseURL, opts.DirectoryID)
+	data := url.Values{
+		"client_id":     {appID},
+		"scope":         {"api://" + appID + "/.default"},
+		"client_secret": {secret},
+		"grant_type":    {"client_credentials"},
+	}
+	client := httpClient(opts)
+	deadline := time.Now().Add(loginAppResourceTimeout)
+	var lastErr string
+	for attempt := 1; time.Now().Before(deadline); attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenURL, strings.NewReader(data.Encode()))
+		if err != nil {
+			return fmt.Errorf("create login app probe request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = err.Error()
+		} else {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if resp.StatusCode < 300 {
+				logging.Logger.Info().
+					Str("appId", appID).
+					Int("attempts", attempt).
+					Msg("Entra resolves the login app as its own token resource")
+				return nil
+			}
+			lastErr = string(body)
+			logging.Logger.Debug().
+				Int("attempt", attempt).
+				Int("statusCode", resp.StatusCode).
+				Msg("Login app is not resolvable as a token resource yet")
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(loginAppResourceInterval):
+		}
+	}
+	return fmt.Errorf("login app %s did not become resolvable as a token resource: %s", appID, lastErr)
 }
 
 // EnsureLoginApp provisions a deployment's own Entra app registration for
@@ -903,7 +991,7 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		}
 	}
 
-	if err := configureLoginApp(ctx, client, token, objectID, appID, ingressHost); err != nil {
+	if err := configureLoginApp(ctx, client, token, objectID, appID, opts.ClientID, ingressHost); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 
@@ -912,6 +1000,9 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := ensureServicePrincipal(ctx, client, token, appID); err != nil {
+		return nil, fmt.Errorf("entra: %w", err)
+	}
+	if err := awaitLoginAppResource(ctx, &opts, appID, secret); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 

@@ -2006,6 +2006,27 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	if v := api["requestedAccessTokenVersion"]; v != float64(2) {
 		t.Errorf("requestedAccessTokenVersion = %v, want 2 (a v1 token's issuer fails validation)", v)
 	}
+
+	scopes, _ := api["oauth2PermissionScopes"].([]any)
+	if len(scopes) != 1 {
+		t.Fatalf("oauth2PermissionScopes = %v, want exactly one scope", api["oauth2PermissionScopes"])
+	}
+	scopeID := scopes[0].(map[string]any)["id"]
+	required, _ := patched["requiredResourceAccess"].([]any)
+	selfListed := false
+	for _, entry := range required {
+		e := entry.(map[string]any)
+		if e["resourceAppId"] != "login-app-id" {
+			continue
+		}
+		access := e["resourceAccess"].([]any)
+		if len(access) == 1 && access[0].(map[string]any)["id"] == scopeID {
+			selfListed = true
+		}
+	}
+	if !selfListed {
+		t.Errorf("requiredResourceAccess = %v, want an entry for the app's own API scope; without it Entra rejects <appId>/.default with AADSTS650057", patched["requiredResourceAccess"])
+	}
 	if scopes, _ := api["oauth2PermissionScopes"].([]any); len(scopes) != 1 {
 		t.Errorf("oauth2PermissionScopes = %v, want exactly one scope for .default", api["oauth2PermissionScopes"])
 	}
