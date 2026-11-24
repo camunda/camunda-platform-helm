@@ -46,7 +46,7 @@ jobs:
         repository: camunda/camunda-platform-helm
         ref: ${{ inputs.camunda-helm-git-ref }}
     - name: Install tools
-      uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+      uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@ab4b2b3604eea14f2b41b77bbc9a66bbf2e51df4 # 3.0.13
     - name: Download deploy-camunda binary
       if: inputs.binary-artifact-name != ''
       continue-on-error: true

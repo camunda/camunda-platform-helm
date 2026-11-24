@@ -79,7 +79,7 @@ jobs:
         echo "${GITHUB_CONTEXT}"
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - name: Install tools
-      uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+      uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@ab4b2b3604eea14f2b41b77bbc9a66bbf2e51df4 # 3.0.13
     - name: Configure curl and wget
       uses: ./.github/actions/setup-curl
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -143,7 +143,7 @@ jobs:
       - name: Setup deploy-camunda
         uses: ./.github/actions/setup-deploy-camunda
       - name: Install tools
-        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@e2923304b40dfc031b3f595bcc1445e90c981adb # 3.0.0
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@ab4b2b3604eea14f2b41b77bbc9a66bbf2e51df4 # 3.0.13
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
