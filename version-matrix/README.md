@@ -39,13 +39,13 @@ helm search repo camunda/camunda-platform --devel --versions
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
+| [14.12.4](./camunda-8.9/#helm-chart-14124) | 8.9.30 | 2026-11-24 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.2](https://github.com/helm/helm/releases/tag/v4.3.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.4?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.4) |
 | [14.12.3](./camunda-8.9/#helm-chart-14123) | 8.9.29 | 2026-11-19 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.3?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.3) |
 | [14.12.2](./camunda-8.9/#helm-chart-14122) | 8.9.28 | 2026-11-06 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.2) |
 | [14.12.1](./camunda-8.9/#helm-chart-14121) | 8.9.27 | 2026-11-03 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.1?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.1) |
 | [14.12.0](./camunda-8.9/#helm-chart-14120) | 8.9.26 | 2026-10-23 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.0?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.0) |
-| [14.11.2](./camunda-8.9/#helm-chart-14112) | 8.9.25 | 2026-10-21 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.11.2?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.11.2) |
 
-[All 32 chart versions for Camunda 8.9 →](./camunda-8.9/)
+[All 33 chart versions for Camunda 8.9 →](./camunda-8.9/)
 
 ## Camunda 8.8 — Standard support until 2027-04-13
 

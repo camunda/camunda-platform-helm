@@ -1,6 +1,6 @@
 apiVersion: v2
 name: camunda-platform
-version: 14.12.3
+version: 14.12.4
 appVersion: 8.9.x
 description: |
   Camunda 8 Self-Managed Helm charts.
@@ -56,7 +56,7 @@ maintainers:
   - name: camunda
     url: https://camunda.com
 annotations:
-  camunda.io/helmCLIVersion: "3.22.1,4.3.1"
+  camunda.io/helmCLIVersion: "3.22.1,4.3.2"
   artifacthub.io/links: |
     - name: Camunda 8 docs
       url: https://docs.camunda.io/
@@ -65,16 +65,4 @@ annotations:
     - name: Camunda 8 Self-Managed Helm charts
       url: https://github.com/camunda/camunda-platform-helm
   artifacthub.io/containsSecurityUpdates: "false"
-  artifacthub.io/changes: |
-    - kind: fixed
-      description: "Keep the 8.9 connectors headless Service as ClusterIP when connectors.service.type changes"
-    - kind: fixed
-      description: "Apply global pullPolicy to optimize migration init container"
-    - kind: fixed
-      description: "Warn that bitnamilegacy images still trust the compromised eMudhra roots"
-    - kind: fixed
-      description: "Declare bundled subchart values"
-    - kind: fixed
-      description: "Declare bundled subchart image tags"
-    - kind: fixed
-      description: "Disable BASE64 intrinsics in Keycloak and Elasticsearch for CVE-2026-114938"
+  artifacthub.io/changes: ""
