@@ -23,14 +23,17 @@ global:
         # this existingSecret must be a string literal
         secret:
           inlineSecret: $ENTRA_APP_CLIENT_SECRET
+        # Left blank on purpose. A non-blank initial claim makes Identity create
+        # its "Default" rule on the same claim/value/type triple as the rule
+        # below, and MappingRuleInitializerService skips any later rule whose
+        # triple already exists -- so the component roles would never be granted.
         initialClaimValue: ""
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.identity.contextPath }}"
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.optimize.contextPath }}"
       webModeler:
         clientId: $ENTRA_APP_CLIENT_ID
@@ -43,8 +46,7 @@ global:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.console.contextPath }}"
 
@@ -55,6 +57,11 @@ orchestration:
       oidc:
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.orchestration.contextPath }}"
         usernameClaim: oid
+        # The chart default, client_id, is absent from Entra v2 access tokens,
+        # so a client-credentials token is read as a user's and resolved
+        # against usernameClaim instead. In 8.11 the chart also feeds this value
+        # to Optimize's client-id-claim, so Optimize needs no env override.
+        clientIdClaim: azp
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
@@ -64,6 +71,8 @@ orchestration:
         admin:
           users:
             - $INITIAL_CLAIM_VALUE
+          clients:
+            - $ENTRA_PARENT_CLIENT_ID
 
 connectors:
   security:
@@ -73,8 +82,7 @@ connectors:
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          inlineSecret: $ENTRA_APP_CLIENT_SECRET
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
 console:
@@ -84,14 +92,16 @@ console:
 
 # Mirrors the roles the Keycloak path seeds on identity.firstUser; the OIDC
 # path seeds only the Default rule, which grants the Identity UI alone.
+# Keyed on tid so every account in this QA-only tenant matches, not just the
+# OID below: the E2E specs claim a slot from a pre-provisioned user pool.
 identity:
   env:
     - name: IDENTITY_MAPPINGRULES_0_NAME
       value: "QA E2E component access"
     - name: IDENTITY_MAPPINGRULES_0_CLAIMNAME
-      value: "oid"
+      value: "tid"
     - name: IDENTITY_MAPPINGRULES_0_CLAIMVALUE
-      value: "$INITIAL_CLAIM_VALUE"
+      value: "$ENTRA_APP_DIRECTORY_ID"
     - name: IDENTITY_MAPPINGRULES_0_OPERATOR
       value: "EQUALS"
     - name: IDENTITY_MAPPINGRULES_0_RULETYPE
