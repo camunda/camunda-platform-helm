@@ -192,8 +192,16 @@ func TestResolveScenarioRejectsQAEntra(t *testing.T) {
 		Chart:      config.ChartFlags{ChartPath: chart},
 		Deployment: config.DeploymentFlags{Scenarios: []string{"qa-entra"}, Flow: "install", Platform: "gke"},
 	}
-	require.ErrorContains(t, ResolveScenario(flags, nil), "use matrix run")
-	require.False(t, flags.SelectionResolved)
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.ErrorContains(t, RejectDirectQAEntra(flags), "use matrix run")
+
+	explicit := &config.RuntimeFlags{
+		Selection: config.SelectionFlags{Identity: "oidc-qa", Persistence: "elasticsearch"},
+	}
+	require.ErrorContains(t, RejectDirectQAEntra(explicit), "use matrix run")
+	require.NoError(t, RejectDirectQAEntra(&config.RuntimeFlags{
+		Selection: config.SelectionFlags{Identity: "oidc"},
+	}))
 }
 
 func TestResolveScenarioDeclaredFeatureAndScript(t *testing.T) {

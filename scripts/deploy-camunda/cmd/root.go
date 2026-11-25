@@ -217,7 +217,10 @@ func prepareDeploy(cmd *cobra.Command, _ []string) error {
 			flags.Debug.DebugComponents[component] = config.DebugConfig{Port: port}
 		}
 	}
-	return matrix.ResolveScenario(&flags, rootConfig)
+	if err := matrix.ResolveScenario(&flags, rootConfig); err != nil {
+		return err
+	}
+	return matrix.RejectDirectQAEntra(&flags)
 }
 
 func resolveDeployChartPath(chart *config.ChartFlags) error {
