@@ -597,7 +597,7 @@ jobs:
           namespace: ${{ env.TEST_NAMESPACE }}
 
       - name: Helm - Install - Register Entra Redirect URIs
-        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.test-identity != 'auth0' && inputs.scenario != 'auth0' && inputs.test-identity != 'oidc-qa' && inputs.scenario != 'qa-entra'
+        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.test-identity != 'auth0' && inputs.scenario != 'auth0' && inputs.test-identity != 'oidc-qa' && !(inputs.scenario == 'qa-entra' && contains(fromJSON('["camunda-platform-8.10","camunda-platform-8.11"]'), inputs.camunda-helm-dir))
         timeout-minutes: 5
         env:
           TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
@@ -1020,7 +1020,7 @@ jobs:
       # Upgrade
       ##########################################################################################################
       - name: Helm - Upgrade - Register Entra Redirect URIs
-        if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.test-identity != 'auth0' && inputs.scenario != 'auth0' && inputs.test-identity != 'oidc-qa' && inputs.scenario != 'qa-entra'
+        if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.test-identity != 'auth0' && inputs.scenario != 'auth0' && inputs.test-identity != 'oidc-qa' && !(inputs.scenario == 'qa-entra' && contains(fromJSON('["camunda-platform-8.10","camunda-platform-8.11"]'), inputs.camunda-helm-dir))
         timeout-minutes: 5
         env:
           TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
