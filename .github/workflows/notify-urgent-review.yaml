@@ -13,4 +13,8 @@ jobs:
     permissions:
       id-token: write
     uses: camunda/infraex-common-config/.github/workflows/notify-urgent-review-global.yml@878e9c01c4ba93d4bb162d399ab35266fe11f5a3 # feat/notify-review-on-slack
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
