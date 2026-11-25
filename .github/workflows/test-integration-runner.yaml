@@ -606,6 +606,7 @@ jobs:
           ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
+          set -euo pipefail
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
@@ -1029,6 +1030,7 @@ jobs:
           ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
+          set -euo pipefail
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
@@ -2115,6 +2117,7 @@ jobs:
           ENTRA_APP_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
+          set -euo pipefail
           deploy-camunda entra cleanup-login-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info

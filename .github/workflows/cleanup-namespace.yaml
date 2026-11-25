@@ -141,7 +141,7 @@ jobs:
           INPUTS_NAMESPACE: ${{ inputs.namespace }}
 
       - name: CI Cleanup - Delete the deployment's Entra login app registration
-        if: inputs.distro-platform == 'gke' && contains(inputs.namespace, 'qaen')
+        if: always() && inputs.distro-platform == 'gke' && contains(inputs.namespace, 'qaen')
         continue-on-error: true
         working-directory: scripts/deploy-camunda
         shell: bash
@@ -151,6 +151,7 @@ jobs:
           ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
           INPUTS_NAMESPACE: ${{ inputs.namespace }}
         run: |
+          set -euo pipefail
           go run . entra cleanup-login-app --namespace "${INPUTS_NAMESPACE}" --log-level info
 
       - name: Observe build status
