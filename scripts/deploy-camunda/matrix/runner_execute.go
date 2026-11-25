@@ -287,6 +287,9 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	if entra.IsOIDCEntry(entry.Auth, entry.Identity) {
 		venomOpts, loginOpts, err = prepareEntraEntry(ctx, flags, namespace, kubeCtx, entry.Identity)
 		if err != nil {
+			if opts.Cleanup {
+				cleanupEntraApps(ctx, venomOpts, loginOpts)
+			}
 			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
 		}
 	}
@@ -390,6 +393,17 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	return finishEntry(ctx, result, opts)
 }
 
+// cleanupEntraApps deletes the registrations a failed prepareEntraEntry left
+// behind; the namespace does not exist yet, so cleanupEntry is not used.
+func cleanupEntraApps(ctx context.Context, venomOpts, loginOpts *entra.Options) {
+	if venomOpts != nil {
+		entra.CleanupVenomApp(ctx, *venomOpts)
+	}
+	if loginOpts != nil {
+		entra.CleanupLoginApp(ctx, *loginOpts)
+	}
+}
+
 func finishEntry(ctx context.Context, result RunResult, opts RunOptions) RunResult {
 	if opts.Cleanup {
 		if opts.OnPhaseChange != nil {
@@ -431,7 +445,7 @@ func prepareEntraEntry(ctx context.Context, flags *config.RuntimeFlags, namespac
 		Msg("OIDC entry detected — provisioning venom Entra app (Phase 1: API + env vars)")
 	app, err := entra.EnsureVenomApp(ctx, opts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("entra: provision venom app: %w", err)
+		return &opts, nil, fmt.Errorf("entra: provision venom app: %w", err)
 	}
 	if opts.ClientID == "" {
 		opts.ClientID = os.Getenv("ENTRA_APP_CLIENT_ID")
@@ -452,7 +466,7 @@ func prepareEntraEntry(ctx context.Context, flags *config.RuntimeFlags, namespac
 		ingressHost := resolveEntraIngressHost(flags)
 		login, loginErr := entra.EnsureLoginApp(ctx, opts, ingressHost)
 		if loginErr != nil {
-			return nil, nil, fmt.Errorf("entra: provision login app: %w", loginErr)
+			return &opts, &opts, fmt.Errorf("entra: provision login app: %w", loginErr)
 		}
 		flags.ExtraEnv["ENTRA_APP_CLIENT_ID"] = login.AppID
 		flags.ExtraEnv["ENTRA_APP_CLIENT_SECRET"] = login.ClientSecret
