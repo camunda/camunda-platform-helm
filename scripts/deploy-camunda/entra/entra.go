@@ -702,11 +702,16 @@ func assignAPIAppRole(ctx context.Context, client *http.Client, token, appID, pa
 	return nil
 }
 
-// permissionGrantRetryable keeps the duplicate-grant answer off the retry path:
-// a reused service principal already holds the AllPrincipals grants.
+// permissionGrantRetryable keeps the duplicate-grant answer off the retry path
+// (a reused service principal already holds the AllPrincipals grants) and puts
+// the 400 Graph returns for a service principal it has not replicated yet on it.
 func permissionGrantRetryable(statusCode int, body []byte, err error) bool {
 	if isDuplicatePermissionGrant(statusCode, body) {
 		return false
+	}
+	if statusCode == http.StatusBadRequest &&
+		bytes.Contains(body, []byte("Specified resourceId was not found")) {
+		return true
 	}
 	return defaultRetryable(statusCode, body, err)
 }

@@ -2277,3 +2277,26 @@ func patchedURIs(t *testing.T, patched map[string]any, platform string) []string
 	}
 	return uris
 }
+
+func TestPermissionGrantRetryable(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+		want   bool
+	}{
+		{"unreplicated service principal", http.StatusBadRequest, `{"error":{"code":"Request_BadRequest","message":"Specified resourceId was not found."}}`, true},
+		{"duplicate grant", http.StatusBadRequest, `{"error":{"message":"Permission entry already exists."}}`, false},
+		{"duplicate grant conflict", http.StatusConflict, `{"error":{"message":"Permission entry already exists."}}`, false},
+		{"generic bad request", http.StatusBadRequest, `{"error":{"code":"Request_BadRequest","message":"Invalid scope"}}`, false},
+		{"forbidden", http.StatusForbidden, `{"error":{"code":"Authorization_RequestDenied"}}`, false},
+		{"throttled", http.StatusTooManyRequests, ``, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := permissionGrantRetryable(tc.status, []byte(tc.body), nil); got != tc.want {
+				t.Errorf("permissionGrantRetryable(%d) = %v, want %v", tc.status, got, tc.want)
+			}
+		})
+	}
+}
