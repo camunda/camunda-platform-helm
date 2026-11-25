@@ -750,7 +750,9 @@ func grantAdminConsent(ctx context.Context, client *http.Client, token, appID st
 			return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
 		})
 		if isDuplicatePermissionGrant(statusCode, body) {
-			logging.Logger.Debug().Str("appId", appID).Str("scope", grant.scope).Msg("Admin consent already granted")
+			if err := ensureGrantScopes(ctx, client, token, permissionGrant{clientID: clientSPID, resourceID: grant.resourceID, scope: grant.scope}); err != nil {
+				return fmt.Errorf("grant admin consent for %q: %w", grant.scope, err)
+			}
 			continue
 		}
 		if err != nil {
@@ -765,6 +767,61 @@ func grantAdminConsent(ctx context.Context, client *http.Client, token, appID st
 		Str("appId", appID).
 		Str("scopes", graphSignInScopes+" "+loginAppSelfScope).
 		Msg("Consented the login app for all principals")
+	return nil
+}
+
+// permissionGrant names an AllPrincipals delegated grant by client and resource
+// service principal ids and its space-separated scopes.
+type permissionGrant struct {
+	clientID   string
+	resourceID string
+	scope      string
+}
+
+// ensureGrantScopes adds any of grant.scope's entries missing from the existing
+// AllPrincipals grant of grant.clientID on grant.resourceID.
+func ensureGrantScopes(ctx context.Context, client *http.Client, token string, grant permissionGrant) error {
+	clientSPID, resourceID, scope := grant.clientID, grant.resourceID, grant.scope
+	filter := fmt.Sprintf("clientId eq '%s' and resourceId eq '%s' and consentType eq 'AllPrincipals'", clientSPID, resourceID)
+	body, err := graphGet(ctx, client, token, "/oauth2PermissionGrants?$filter="+strings.ReplaceAll(url.QueryEscape(filter), "+", "%20"))
+	if err != nil {
+		return fmt.Errorf("read existing grant: %w", err)
+	}
+	var result struct {
+		Value []struct {
+			ID    string `json:"id"`
+			Scope string `json:"scope"`
+		} `json:"value"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return fmt.Errorf("decode existing grant: %w", err)
+	}
+	if len(result.Value) == 0 {
+		return fmt.Errorf("graph reported a duplicate grant but returned none for client %s on %s", clientSPID, resourceID)
+	}
+	existing := result.Value[0]
+	have := strings.Fields(existing.Scope)
+	merged := have
+	for want := range strings.FieldsSeq(scope) {
+		if !slices.Contains(merged, want) {
+			merged = append(merged, want)
+		}
+	}
+	if len(merged) == len(have) {
+		logging.Logger.Debug().Str("grantId", existing.ID).Str("scope", existing.Scope).Msg("Admin consent already granted")
+		return nil
+	}
+	newScope := strings.Join(merged, " ")
+	body, statusCode, err := withGraphRetry(ctx, "updateGrantScopes", nil, func() ([]byte, int, error) {
+		return graphPatch(ctx, client, token, "/oauth2PermissionGrants/"+url.PathEscape(existing.ID), map[string]string{"scope": newScope}, nil)
+	})
+	if err != nil {
+		return fmt.Errorf("update grant scopes: %w", err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("update grant scopes failed (status=%d): %s", statusCode, string(body))
+	}
+	logging.Logger.Info().Str("grantId", existing.ID).Str("scope", newScope).Msg("Extended the existing admin consent grant")
 	return nil
 }
 

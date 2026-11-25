@@ -2177,6 +2177,22 @@ func TestEnsureLoginApp_ReprovisionsReusedApp(t *testing.T) {
 			grants[key] = true
 			jsonResponse(w, 201, map[string]string{"id": "grant-id"})
 		},
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			filter := r.URL.Query().Get("$filter")
+			for key := range grants {
+				resource, scope, _ := strings.Cut(key, "|")
+				if strings.Contains(filter, "resourceId eq '"+resource+"'") {
+					jsonResponse(w, 200, map[string]any{"value": []any{
+						map[string]string{"id": "grant-" + resource, "scope": scope},
+					}})
+					return
+				}
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{}})
+		},
+		"PATCH /oauth2PermissionGrants/": func(w http.ResponseWriter, r *http.Request) {
+			t.Errorf("unexpected grant update %s: the existing grants already hold every scope", r.URL.Path)
+		},
 		"PATCH /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
 		},
@@ -2419,5 +2435,93 @@ func TestAppRoleAssignRetryable(t *testing.T) {
 				t.Errorf("appRoleAssignRetryable(%d) = %v, want %v", tc.status, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestEnsureGrantScopes_AddsMissingScopes(t *testing.T) {
+	var filter, patchedPath, patchedScope string
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			filter = r.URL.Query().Get("$filter")
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"id": "grant-1", "scope": "openid profile"},
+			}})
+		},
+		"PATCH /oauth2PermissionGrants/grant-1": func(w http.ResponseWriter, r *http.Request) {
+			patchedPath = r.URL.Path
+			var body map[string]string
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode PATCH body: %v", err)
+			}
+			patchedScope = body["scope"]
+			w.WriteHeader(http.StatusNoContent)
+		},
+	})
+
+	if err := ensureGrantScopes(context.Background(), srv.Client(), "token", permissionGrant{clientID: "client-sp", resourceID: "graph-sp", scope: "openid profile email"}); err != nil {
+		t.Fatalf("ensureGrantScopes: %v", err)
+	}
+	if want := "clientId eq 'client-sp' and resourceId eq 'graph-sp' and consentType eq 'AllPrincipals'"; filter != want {
+		t.Errorf("$filter = %q, want %q", filter, want)
+	}
+	if patchedPath != "/oauth2PermissionGrants/grant-1" || patchedScope != "openid profile email" {
+		t.Errorf("PATCH %s scope=%q, want /oauth2PermissionGrants/grant-1 scope=%q", patchedPath, patchedScope, "openid profile email")
+	}
+}
+
+func TestEnsureGrantScopes_LeavesCompleteGrant(t *testing.T) {
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"id": "grant-1", "scope": "email openid profile offline_access"},
+			}})
+		},
+		"PATCH /oauth2PermissionGrants/": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("unexpected PATCH for a grant that already holds every scope")
+		},
+	})
+
+	if err := ensureGrantScopes(context.Background(), srv.Client(), "token", permissionGrant{clientID: "client-sp", resourceID: "graph-sp", scope: "openid profile email"}); err != nil {
+		t.Fatalf("ensureGrantScopes: %v", err)
+	}
+}
+
+func TestAwaitLoginAppResource_RetriesUntilIssued(t *testing.T) {
+	origTimeout, origInterval := loginAppResourceTimeout, loginAppResourceInterval
+	loginAppResourceTimeout, loginAppResourceInterval = 5*time.Second, time.Millisecond
+	t.Cleanup(func() { loginAppResourceTimeout, loginAppResourceInterval = origTimeout, origInterval })
+
+	const failures = 3
+	var attempts int
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": func(w http.ResponseWriter, r *http.Request) {
+			if err := r.ParseForm(); err != nil {
+				t.Errorf("parse form: %v", err)
+			}
+			for field, want := range map[string]string{
+				"client_id":     "login-app",
+				"client_secret": "login-secret",
+				"grant_type":    "client_credentials",
+				"scope":         "api://login-app/.default",
+			} {
+				if got := r.PostForm.Get(field); got != want {
+					t.Errorf("%s = %q, want %q", field, got, want)
+				}
+			}
+			attempts++
+			if attempts <= failures {
+				jsonResponse(w, 400, map[string]string{"error": "invalid_resource", "error_description": "AADSTS500011"})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{"access_token": "t", "expires_in": 3600})
+		},
+	})
+
+	opts := testLoginOpts(srv)
+	if err := awaitLoginAppResource(context.Background(), &opts, "login-app", "login-secret"); err != nil {
+		t.Fatalf("awaitLoginAppResource: %v", err)
+	}
+	if attempts != failures+1 {
+		t.Errorf("token requests = %d, want %d", attempts, failures+1)
 	}
 }
