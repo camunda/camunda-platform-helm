@@ -1363,7 +1363,7 @@ func cleanupEntry(ctx context.Context, result RunResult) {
 	if result.venomOpts != nil {
 		logging.Logger.Info().Str("namespace", result.Namespace).Msg("Cleaning up Entra app registrations")
 	}
-	cleanupEntraApps(ctx, result.venomOpts, result.Entry.Identity)
+	cleanupEntraApps(ctx, result.venomOpts, result.Entry.Identity == qaEntraIdentity)
 
 	// Clean up Auth0 clients for Auth0 entries (best-effort, before namespace deletion).
 	if result.auth0Opts != nil {

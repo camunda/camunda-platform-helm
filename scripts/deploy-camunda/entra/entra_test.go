@@ -16,6 +16,7 @@ package entra
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -80,6 +81,7 @@ type fakeRedirectApp struct {
 	patches             int
 	afterPatch          func(f *fakeRedirectApp)
 	getStatusAfterPatch int
+	getFailuresLeft     int
 	staleReads          int
 	staleLeft           int
 }
@@ -90,7 +92,8 @@ func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
 		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
 			f.mu.Lock()
 			defer f.mu.Unlock()
-			if f.patches > 0 && f.getStatusAfterPatch != 0 {
+			if f.patches > 0 && f.getStatusAfterPatch != 0 && f.getFailuresLeft != 0 {
+				f.getFailuresLeft--
 				jsonResponse(w, f.getStatusAfterPatch, map[string]any{
 					"error": map[string]string{"code": "serviceNotAvailable"},
 				})
@@ -145,9 +148,15 @@ func runUpdateRedirectURIs(t *testing.T, f *fakeRedirectApp) error {
 func tokenHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, 200, map[string]string{
-			"access_token": "test-bearer-token",
+			"access_token": testAccessToken(loginAppRoleValue),
 		})
 	}
+}
+
+// testAccessToken returns an unsigned JWT whose roles claim holds roles.
+func testAccessToken(roles ...string) string {
+	payload, _ := json.Marshal(map[string]any{"roles": roles})
+	return "e30." + base64.RawURLEncoding.EncodeToString(payload) + ".sig"
 }
 
 func TestIsOIDCEntry(t *testing.T) {
@@ -249,8 +258,8 @@ func TestAcquireBearerToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if token != "test-bearer-token" {
-		t.Errorf("got token %q, want %q", token, "test-bearer-token")
+	if want := testAccessToken(loginAppRoleValue); token != want {
+		t.Errorf("got token %q, want %q", token, want)
 	}
 }
 
@@ -417,6 +426,77 @@ func TestRotateCredentials(t *testing.T) {
 	}
 	if secret != "new-secret-value" {
 		t.Errorf("secret = %q, want %q", secret, "new-secret-value")
+	}
+}
+
+func TestRotateCredentials_AddsBeforeRemoving(t *testing.T) {
+	shrinkRetryTimings(t)
+	var calls []string
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-123": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []map[string]string{
+				{"keyId": "old-key-1"}, {"keyId": "old-key-2"},
+			}})
+		},
+		"POST /applications/obj-123/removePassword": func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]string
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode removePassword body: %v", err)
+			}
+			calls = append(calls, "remove "+body["keyId"])
+			w.WriteHeader(204)
+		},
+		"POST /applications/obj-123/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			calls = append(calls, "add")
+			jsonResponse(w, 200, map[string]string{"keyId": "new-key", "secretText": "new-secret-value"})
+		},
+	})
+
+	if _, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-123"); err != nil {
+		t.Fatalf("rotateCredentials: %v", err)
+	}
+	if want := []string{"add", "remove old-key-1", "remove old-key-2"}; !slices.Equal(calls, want) {
+		t.Errorf("calls = %v, want %v", calls, want)
+	}
+}
+
+func TestRotateCredentials_KeepsOldSecretWhenAddFails(t *testing.T) {
+	shrinkRetryTimings(t)
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-123": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []map[string]string{{"keyId": "old-key-1"}}})
+		},
+		"POST /applications/obj-123/removePassword": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("removed the old credential although no new one was added")
+			w.WriteHeader(204)
+		},
+		"POST /applications/obj-123/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 403, map[string]any{"error": map[string]string{"code": "Authorization_RequestDenied"}})
+		},
+	})
+
+	if _, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-123"); err == nil {
+		t.Fatal("expected an error when addPassword fails")
+	}
+}
+
+func TestRotateCredentials_FailsWhenRemovalFails(t *testing.T) {
+	shrinkRetryTimings(t)
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-123": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []map[string]string{{"keyId": "old-key-1"}}})
+		},
+		"POST /applications/obj-123/removePassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 403, map[string]any{"error": map[string]string{"code": "Authorization_RequestDenied"}})
+		},
+		"POST /applications/obj-123/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"secretText": "new-secret-value"})
+		},
+	})
+
+	_, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-123")
+	if err == nil || !strings.Contains(err.Error(), "old-key-1") {
+		t.Fatalf("error = %v, want a removal failure naming old-key-1", err)
 	}
 }
 
@@ -1824,12 +1904,25 @@ func TestUpdateRedirectURIs_FailsWhenOverwrittenEveryAttempt(t *testing.T) {
 }
 
 func TestUpdateRedirectURIs_FailsWhenVerificationReadFails(t *testing.T) {
-	f := &fakeRedirectApp{getStatusAfterPatch: 503}
+	shrinkRetryTimings(t)
+	f := &fakeRedirectApp{getStatusAfterPatch: 503, getFailuresLeft: -1}
 
 	err := runUpdateRedirectURIs(t, f)
 
 	if err == nil || !strings.Contains(err.Error(), "status=503") {
 		t.Fatalf("error = %v, want verification read failure with status=503", err)
+	}
+	if f.patches != 1 {
+		t.Errorf("PATCH count = %d, want 1", f.patches)
+	}
+}
+
+func TestUpdateRedirectURIs_RetriesTransientVerificationRead(t *testing.T) {
+	shrinkRetryTimings(t)
+	f := &fakeRedirectApp{getStatusAfterPatch: 503, getFailuresLeft: 2}
+
+	if err := runUpdateRedirectURIs(t, f); err != nil {
+		t.Fatalf("UpdateRedirectURIs: %v", err)
 	}
 	if f.patches != 1 {
 		t.Errorf("PATCH count = %d, want 1", f.patches)
@@ -2006,7 +2099,7 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 		graphBaseURL, loginBaseURL, propagationSleepDuration = origGraph, origLogin, origSleep
 	}()
 
-	app, err := EnsureLoginApp(context.Background(), Options{
+	app, created, err := EnsureLoginApp(context.Background(), Options{
 		Namespace:    "test-ns",
 		DirectoryID:  "test-tenant",
 		ClientID:     "parent-client-id",
@@ -2015,6 +2108,9 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	}, host)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	if !created {
+		t.Error("created = false, want true for a newly registered app")
 	}
 	if app.AppID != "login-app-id" || app.ClientSecret != "login-secret" {
 		t.Errorf("app = %+v, want appId login-app-id and secret login-secret", app)
@@ -2233,8 +2329,12 @@ func TestEnsureLoginApp_ReprovisionsReusedApp(t *testing.T) {
 		HTTPClient:   srv.Client(),
 	}
 	for run := 1; run <= 2; run++ {
-		if _, err := EnsureLoginApp(context.Background(), opts, host); err != nil {
+		_, created, err := EnsureLoginApp(context.Background(), opts, host)
+		if err != nil {
 			t.Fatalf("run %d: unexpected error: %v", run, err)
+		}
+		if created != (run == 1) {
+			t.Errorf("run %d: created = %v, want %v", run, created, run == 1)
 		}
 	}
 
@@ -2249,10 +2349,63 @@ func TestEnsureLoginApp_ReprovisionsReusedApp(t *testing.T) {
 	}
 }
 
+// TestEnsureLoginApp_ReportsCreatedOnFailure checks that a failure after the
+// lookup reports whether this call registered the app, so the caller deletes
+// only an app it created.
+func TestEnsureLoginApp_ReportsCreatedOnFailure(t *testing.T) {
+	shrinkRetryTimings(t)
+	origSleep := propagationSleepDuration
+	propagationSleepDuration = 0
+	t.Cleanup(func() { propagationSleepDuration = origSleep })
+
+	for _, tc := range []struct {
+		name        string
+		exists      bool
+		wantCreated bool
+	}{
+		{name: "reused app", exists: true, wantCreated: false},
+		{name: "new app", exists: false, wantCreated: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			exists := tc.exists
+			srv := withTestGraph(t, map[string]http.HandlerFunc{
+				"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+				"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+					if !exists {
+						jsonResponse(w, 200, map[string]any{"value": []any{}})
+						return
+					}
+					jsonResponse(w, 200, map[string]any{"value": []any{
+						map[string]string{"appId": "login-app-id", "id": "login-obj-id"},
+					}})
+				},
+				"POST /applications": func(w http.ResponseWriter, r *http.Request) {
+					exists = true
+					jsonResponse(w, 201, map[string]string{"appId": "login-app-id", "id": "login-obj-id"})
+				},
+				"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+					jsonResponse(w, 403, map[string]any{"error": map[string]string{"code": "Authorization_RequestDenied"}})
+				},
+			})
+
+			login, created, err := EnsureLoginApp(context.Background(), testLoginOpts(srv), "host.example.com")
+			if err == nil {
+				t.Fatal("expected an error when configuring the login app fails")
+			}
+			if login != nil {
+				t.Errorf("login = %+v, want nil on failure", login)
+			}
+			if created != tc.wantCreated {
+				t.Errorf("created = %v, want %v", created, tc.wantCreated)
+			}
+		})
+	}
+}
+
 // TestEnsureLoginApp_RequiresIngressHost guards against provisioning an app
 // with no redirect URI, which would fail every sign-in with AADSTS50011.
 func TestEnsureLoginApp_RequiresIngressHost(t *testing.T) {
-	_, err := EnsureLoginApp(context.Background(), Options{
+	_, _, err := EnsureLoginApp(context.Background(), Options{
 		Namespace:    "test-ns",
 		DirectoryID:  "test-tenant",
 		ClientID:     "parent-client-id",
@@ -2486,34 +2639,79 @@ func TestEnsureGrantScopes_LeavesCompleteGrant(t *testing.T) {
 	}
 }
 
+func TestEnsureGrantScopes_RetriesUntilGrantIsVisible(t *testing.T) {
+	shrinkRetryTimings(t)
+	const staleReads = 2
+	reads := 0
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			reads++
+			if reads <= staleReads {
+				jsonResponse(w, 200, map[string]any{"value": []any{}})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"id": "grant-1", "scope": "openid profile email"},
+			}})
+		},
+	})
+
+	if err := ensureGrantScopes(context.Background(), srv.Client(), "token", permissionGrant{clientID: "client-sp", resourceID: "graph-sp", scope: "openid profile email"}); err != nil {
+		t.Fatalf("ensureGrantScopes: %v", err)
+	}
+	if reads != staleReads+1 {
+		t.Errorf("grant reads = %d, want %d", reads, staleReads+1)
+	}
+}
+
+func TestEnsureGrantScopes_FailsWhenGrantNeverVisible(t *testing.T) {
+	shrinkRetryTimings(t)
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"value": []any{}})
+		},
+	})
+
+	if err := ensureGrantScopes(context.Background(), srv.Client(), "token", permissionGrant{clientID: "client-sp", resourceID: "graph-sp", scope: "openid"}); err == nil {
+		t.Fatal("expected an error when Graph never returns the grant")
+	}
+}
+
 func TestAwaitLoginAppResource_RetriesUntilIssued(t *testing.T) {
 	origTimeout, origInterval := loginAppResourceTimeout, loginAppResourceInterval
 	loginAppResourceTimeout, loginAppResourceInterval = 5*time.Second, time.Millisecond
 	t.Cleanup(func() { loginAppResourceTimeout, loginAppResourceInterval = origTimeout, origInterval })
 
 	const failures = 3
-	var attempts int
+	attempts := map[string]int{}
 	srv := withTestGraph(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": func(w http.ResponseWriter, r *http.Request) {
 			if err := r.ParseForm(); err != nil {
 				t.Errorf("parse form: %v", err)
 			}
+			clientID := r.PostForm.Get("client_id")
+			wantSecret := map[string]string{"login-app": "login-secret", "parent-client": "parent-secret"}[clientID]
+			if wantSecret == "" {
+				t.Errorf("unexpected client_id %q", clientID)
+			}
 			for field, want := range map[string]string{
-				"client_id":     "login-app",
-				"client_secret": "login-secret",
+				"client_secret": wantSecret,
 				"grant_type":    "client_credentials",
 				"scope":         "api://login-app/.default",
 			} {
 				if got := r.PostForm.Get(field); got != want {
-					t.Errorf("%s = %q, want %q", field, got, want)
+					t.Errorf("%s: %s = %q, want %q", clientID, field, got, want)
 				}
 			}
-			attempts++
-			if attempts <= failures {
+			attempts[clientID]++
+			switch {
+			case attempts[clientID] <= failures:
 				jsonResponse(w, 400, map[string]string{"error": "invalid_resource", "error_description": "AADSTS500011"})
-				return
+			case clientID == "parent-client" && attempts[clientID] <= 2*failures:
+				jsonResponse(w, 200, map[string]any{"access_token": testAccessToken(), "expires_in": 3600})
+			default:
+				jsonResponse(w, 200, map[string]any{"access_token": testAccessToken(loginAppRoleValue), "expires_in": 3600})
 			}
-			jsonResponse(w, 200, map[string]any{"access_token": "t", "expires_in": 3600})
 		},
 	})
 
@@ -2521,7 +2719,10 @@ func TestAwaitLoginAppResource_RetriesUntilIssued(t *testing.T) {
 	if err := awaitLoginAppResource(context.Background(), &opts, "login-app", "login-secret"); err != nil {
 		t.Fatalf("awaitLoginAppResource: %v", err)
 	}
-	if attempts != failures+1 {
-		t.Errorf("token requests = %d, want %d", attempts, failures+1)
+	if attempts["login-app"] != failures+1 {
+		t.Errorf("login app token requests = %d, want %d", attempts["login-app"], failures+1)
+	}
+	if attempts["parent-client"] != 2*failures+1 {
+		t.Errorf("parent token requests = %d, want %d (must wait for the role claim)", attempts["parent-client"], 2*failures+1)
 	}
 }
