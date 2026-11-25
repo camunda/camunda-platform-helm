@@ -63,7 +63,7 @@ helm search repo camunda/camunda-platform --devel --versions
 
 | Camunda | Released | Latest chart | Full matrix |
 |---|---|---|---|
-| 8.7 | 2025-04-08 | [12.14.4](./camunda-8.7/#helm-chart-12144) | [camunda-8.7](./camunda-8.7/) |
+| 8.7 | 2025-04-08 | [12.14.5](./camunda-8.7/#helm-chart-12145) | [camunda-8.7](./camunda-8.7/) |
 | 8.6 | 2024-10-08 | [11.12.4](./camunda-8.6/#helm-chart-11124) | [camunda-8.6](./camunda-8.6/) |
 
 ## End of life — no longer supported
