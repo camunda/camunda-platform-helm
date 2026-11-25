@@ -938,6 +938,60 @@ func awaitAppPropagation(ctx context.Context, client *http.Client, token, displa
 	return "", "", fmt.Errorf("app registration %q did not propagate", displayName)
 }
 
+// CleanupVenomApp deletes the venom Entra app registration for a namespace.
+// Errors are logged but not returned — cleanup is best-effort.
+func CleanupVenomApp(ctx context.Context, opts Options) {
+	cleanupApp(ctx, opts, appDisplayName, "venom")
+}
+
+// CleanupLoginApp deletes a deployment's own Entra login app registration.
+// Errors are logged but not returned — cleanup is best-effort.
+func CleanupLoginApp(ctx context.Context, opts Options) {
+	cleanupApp(ctx, opts, loginAppDisplayName, "login")
+}
+
+// cleanupApp deletes the app registration displayName(opts.Namespace) names.
+// Errors are logged, not returned.
+func cleanupApp(ctx context.Context, opts Options, displayName func(string) string, kind string) {
+	log := logging.Logger.With().Str("app", kind).Logger()
+	if err := resolveOpts(&opts); err != nil {
+		log.Warn().Err(err).Msg("entra cleanup: invalid options, skipping")
+		return
+	}
+
+	name := displayName(opts.Namespace)
+	client := httpClient(&opts)
+	log.Info().Str("namespace", opts.Namespace).Str("displayName", name).Msg("Cleaning up Entra app registration")
+
+	token, err := acquireBearerToken(ctx, &opts)
+	if err != nil {
+		log.Warn().Err(err).Msg("entra cleanup: failed to obtain bearer token")
+		return
+	}
+
+	_, objectID, err := findApp(ctx, client, token, name)
+	if err != nil {
+		log.Warn().Err(err).Msg("entra cleanup: failed to search for app")
+		return
+	}
+	if objectID == "" {
+		log.Info().Str("displayName", name).Msg("No Entra app found, nothing to clean up")
+		return
+	}
+
+	log.Debug().Str("objectId", objectID).Str("displayName", name).Msg("Sending DELETE request for app registration")
+	statusCode, err := graphDelete(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
+	if err != nil {
+		log.Warn().Err(err).Str("objectId", objectID).Msg("entra cleanup: delete request failed")
+		return
+	}
+	if statusCode == 204 || statusCode == 404 {
+		log.Info().Str("displayName", name).Int("status", statusCode).Msg("Successfully deleted Entra app")
+	} else {
+		log.Warn().Str("displayName", name).Int("status", statusCode).Msg("Unexpected status when deleting Entra app")
+	}
+}
+
 // loginAppRef identifies a login app registration and, once configured, its API role.
 type loginAppRef struct {
 	appID    string
@@ -1032,15 +1086,8 @@ func patchLoginApp(ctx context.Context, client *http.Client, token, path string,
 	return nil
 }
 
-// awaitLoginAppResource blocks until Entra's token service resolves the app as
-// its own token resource. The Graph PATCH that adds identifierUris, the
-// user_impersonation scope and the self requiredResourceAccess entry lands on
-// Graph immediately, but login.microsoftonline.com serves it from a separate
-// replica. Until that replica catches up every sign-in redirect fails with
-// AADSTS650057 ("Invalid resource ... List of valid resources from app
-// registration: <parent>"), which the browser sees as a bounce back to the
-// component's own login page. Probing the same token service the browser hits
-// is the only check that proves the resource is live.
+// awaitLoginAppResource polls the token endpoint with a client-credentials
+// request for "<appID>/.default" until Entra issues a token for it.
 func awaitLoginAppResource(ctx context.Context, opts *Options, appID, secret string) error {
 	tokenURL := fmt.Sprintf("%s/%s/oauth2/v2.0/token", loginBaseURL, opts.DirectoryID)
 	data := url.Values{
@@ -1164,94 +1211,6 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 		Msg("Login app provisioned — callers should override ENTRA_APP_CLIENT_ID/SECRET via ExtraEnv")
 
 	return &LoginApp{AppID: appID, ObjectID: objectID, ClientSecret: secret}, nil
-}
-
-// CleanupLoginApp deletes a deployment's own Entra login app registration.
-// Errors are logged but not returned — cleanup is best-effort.
-func CleanupLoginApp(ctx context.Context, opts Options) {
-	if err := resolveOpts(&opts); err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra login cleanup: invalid options, skipping")
-		return
-	}
-
-	displayName := loginAppDisplayName(opts.Namespace)
-	client := httpClient(&opts)
-
-	token, err := acquireBearerToken(ctx, &opts)
-	if err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra login cleanup: failed to obtain bearer token")
-		return
-	}
-
-	_, objectID, err := findApp(ctx, client, token, displayName)
-	if err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra login cleanup: failed to search for app")
-		return
-	}
-	if objectID == "" {
-		logging.Logger.Info().Str("displayName", displayName).Msg("No login app found, nothing to clean up")
-		return
-	}
-
-	statusCode, err := graphDelete(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
-	if err != nil {
-		logging.Logger.Warn().Err(err).Str("objectId", objectID).Msg("entra login cleanup: delete request failed")
-		return
-	}
-	if statusCode == 204 || statusCode == 404 {
-		logging.Logger.Info().Str("displayName", displayName).Int("status", statusCode).Msg("Successfully deleted the login app")
-	} else {
-		logging.Logger.Warn().Str("displayName", displayName).Int("status", statusCode).Msg("Unexpected status when deleting the login app")
-	}
-}
-
-// CleanupVenomApp deletes the venom Entra app registration for a namespace.
-// Errors are logged but not returned — cleanup is best-effort.
-func CleanupVenomApp(ctx context.Context, opts Options) {
-	if err := resolveOpts(&opts); err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra cleanup: invalid options, skipping")
-		return
-	}
-
-	displayName := appDisplayName(opts.Namespace)
-	client := httpClient(&opts)
-
-	logging.Logger.Info().
-		Str("namespace", opts.Namespace).
-		Str("displayName", displayName).
-		Msg("Cleaning up venom Entra app registration")
-
-	// Acquire bearer token.
-	token, err := acquireBearerToken(ctx, &opts)
-	if err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra cleanup: failed to obtain bearer token")
-		return
-	}
-
-	// Find the app.
-	_, objectID, err := findApp(ctx, client, token, displayName)
-	if err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra cleanup: failed to search for app")
-		return
-	}
-	if objectID == "" {
-		logging.Logger.Info().Str("displayName", displayName).Msg("No Entra app found, nothing to clean up")
-		return
-	}
-
-	// Delete the app.
-	logging.Logger.Debug().Str("objectId", objectID).Str("displayName", displayName).Msg("Sending DELETE request for app registration")
-	statusCode, err := graphDelete(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
-	if err != nil {
-		logging.Logger.Warn().Err(err).Str("objectId", objectID).Msg("entra cleanup: delete request failed")
-		return
-	}
-
-	if statusCode == 204 || statusCode == 404 {
-		logging.Logger.Info().Str("displayName", displayName).Int("status", statusCode).Msg("Successfully deleted Entra app")
-	} else {
-		logging.Logger.Warn().Str("displayName", displayName).Int("status", statusCode).Msg("Unexpected status when deleting Entra app")
-	}
 }
 
 // createVenomK8sSecret creates or updates the venom-entra-credentials Opaque

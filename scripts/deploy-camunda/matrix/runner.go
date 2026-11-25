@@ -1360,21 +1360,10 @@ func lastNLines(s string, n int) string {
 // happen after diagnostics have been collected. Errors are logged but do not affect the
 // entry's result.
 func cleanupEntry(ctx context.Context, result RunResult) {
-	// Clean up Entra app registration for OIDC entries (best-effort, before namespace deletion).
 	if result.venomOpts != nil {
-		logging.Logger.Info().
-			Str("namespace", result.Namespace).
-			Msg("Cleaning up venom Entra app registration")
-		entra.CleanupVenomApp(ctx, *result.venomOpts)
+		logging.Logger.Info().Str("namespace", result.Namespace).Msg("Cleaning up Entra app registrations")
 	}
-
-	// Clean up the deployment's own Entra login app (QA identity layer only).
-	if result.venomOpts != nil && result.Entry.Identity == qaEntraIdentity {
-		logging.Logger.Info().
-			Str("namespace", result.Namespace).
-			Msg("Cleaning up the deployment's Entra login app registration")
-		entra.CleanupLoginApp(ctx, *result.venomOpts)
-	}
+	cleanupEntraApps(ctx, result.venomOpts, result.Entry.Identity)
 
 	// Clean up Auth0 clients for Auth0 entries (best-effort, before namespace deletion).
 	if result.auth0Opts != nil {

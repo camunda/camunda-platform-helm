@@ -393,8 +393,7 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	return finishEntry(ctx, result, opts)
 }
 
-// cleanupEntraApps deletes the registrations a failed prepareEntraEntry left
-// behind; the namespace does not exist yet, so cleanupEntry is not used.
+// cleanupEntraApps deletes an entry's venom app and, for oidc-qa, its login app.
 func cleanupEntraApps(ctx context.Context, venomOpts *entra.Options, identity string) {
 	if venomOpts == nil {
 		return
