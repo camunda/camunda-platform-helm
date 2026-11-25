@@ -1,0 +1,27 @@
+# https://github.com/camunda/smx/issues/232
+---
+name: Notify - Urgent Review
+
+on:
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
+    types: [labeled]
+
+permissions: {}
+
+jobs:
+  notify:
+    if: github.event.label.name == 'review:urgent' && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    concurrency:
+      group: review-urgent-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: camunda/infraex-common-config/.github/actions/notify-review-on-slack@a3cc7feac50e7bc696b695a50a4bbebbea187fb4 # feat/notify-review-on-slack
+        with:
+          vault_addr: ${{ secrets.VAULT_ADDR }}
+          vault_jwt_path: ${{ secrets.VAULT_JWT_PATH || vars.VAULT_JWT_PATH }}
+          vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE || vars.VAULT_JWT_ROLE }}
+          vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE || vars.VAULT_JWT_AUDIENCE }}
+          slack_channel_id: C0CM1P9AB8U  # team-smx-reviews
