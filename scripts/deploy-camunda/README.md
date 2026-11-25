@@ -17,7 +17,8 @@ Scenarios are the source of truth for a "what does a Camunda deployment
 of type X look like" question. Each one declares:
 
 - an identity provider (`keycloak`, `oidc`, `oidc-qa`, `basic`, `auth0`);
-  `oidc-qa` (the `qa-entra` scenario) provisions its own Entra login app and
+  `oidc-qa` (the `qa-entra` scenario on charts 8.10 and 8.11; 8.8 and 8.9 use
+  `oidc`) provisions its own Entra login app and
   runs only through `matrix run --include-disabled`, so a direct
   `deploy-camunda` with it exits with an error,
 - a persistence backend (`elasticsearch`, `opensearch`, `rdbms`, …),
