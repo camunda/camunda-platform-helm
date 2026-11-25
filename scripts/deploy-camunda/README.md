@@ -443,6 +443,18 @@ override with an `--extra-values` overlay that replaces the `issuer`,
 | `ENTRA_APP_CLIENT_SECRET` | Client secret for the identity component. |
 | `ENTRA_APP_OBJECT_ID` | Object ID used for initial-claim seed. |
 
+With `identity: oidc-qa` (`matrix run --include-disabled`), these variables
+hold the parent app. deploy-camunda uses it to register a login app
+`camunda-oidc-<namespace>` for each deployment. The parent app needs these
+Microsoft Graph application permissions, with admin consent:
+
+| Permission | Used to |
+|---|---|
+| `Application.ReadWrite.OwnedBy` | Create the login app, set its redirect URIs, scope and app role, rotate its secret, create its service principal, and delete it at cleanup. |
+| `Application.Read.All` | Read the service principals of Microsoft Graph and of the parent app. |
+| `DelegatedPermissionGrant.ReadWrite.All` | Grant admin consent for the login app's delegated scopes. |
+| `AppRoleAssignment.ReadWrite.All` | Assign the login app's `camunda.api.access` role to the parent app. |
+
 For a fully generic OIDC IdP the cleanest path is to author a companion
 values file (e.g. `custom-oidc.yaml`) and reference it via
 `extraValues:` in your config profile.
