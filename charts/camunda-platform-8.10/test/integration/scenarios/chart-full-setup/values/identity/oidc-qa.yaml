@@ -23,10 +23,6 @@ global:
         # this existingSecret must be a string literal
         secret:
           inlineSecret: $ENTRA_APP_CLIENT_SECRET
-        # Left blank on purpose. A non-blank initial claim makes Identity create
-        # its "Default" rule on the same claim/value/type triple as the rule
-        # below, and MappingRuleInitializerService skips any later rule whose
-        # triple already exists -- so the component roles would never be granted.
         initialClaimValue: ""
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.identity.contextPath }}"
       optimize:
@@ -57,9 +53,6 @@ orchestration:
       oidc:
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.orchestration.contextPath }}"
         usernameClaim: oid
-        # The chart default, client_id, is absent from Entra v2 access tokens,
-        # so a client-credentials token is read as a user's and resolved
-        # against usernameClaim instead -- same gotcha as Optimize below.
         clientIdClaim: azp
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
@@ -89,10 +82,6 @@ console:
     - name: CAMUNDA_IDENTITY_JWKS_URL
       value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
 
-# Mirrors the roles the Keycloak path seeds on identity.firstUser; the OIDC
-# path seeds only the Default rule, which grants the Identity UI alone.
-# Keyed on tid so every account in this QA-only tenant matches, not just the
-# OID below: the E2E specs claim a slot from a pre-provisioned user pool.
 identity:
   env:
     - name: IDENTITY_MAPPINGRULES_0_NAME
@@ -114,10 +103,6 @@ identity:
     - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_3
       value: "Optimize"
 
-# Without the resource scope Entra issues a Microsoft Graph access token, which
-# Optimize cannot validate against the Camunda issuer; it then falls back to ID
-# token claims and denies access. The chart exposes tokenScope for connectors
-# and orchestration only, so Optimize takes the property as env.
 optimize:
   env:
     - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_0
@@ -128,7 +113,5 @@ optimize:
       value: "email"
     - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_3
       value: "$ENTRA_APP_CLIENT_ID/.default"
-    # Unset, Optimize classifies the client-credentials token as a user's and
-    # denies the Optimize API. Entra v2 carries the client id in azp.
     - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTIDCLAIM
       value: "azp"

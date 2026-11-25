@@ -1,5 +1,3 @@
-# Re-keys the persistence layer's venom/connectors mapping rules on the
-# Entra "azp" claim. Env entries merge by name, so this layer must follow it.
 orchestration:
   env:
     - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
