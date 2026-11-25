@@ -2115,6 +2115,124 @@ func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
 	}
 }
 
+// TestEnsureLoginApp_ReprovisionsReusedApp deploys twice to one namespace: the
+// second run reuses the app, so it must keep the scope id the first run exposed
+// and treat the consent grants and role assignment that already exist as done.
+func TestEnsureLoginApp_ReprovisionsReusedApp(t *testing.T) {
+	const host = "gke-qaen-1234-8-10-qaen.ci.distro.ultrawombat.com"
+
+	created := false
+	var scopeIDs []string
+	grants := map[string]bool{}
+	assigned := false
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			if !created {
+				jsonResponse(w, 200, map[string]any{"value": []any{}})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"appId": "login-app-id", "id": "login-obj-id"},
+			}})
+		},
+		"POST /applications": func(w http.ResponseWriter, r *http.Request) {
+			created = true
+			jsonResponse(w, 201, map[string]string{"appId": "login-app-id", "id": "login-obj-id"})
+		},
+		"GET /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []any{}})
+		},
+		"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode PATCH body: %v", err)
+			}
+			if api, ok := body["api"].(map[string]any); ok {
+				scopes, _ := api["oauth2PermissionScopes"].([]any)
+				if len(scopes) == 1 {
+					scope, _ := scopes[0].(map[string]any)
+					id, _ := scope["id"].(string)
+					scopeIDs = append(scopeIDs, id)
+				}
+			}
+			w.WriteHeader(http.StatusNoContent)
+		},
+		"POST /applications/login-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"secretText": "login-secret"})
+		},
+		"POST /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			var grant map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&grant); err != nil {
+				t.Errorf("decode grant body: %v", err)
+			}
+			key := fmt.Sprintf("%v|%v", grant["resourceId"], grant["scope"])
+			if grants[key] {
+				jsonResponse(w, 409, map[string]any{"error": map[string]string{
+					"code":    "Request_MultipleObjectsWithSameKeyValue",
+					"message": "Permission entry already exists.",
+				}})
+				return
+			}
+			grants[key] = true
+			jsonResponse(w, 201, map[string]string{"id": "grant-id"})
+		},
+		"PATCH /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
+		},
+		"GET /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "sp-id"})
+		},
+		"GET /servicePrincipals(appId='00000003-0000-0000-c000-000000000000')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "graph-sp-id"})
+		},
+		"GET /servicePrincipals(appId='parent-client-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "parent-sp-id"})
+		},
+		"POST /servicePrincipals/sp-id/appRoleAssignedTo": func(w http.ResponseWriter, r *http.Request) {
+			if assigned {
+				jsonResponse(w, 400, map[string]any{"error": map[string]string{
+					"code":    "Request_BadRequest",
+					"message": "Permission being assigned already exists on the object",
+				}})
+				return
+			}
+			assigned = true
+			jsonResponse(w, 201, map[string]string{"id": "assignment-id"})
+		},
+	})
+	defer srv.Close()
+
+	origGraph, origLogin, origSleep := graphBaseURL, loginBaseURL, propagationSleepDuration
+	graphBaseURL, loginBaseURL, propagationSleepDuration = srv.URL, srv.URL, 0
+	defer func() {
+		graphBaseURL, loginBaseURL, propagationSleepDuration = origGraph, origLogin, origSleep
+	}()
+
+	opts := Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client-id",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	}
+	for run := 1; run <= 2; run++ {
+		if _, err := EnsureLoginApp(context.Background(), opts, host); err != nil {
+			t.Fatalf("run %d: unexpected error: %v", run, err)
+		}
+	}
+
+	if len(scopeIDs) != 2 {
+		t.Fatalf("scope ids written = %v, want one per run", scopeIDs)
+	}
+	if scopeIDs[0] != scopeIDs[1] {
+		t.Errorf("scope id changed between runs (%s -> %s); Entra refuses to drop an enabled scope", scopeIDs[0], scopeIDs[1])
+	}
+	if scopeIDs[0] != loginAppScopeID("login-app-id") {
+		t.Errorf("scope id = %s, want the id derived from the app id", scopeIDs[0])
+	}
+}
+
 // TestEnsureLoginApp_RequiresIngressHost guards against provisioning an app
 // with no redirect URI, which would fail every sign-in with AADSTS50011.
 func TestEnsureLoginApp_RequiresIngressHost(t *testing.T) {

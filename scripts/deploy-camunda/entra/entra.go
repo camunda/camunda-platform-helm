@@ -635,6 +635,14 @@ func loginAppRoleID(appID string) string {
 	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("camunda-login-app-role:"+appID)).String()
 }
 
+// loginAppScopeID derives the user_impersonation scope id from the app id for
+// the same reason as loginAppRoleID: PATCH replaces oauth2PermissionScopes
+// wholesale, and Entra rejects dropping an enabled scope, so a re-deploy that
+// minted a fresh id would fail on the reused app.
+func loginAppScopeID(appID string) string {
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("camunda-login-app-scope:"+appID)).String()
+}
+
 // appRoleAssignRetryable keeps the duplicate-assignment answer off the retry
 // path: it is the steady state on every re-deploy, not a transient fault.
 func appRoleAssignRetryable(statusCode int, body []byte, err error) bool {
@@ -694,6 +702,22 @@ func assignAPIAppRole(ctx context.Context, client *http.Client, token, appID, pa
 	return nil
 }
 
+// permissionGrantRetryable keeps the duplicate-grant answer off the retry path:
+// a reused service principal already holds the AllPrincipals grants.
+func permissionGrantRetryable(statusCode int, body []byte, err error) bool {
+	if isDuplicatePermissionGrant(statusCode, body) {
+		return false
+	}
+	return defaultRetryable(statusCode, body, err)
+}
+
+func isDuplicatePermissionGrant(statusCode int, body []byte) bool {
+	if statusCode != http.StatusBadRequest && statusCode != http.StatusConflict {
+		return false
+	}
+	return bytes.Contains(body, []byte("Permission entry already exists"))
+}
+
 // grantAdminConsent records tenant-wide consent for the login app.
 //
 // Consent is held on the service principal, not on the app registration, and a
@@ -729,9 +753,13 @@ func grantAdminConsent(ctx context.Context, client *http.Client, token, appID st
 			"resourceId":  grant.resourceID,
 			"scope":       grant.scope,
 		}
-		body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", nil, func() ([]byte, int, error) {
+		body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", permissionGrantRetryable, func() ([]byte, int, error) {
 			return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
 		})
+		if isDuplicatePermissionGrant(statusCode, body) {
+			logging.Logger.Debug().Str("appId", appID).Str("scope", grant.scope).Msg("Admin consent already granted")
+			continue
+		}
 		if err != nil {
 			return fmt.Errorf("grant admin consent for %q: %w", grant.scope, err)
 		}
@@ -1000,7 +1028,7 @@ type LoginApp struct {
 // profile need no entry at all.
 func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) (string, error) {
 	web, spa := buildRedirectURIs(host)
-	scopeID := uuid.NewString()
+	scopeID := loginAppScopeID(appID)
 	roleID := loginAppRoleID(appID)
 	path := fmt.Sprintf("/applications/%s", objectID)
 
