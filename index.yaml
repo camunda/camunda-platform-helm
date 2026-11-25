@@ -13026,6 +13026,114 @@ entries:
         - image: docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
         - image: docker.io/camunda/connectors-bundle:8.7.34
         - image: docker.io/camunda/console:8.7.118
+        - image: docker.io/camunda/identity:8.7.31
+        - image: docker.io/camunda/operate:8.7.46
+        - image: docker.io/camunda/optimize:8.7.32
+        - image: docker.io/camunda/tasklist:8.7.46
+        - image: docker.io/camunda/web-modeler-restapi:8.7.31
+        - image: docker.io/camunda/web-modeler-webapp:8.7.31
+        - image: docker.io/camunda/web-modeler-websockets:8.7.31
+        - image: docker.io/camunda/zeebe:8.7.46
+        - image: registry.camunda.cloud/keycloak-ee/keycloak:26.7.2
+      artifacthub.io/links: |
+        - name: Camunda 8 docs
+          url: https://docs.camunda.io/
+        - name: Camunda 8 Self-Managed docs
+          url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+        - name: Camunda 8 Self-Managed Helm charts
+          url: https://github.com/camunda/camunda-platform-helm
+      camunda.io/chart-images: |
+        docker.io/bitnamilegacy/elasticsearch:8.17.4
+        docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+        docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+        docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+        docker.io/camunda/connectors-bundle:8.7.34
+        docker.io/camunda/console:8.7.118
+        docker.io/camunda/identity:8.7.31
+        docker.io/camunda/operate:8.7.46
+        docker.io/camunda/optimize:8.7.32
+        docker.io/camunda/tasklist:8.7.46
+        docker.io/camunda/web-modeler-restapi:8.7.31
+        docker.io/camunda/web-modeler-webapp:8.7.31
+        docker.io/camunda/web-modeler-websockets:8.7.31
+        docker.io/camunda/zeebe:8.7.46
+        registry.camunda.cloud/keycloak-ee/keycloak:26.7.2
+      camunda.io/component-image-versions: |
+        zeebe: 8.7.46
+        operate: 8.7.46
+        tasklist: 8.7.46
+        identity: 8.7.31
+        optimize: 8.7.32
+        webModeler: 8.7.31
+        connectors: 8.7.34
+        console: 8.7.118
+      camunda.io/helmCLIVersion: 3.22.1
+    apiVersion: v2
+    appVersion: 8.7.x
+    created: "2026-11-25T16:48:06.041126056Z"
+    dependencies:
+    - alias: identityKeycloak
+      condition: identity.keycloak.enabled,identityKeycloak.enabled
+      name: keycloak
+      repository: file://../keycloak-24
+      version: 24.x.x
+    - alias: identityPostgresql
+      condition: identity.postgresql.enabled,identityPostgresql.enabled
+      name: postgresql
+      repository: file://../identity-postgresql-15
+      version: 15.x.x
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: web-modeler-postgresql
+      repository: file://../web-modeler-postgresql-15
+      version: 15.x.x
+    - condition: elasticsearch.enabled
+      name: elasticsearch
+      repository: file://../elasticsearch-21
+      version: 21.6.3
+    - name: common
+      repository: file://../common-2
+      version: 2.x.x
+    description: 'Camunda 8 Self-Managed Helm charts. Camunda''s process automation
+      platform allows developers to design, automate and improve processes. '
+    digest: f50113d09f285d0bd6e02499a6ed14ac6eaef451cf3508308f1d4b643772af30
+    home: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    icon: https://helm.camunda.io/imgs/camunda.svg
+    keywords:
+    - automation
+    - business-rules
+    - bpm
+    - bpmn
+    - camunda-platform
+    - decision-engine
+    - dmn
+    - modeling
+    - orchestration
+    - process-automation
+    - process-engine
+    - process-orchestration
+    - workflow
+    - workflow-engine
+    maintainers:
+    - name: camunda
+      url: https://camunda.com
+    name: camunda-platform
+    sources:
+    - https://github.com/camunda/camunda-platform-helm
+    type: application
+    urls:
+    - https://github.com/camunda/camunda-platform-helm/releases/download/camunda-platform-8.7-12.14.6/camunda-platform-12.14.6.tgz
+    version: 12.14.6
+  - annotations:
+      artifacthub.io/changes: ""
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - image: docker.io/bitnamilegacy/elasticsearch:8.17.4
+        - image: docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+        - image: docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+        - image: docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+        - image: docker.io/camunda/connectors-bundle:8.7.34
+        - image: docker.io/camunda/console:8.7.118
         - image: docker.io/camunda/identity:8.7.30
         - image: docker.io/camunda/operate:8.7.46
         - image: docker.io/camunda/optimize:8.7.32
@@ -37157,4 +37265,4 @@ entries:
     urls:
     - https://github.com/camunda-community-hub/camunda-cloud-helm/releases/download/zeebe-zeeqs-helm-1.0.0/zeebe-zeeqs-helm-1.0.0.tgz
     version: 1.0.0
-generated: "2026-11-25T16:07:31.476654275Z"
+generated: "2026-11-25T16:48:06.04241792Z"
