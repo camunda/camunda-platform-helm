@@ -2107,6 +2107,18 @@ jobs:
             --namespace "$TEST_NAMESPACE" \
             --log-level info
 
+      - name: CI Cleanup - Delete the deployment's Entra login app registration
+        if: always() && (inputs.scenario == 'qa-entra' || inputs.test-identity == 'oidc-qa') && (env.CI_DEPLOYMENT_TTL == '' || inputs.always-delete-namespace)
+        continue-on-error: true
+        env:
+          ENTRA_APP_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
+        run: |
+          deploy-camunda entra cleanup-login-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info
+
       - name: CI Cleanup - Delete Auth0 OIDC clients
         # Mirrors the Entra cleanup above. The auth0 scenario provisions
         # per-component first-party clients in the tenant via

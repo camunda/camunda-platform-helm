@@ -95,6 +95,9 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_GKE_CLUSTER_LOCATION;
             secret/data/products/distribution/ci DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER;
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
           exportEnv: false
 
       - name: Import GitHub App credentials from Vault
@@ -136,6 +139,19 @@ jobs:
           kubectl annotate ns "${INPUTS_NAMESPACE}" janitor/ttl=1s --overwrite=true
         env:
           INPUTS_NAMESPACE: ${{ inputs.namespace }}
+
+      - name: CI Cleanup - Delete the deployment's Entra login app registration
+        if: inputs.distro-platform == 'gke' && contains(inputs.namespace, 'qaen')
+        continue-on-error: true
+        working-directory: scripts/deploy-camunda
+        shell: bash
+        env:
+          ENTRA_APP_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
+          INPUTS_NAMESPACE: ${{ inputs.namespace }}
+        run: |
+          go run . entra cleanup-login-app --namespace "${INPUTS_NAMESPACE}" --log-level info
 
       - name: Observe build status
         if: always()

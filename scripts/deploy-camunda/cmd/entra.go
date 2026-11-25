@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// newEntraCommand creates the "entra" parent command with ensure-venom-app and cleanup-venom-app subcommands.
+// newEntraCommand creates the "entra" parent command and its subcommands.
 func newEntraCommand() *cobra.Command {
 	entraCmd := &cobra.Command{
 		Use:   "entra",
@@ -34,6 +34,7 @@ func newEntraCommand() *cobra.Command {
 
 	entraCmd.AddCommand(newEntraEnsureCommand())
 	entraCmd.AddCommand(newEntraCleanupCommand())
+	entraCmd.AddCommand(newEntraCleanupLoginAppCommand())
 	entraCmd.AddCommand(newEntraUpdateRedirectURIsCommand())
 
 	return entraCmd
@@ -191,6 +192,44 @@ Environment variables (or set in .env file):
 
 			// CleanupVenomApp is best-effort — it logs warnings but doesn't return errors.
 			entra.CleanupVenomApp(context.Background(), opts)
+			return nil
+		},
+	}
+
+	f := cmd.Flags()
+	f.StringVarP(&namespace, "namespace", "n", "", "Kubernetes namespace (required)")
+	f.StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
+	f.StringVar(&envFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
+	_ = cmd.MarkFlagRequired("namespace")
+
+	return cmd
+}
+
+// newEntraCleanupLoginAppCommand creates the "entra cleanup-login-app" subcommand.
+func newEntraCleanupLoginAppCommand() *cobra.Command {
+	var (
+		namespace string
+		logLevel  string
+		envFile   string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "cleanup-login-app",
+		Short: "Delete the per-namespace Entra login app registration (camunda-oidc-<namespace>)",
+		Long: `Delete the Entra login app registration a qa-entra deployment provisions for itself.
+This is a best-effort cleanup — errors are logged but do not cause a non-zero exit.
+
+Environment variables (or set in .env file):
+  ENTRA_APP_DIRECTORY_ID  - Entra tenant/directory ID
+  ENTRA_APP_CLIENT_ID     - Parent app client ID
+  ENTRA_APP_CLIENT_SECRET - Parent app client secret`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := setupEntraLogging(logLevel); err != nil {
+				return err
+			}
+			loadEnvFile(envFile)
+
+			entra.CleanupLoginApp(context.Background(), entra.Options{Namespace: namespace})
 			return nil
 		},
 	}
