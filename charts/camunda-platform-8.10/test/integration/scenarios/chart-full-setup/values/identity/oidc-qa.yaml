@@ -69,7 +69,7 @@ orchestration:
       defaultRoles:
         admin:
           users:
-            - $INITIAL_CLAIM_VALUE
+            - $ENTRA_USER_OBJECT_ID
           clients:
             - $ENTRA_PARENT_CLIENT_ID
 
