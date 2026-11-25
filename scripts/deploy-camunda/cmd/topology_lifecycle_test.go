@@ -30,13 +30,13 @@ import (
 )
 
 func TestResolveTopologyReleases_RejectsAScenarioWithoutATopology(t *testing.T) {
-	_, err := resolveTopologyReleases("../../..", "8.10", "elasticsearch", "dogfood")
+	_, err := resolveTopologyReleases("../../..", "8.10", "elasticsearch", "demo")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "declares no topology")
 }
 
 func TestResolveTopologyReleases_RejectsAnUnknownScenario(t *testing.T) {
-	_, err := resolveTopologyReleases("../../..", "8.10", "not-a-scenario", "dogfood")
+	_, err := resolveTopologyReleases("../../..", "8.10", "not-a-scenario", "demo")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }
@@ -99,10 +99,10 @@ func TestPodReadiness_CapsTheNotReadyList(t *testing.T) {
 
 func TestPersistTopologyNamespaces_AttemptsEveryExistingNamespace(t *testing.T) {
 	releases := []topologyRelease{
-		{Namespace: "dogfood-hub"},
-		{Namespace: "dogfood-missing"},
-		{Namespace: "dogfood-failing"},
-		{Namespace: "dogfood-plain"},
+		{Namespace: "demo-hub"},
+		{Namespace: "demo-missing"},
+		{Namespace: "demo-failing"},
+		{Namespace: "demo-plain"},
 	}
 	var attempted []string
 	out := &bytes.Buffer{}
@@ -110,11 +110,11 @@ func TestPersistTopologyNamespaces_AttemptsEveryExistingNamespace(t *testing.T) 
 	err := persistTopologyNamespaces(
 		context.Background(), out, releases, "8760h",
 		func(_ context.Context, namespace string) (bool, error) {
-			return namespace != "dogfood-missing", nil
+			return namespace != "demo-missing", nil
 		},
 		func(_ context.Context, namespace string) error {
 			attempted = append(attempted, namespace)
-			if namespace == "dogfood-failing" {
+			if namespace == "demo-failing" {
 				return errors.New("apply failed")
 			}
 			return nil
@@ -122,17 +122,17 @@ func TestPersistTopologyNamespaces_AttemptsEveryExistingNamespace(t *testing.T) 
 	)
 
 	require.Error(t, err)
-	assert.Equal(t, []string{"dogfood-hub", "dogfood-failing", "dogfood-plain"}, attempted)
-	assert.Contains(t, err.Error(), "dogfood-missing")
-	assert.Contains(t, err.Error(), "dogfood-failing")
-	assert.Contains(t, out.String(), "persisted dogfood-plain")
+	assert.Equal(t, []string{"demo-hub", "demo-failing", "demo-plain"}, attempted)
+	assert.Contains(t, err.Error(), "demo-missing")
+	assert.Contains(t, err.Error(), "demo-failing")
+	assert.Contains(t, out.String(), "persisted demo-plain")
 }
 
 func TestWriteTopologyStatus_DistinguishesMissingFromAPIErrors(t *testing.T) {
 	releases := []topologyRelease{
-		{Role: "hub", Namespace: "dogfood-hub"},
-		{Role: "orchestration", Namespace: "dogfood-missing"},
-		{Role: "orchestration", Namespace: "dogfood-error"},
+		{Role: "hub", Namespace: "demo-hub"},
+		{Role: "orchestration", Namespace: "demo-missing"},
+		{Role: "orchestration", Namespace: "demo-error"},
 	}
 	out := &bytes.Buffer{}
 
@@ -140,9 +140,9 @@ func TestWriteTopologyStatus_DistinguishesMissingFromAPIErrors(t *testing.T) {
 		context.Background(), out,
 		func(_ context.Context, namespace string) (*corev1.PodList, error) {
 			switch namespace {
-			case "dogfood-missing":
+			case "demo-missing":
 				return nil, apierrors.NewNotFound(schema.GroupResource{Resource: "pods"}, namespace)
-			case "dogfood-error":
+			case "demo-error":
 				return nil, errors.New("temporary API failure")
 			default:
 				return &corev1.PodList{Items: []corev1.Pod{pod("ready", true)}}, nil
@@ -154,15 +154,15 @@ func TestWriteTopologyStatus_DistinguishesMissingFromAPIErrors(t *testing.T) {
 	assert.Equal(t, 1, missing)
 	assert.Equal(t, 0, unready)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "dogfood-error")
-	assert.Contains(t, out.String(), "| orchestration | `dogfood-missing` | absent |")
-	assert.Contains(t, out.String(), "| orchestration | `dogfood-error` | error |")
+	assert.Contains(t, err.Error(), "demo-error")
+	assert.Contains(t, out.String(), "| orchestration | `demo-missing` | absent |")
+	assert.Contains(t, out.String(), "| orchestration | `demo-error` | error |")
 }
 
 func TestWriteTopologyStatus_UsesHubHostAndContextPathForOptimize(t *testing.T) {
 	releases := []topologyRelease{
-		{Role: "hub", Namespace: "dogfood-hub"},
-		{Role: "optimize", Namespace: "dogfood-optplain", OptimizeContextPath: "/optimize-plain"},
+		{Role: "hub", Namespace: "demo-hub"},
+		{Role: "optimize", Namespace: "demo-optplain", OptimizeContextPath: "/optimize-plain"},
 	}
 	out := &bytes.Buffer{}
 
@@ -177,15 +177,15 @@ func TestWriteTopologyStatus_UsesHubHostAndContextPathForOptimize(t *testing.T) 
 	require.NoError(t, err)
 	assert.Zero(t, missing)
 	assert.Zero(t, unready)
-	assert.Contains(t, out.String(), "https://dogfood-hub.example.com/optimize-plain")
-	assert.NotContains(t, out.String(), "https://dogfood-optplain.example.com")
+	assert.Contains(t, out.String(), "https://demo-hub.example.com/optimize-plain")
+	assert.NotContains(t, out.String(), "https://demo-optplain.example.com")
 }
 
 func TestNewTopologyUninstallCommand_RejectsAMismatchedConfirmation(t *testing.T) {
 	cmd := newTopologyUninstallCommand()
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
-	cmd.SetArgs([]string{"--version", "8.10", "--scenario", "dogfood", "--base", "dogfood", "--confirm", "dogfoo"})
+	cmd.SetArgs([]string{"--version", "8.10", "--scenario", "demo", "--base", "demo", "--confirm", "dogfoo"})
 
 	err := cmd.Execute()
 

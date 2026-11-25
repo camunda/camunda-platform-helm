@@ -462,7 +462,7 @@ func TestApplyTopologyCredentialsManifest(t *testing.T) {
 
 	t.Run("declared manifest is rendered and wired into the deploy flags", func(t *testing.T) {
 		flags := &config.RuntimeFlags{}
-		remove, err := applyTopologyCredentialsManifest(flags, repoRoot, rel, "dogfood")
+		remove, err := applyTopologyCredentialsManifest(flags, repoRoot, rel, "demo")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -474,7 +474,7 @@ func TestApplyTopologyCredentialsManifest(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if string(got) != "key: dogfood-credentials\n" {
+		if string(got) != "key: demo-credentials\n" {
 			t.Errorf("rendered manifest = %q, want the base namespace substituted", got)
 		}
 		remove()
@@ -486,7 +486,7 @@ func TestApplyTopologyCredentialsManifest(t *testing.T) {
 	t.Run("no manifest leaves the flags unchanged", func(t *testing.T) {
 		flags := &config.RuntimeFlags{}
 		flags.Secrets.CredentialsManifest = "preset.yaml"
-		remove, err := applyTopologyCredentialsManifest(flags, repoRoot, "", "dogfood")
+		remove, err := applyTopologyCredentialsManifest(flags, repoRoot, "", "demo")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -498,7 +498,7 @@ func TestApplyTopologyCredentialsManifest(t *testing.T) {
 
 	t.Run("missing manifest is an error", func(t *testing.T) {
 		flags := &config.RuntimeFlags{}
-		if _, err := applyTopologyCredentialsManifest(flags, repoRoot, "charts/absent.yaml", "dogfood"); err == nil {
+		if _, err := applyTopologyCredentialsManifest(flags, repoRoot, "charts/absent.yaml", "demo"); err == nil {
 			t.Fatal("expected an error for a missing manifest")
 		}
 		if flags.Secrets.CredentialsManifest != "" {
