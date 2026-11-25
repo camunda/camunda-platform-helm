@@ -385,6 +385,9 @@ func ResolveScenario(flags *config.RuntimeFlags, root *config.RootConfig) error 
 	if err := config.ApplySelectionDefaults(flags, defaults, root); err != nil {
 		return err
 	}
+	if flags.Selection.Identity == qaEntraIdentity {
+		return fmt.Errorf("scenario %q provisions its own Entra login app; use matrix run --include-disabled", name)
+	}
 	flags.SelectionResolved = true
 	if flags.Deployment.ScenarioPath == "" {
 		flags.Deployment.ScenarioPath = filepath.Join(flags.Chart.ChartPath, "test/integration/scenarios/chart-full-setup")

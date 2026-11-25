@@ -185,6 +185,17 @@ func TestResolveScenarioInvalidMatch(t *testing.T) {
 	}, nil), "parse manifest")
 }
 
+func TestResolveScenarioRejectsQAEntra(t *testing.T) {
+	chart, err := filepath.Abs("../../../charts/camunda-platform-8.10")
+	require.NoError(t, err)
+	flags := &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: chart},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"qa-entra"}, Flow: "install", Platform: "gke"},
+	}
+	require.ErrorContains(t, ResolveScenario(flags, nil), "use matrix run")
+	require.False(t, flags.SelectionResolved)
+}
+
 func TestResolveScenarioDeclaredFeatureAndScript(t *testing.T) {
 	repoRoot := t.TempDir()
 	require.NoError(t, os.CopyFS(repoRoot, os.DirFS("testdata/registry-good")))
