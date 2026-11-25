@@ -2300,3 +2300,103 @@ func TestPermissionGrantRetryable(t *testing.T) {
 		})
 	}
 }
+
+func withTestGraph(t *testing.T, handlers map[string]http.HandlerFunc) *httptest.Server {
+	t.Helper()
+	srv := newTestServer(t, handlers)
+	t.Cleanup(srv.Close)
+	origGraph, origLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = srv.URL, srv.URL
+	t.Cleanup(func() {
+		graphBaseURL, loginBaseURL = origGraph, origLogin
+	})
+	return srv
+}
+
+func testLoginOpts(srv *httptest.Server) Options {
+	return Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	}
+}
+
+func TestCleanupLoginApp_AppExists(t *testing.T) {
+	var filter string
+	deleted := false
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			filter = r.URL.Query().Get("$filter")
+			jsonResponse(w, 200, map[string]any{
+				"value": []map[string]string{{"appId": "login-app", "id": "login-obj"}},
+			})
+		},
+		"DELETE /applications/login-obj": func(w http.ResponseWriter, r *http.Request) {
+			deleted = true
+			w.WriteHeader(204)
+		},
+	})
+
+	CleanupLoginApp(context.Background(), testLoginOpts(srv))
+
+	if want := "displayName eq 'camunda-oidc-test-ns'"; filter != want {
+		t.Errorf("$filter = %q, want %q", filter, want)
+	}
+	if !deleted {
+		t.Error("expected the login app to be deleted")
+	}
+}
+
+func TestCleanupLoginApp_AppNotFound(t *testing.T) {
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"value": []any{}})
+		},
+		"DELETE /applications/": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("unexpected DELETE when no login app exists")
+		},
+	})
+
+	CleanupLoginApp(context.Background(), testLoginOpts(srv))
+}
+
+func TestCleanupLoginApp_InvalidOpts(t *testing.T) {
+	t.Setenv("ENTRA_APP_DIRECTORY_ID", "")
+	t.Setenv("ENTRA_APP_CLIENT_ID", "")
+	t.Setenv("ENTRA_APP_CLIENT_SECRET", "")
+
+	CleanupLoginApp(context.Background(), Options{})
+}
+
+func TestCleanupLoginApp_RejectsNamespaceOutsideDNS1123(t *testing.T) {
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("unexpected token request for an invalid namespace")
+		},
+	})
+	opts := testLoginOpts(srv)
+	opts.Namespace = "x' or displayName eq 'Parent App"
+
+	CleanupLoginApp(context.Background(), opts)
+}
+
+func TestFindAppDoublesSingleQuotes(t *testing.T) {
+	var filter string
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			filter = r.URL.Query().Get("$filter")
+			jsonResponse(w, 200, map[string]any{"value": []any{}})
+		},
+	})
+
+	if _, _, err := findApp(context.Background(), srv.Client(), "token", "a' or displayName eq 'b"); err != nil {
+		t.Fatalf("findApp: %v", err)
+	}
+	if want := "displayName eq 'a'' or displayName eq ''b'"; filter != want {
+		t.Errorf("$filter = %q, want %q", filter, want)
+	}
+}

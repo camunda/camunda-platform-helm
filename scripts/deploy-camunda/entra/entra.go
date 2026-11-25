@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -153,8 +154,13 @@ func resolveOpts(opts *Options) error {
 	if opts.Namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
+	if !namespacePattern.MatchString(opts.Namespace) {
+		return fmt.Errorf("namespace %q is not a valid DNS-1123 label", opts.Namespace)
+	}
 	return nil
 }
+
+var namespacePattern = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`)
 
 func httpClient(opts *Options) *http.Client {
 	if opts.HTTPClient != nil {
@@ -463,7 +469,7 @@ func graphDelete(ctx context.Context, client *http.Client, token, path string) (
 func findApp(ctx context.Context, client *http.Client, token, displayName string) (string, string, error) {
 	logging.Logger.Debug().Str("displayName", displayName).Msg("Searching for existing Entra app registration")
 
-	path := fmt.Sprintf("/applications?$filter=displayName%%20eq%%20'%s'", url.PathEscape(displayName))
+	path := fmt.Sprintf("/applications?$filter=displayName%%20eq%%20'%s'", url.PathEscape(strings.ReplaceAll(displayName, "'", "''")))
 	body, err := graphGet(ctx, client, token, path)
 	if err != nil {
 		return "", "", fmt.Errorf("search for app %q: %w", displayName, err)
@@ -622,29 +628,20 @@ const (
 	loginAppSelfScope = "user_impersonation"
 )
 
-// loginAppRoleValue is the app role every login app exposes to the parent app,
-// so that a client-credentials token minted with the parent app's own
-// credentials carries this deployment's app id as its audience -- which is what
-// the components validate.
+// loginAppRoleValue is the app role each login app exposes to the parent app.
 const loginAppRoleValue = "camunda.api.access"
 
-// loginAppRoleID derives the role id from the app id rather than minting a new
-// one: PATCH replaces the appRoles collection wholesale, and Entra rejects the
-// removal of an enabled role that an assignment still points at.
+// loginAppRoleID derives a stable role id from the app id.
 func loginAppRoleID(appID string) string {
 	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("camunda-login-app-role:"+appID)).String()
 }
 
-// loginAppScopeID derives the user_impersonation scope id from the app id for
-// the same reason as loginAppRoleID: PATCH replaces oauth2PermissionScopes
-// wholesale, and Entra rejects dropping an enabled scope, so a re-deploy that
-// minted a fresh id would fail on the reused app.
+// loginAppScopeID derives a stable user_impersonation scope id from the app id.
 func loginAppScopeID(appID string) string {
 	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("camunda-login-app-scope:"+appID)).String()
 }
 
-// appRoleAssignRetryable keeps the duplicate-assignment answer off the retry
-// path: it is the steady state on every re-deploy, not a transient fault.
+// appRoleAssignRetryable treats a duplicate assignment as terminal.
 func appRoleAssignRetryable(statusCode int, body []byte, err error) bool {
 	if isDuplicateAppRoleAssignment(statusCode, body) {
 		return false
@@ -661,11 +658,8 @@ func isDuplicateAppRoleAssignment(statusCode int, body []byte) bool {
 
 // assignAPIAppRole assigns the login app's API role to the parent app's service
 // principal.
-//
-// Without it the parent app can authenticate, but Entra refuses to issue it a
-// token for "<loginAppID>/.default" -- so the E2E job's client-credentials
-// calls arrive with the shared app's audience and every component answers 401.
-func assignAPIAppRole(ctx context.Context, client *http.Client, token, appID, parentClientID, roleID string) error {
+func assignAPIAppRole(ctx context.Context, client *http.Client, token, parentClientID string, app loginAppRef) error {
+	appID, roleID := app.appID, app.roleID
 	resourceSPID, err := servicePrincipalID(ctx, client, token, appID)
 	if err != nil {
 		return fmt.Errorf("assign api app role: %w", err)
@@ -702,9 +696,8 @@ func assignAPIAppRole(ctx context.Context, client *http.Client, token, appID, pa
 	return nil
 }
 
-// permissionGrantRetryable keeps the duplicate-grant answer off the retry path
-// (a reused service principal already holds the AllPrincipals grants) and puts
-// the 400 Graph returns for a service principal it has not replicated yet on it.
+// permissionGrantRetryable treats a duplicate grant as terminal and retries the
+// 400 Graph returns for a not-yet-replicated service principal.
 func permissionGrantRetryable(statusCode int, body []byte, err error) bool {
 	if isDuplicatePermissionGrant(statusCode, body) {
 		return false
@@ -723,18 +716,8 @@ func isDuplicatePermissionGrant(statusCode int, body []byte) bool {
 	return bytes.Contains(body, []byte("Permission entry already exists"))
 }
 
-// grantAdminConsent records tenant-wide consent for the login app.
-//
-// Consent is held on the service principal, not on the app registration, and a
-// run-created principal starts with an empty ledger -- so Entra asks the user,
-// and this tenant withholds consent from ordinary accounts, leaving the pool
-// users on "Need admin approval" with no button to press. Writing the grants
-// here puts a fresh app where the shared app has been since an admin consented
-// it by hand: consentType AllPrincipals, which covers every user in the tenant.
-//
-// This is the one call that needs DelegatedPermissionGrant.ReadWrite.All on the
-// parent app. Without it Graph answers 403 Authorization_RequestDenied, and the
-// deployment is better off failing here than at the first sign-in.
+// grantAdminConsent records AllPrincipals consent for the login app's delegated
+// scopes. Requires DelegatedPermissionGrant.ReadWrite.All on the parent app.
 func grantAdminConsent(ctx context.Context, client *http.Client, token, appID string) error {
 	clientSPID, err := servicePrincipalID(ctx, client, token, appID)
 	if err != nil {
@@ -781,7 +764,7 @@ func grantAdminConsent(ctx context.Context, client *http.Client, token, appID st
 }
 
 // servicePrincipalID resolves an application id to its service principal object
-// id, retrying the 404 a principal created moments ago still answers with.
+// id, retrying 404s.
 func servicePrincipalID(ctx context.Context, client *http.Client, token, appID string) (string, error) {
 	path := fmt.Sprintf("/servicePrincipals(appId='%s')?$select=id", url.PathEscape(appID))
 	body, statusCode, err := withGraphRetry(ctx, "servicePrincipalID", servicePrincipalUpsertRetryable, func() ([]byte, int, error) {
@@ -822,14 +805,6 @@ func ensureServicePrincipal(ctx context.Context, client *http.Client, token, app
 	return nil
 }
 
-// grantAdminConsent consents to the login app's delegated scopes on behalf of
-// every user in the tenant.
-//
-// The tenant disables user consent, so the first sign-in to a freshly created
-// app stops on "Permissions requested" and then "Need admin approval" — a
-// screen no test account can get past. Recording the grants here is what the
-// portal's "Grant admin consent" button does, so the consent screen never
-// appears for the deployment's own app.
 // createVenomK8sSecretFunc is the function used to create the K8s secret.
 // It is a variable so tests can override it to avoid requiring a real cluster.
 var createVenomK8sSecretFunc = createVenomK8sSecret
@@ -888,26 +863,10 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 			Str("portalURL", portalURL).
 			Msg("Created venom app in Entra")
 
-		propogated := false
-		attempts := 0
-		successes := 0
-
-		for !propogated && attempts < 45 && successes < 5 {
-			foundAppID, foundObjID, findErr := findApp(ctx, client, token, displayName)
-			if findErr != nil {
-				logging.Logger.Warn().Err(findErr).Msg("Error while checking for app registration propagation")
-			}
-			if foundAppID != "" && foundObjID != "" {
-				appID = foundAppID
-				objectID = foundObjID
-				propogated = true
-				// success counter is used to ensure that the app is consistently found across multiple attempts, indicating that it has fully propagated through the system.
-				successes++
-			} else {
-				successes = 0
-			}
-			attempts++
-			time.Sleep(propagationSleepDuration)
+		if foundAppID, foundObjID, waitErr := awaitAppPropagation(ctx, client, token, displayName); waitErr != nil {
+			logging.Logger.Warn().Err(waitErr).Msg("Continuing before the venom app registration propagated")
+		} else {
+			appID, objectID = foundAppID, foundObjID
 		}
 
 	}
@@ -959,27 +918,31 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	}, nil
 }
 
-// awaitAppPropagation polls Graph until a freshly created app registration is
-// returned by a lookup on its display name. Graph creates the app on one
-// replica and a PATCH against the other replicas 404s until it catches up.
-func awaitAppPropagation(ctx context.Context, client *http.Client, token, displayName string, appID, objectID *string) error {
+// awaitAppPropagation polls findApp until displayName resolves, then writes the
+// found ids to appID and objectID.
+func awaitAppPropagation(ctx context.Context, client *http.Client, token, displayName string) (string, string, error) {
 	for range 45 {
 		foundAppID, foundObjID, err := findApp(ctx, client, token, displayName)
 		if err != nil {
 			logging.Logger.Warn().Err(err).Msg("Error while checking for app registration propagation")
 		}
 		if foundAppID != "" && foundObjID != "" {
-			*appID = foundAppID
-			*objectID = foundObjID
-			return nil
+			return foundAppID, foundObjID, nil
 		}
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return "", "", ctx.Err()
 		case <-time.After(propagationSleepDuration):
 		}
 	}
-	return fmt.Errorf("app registration %q did not propagate", displayName)
+	return "", "", fmt.Errorf("app registration %q did not propagate", displayName)
+}
+
+// loginAppRef identifies a login app registration and, once configured, its API role.
+type loginAppRef struct {
+	appID    string
+	objectID string
+	roleID   string
 }
 
 // loginAppDisplayName returns the deterministic Entra app display name of a
@@ -999,39 +962,12 @@ type LoginApp struct {
 	ClientSecret string
 }
 
-// configureLoginApp writes everything the deployment needs onto its own app
-// registration.
-//
-// The redirect URIs are set to exactly the ones host needs. The app belongs to
-// a single deployment, so the write owns both arrays outright: nothing is read
-// first, nothing is merged, and no other writer can lose an update against it.
-//
-// The app is also its own token resource: every component requests
-// "<clientId>/.default" and the orchestration cluster then validates the token
-// against the issuer in the values, https://login.microsoftonline.com/<tid>/v2.0.
-// A bare app registration has no identifierUris and no requestedAccessTokenVersion,
-// so Entra issues a v1 token whose iss is https://sts.windows.net/<tid>/ and the
-// cluster rejects it with 401. Setting the API block makes the app a v2 resource
-// so ".default" resolves against it.
-//
-// Being the resource is not enough on its own. The authorize endpoint reads the
-// list of valid resources off the CLIENT's requiredResourceAccess, so an app
-// that points ".default" at itself and lists nothing is refused with
-// AADSTS650057 ("List of valid resources from app registration:" and then
-// nothing) before the browser is ever redirected -- the sign-in page simply
-// comes back with no error on it. Hence the self scope and the matching self
-// entry.
-//
-// The scope is user-consentable, which is as far as this code can take it: the
-// tenant withholds consent from ordinary accounts, so the pool users land on
-// "Need admin approval" until the app carries an AllPrincipals grant -- the one
-// thing the shared app has that a fresh one does not. preAuthorizedApplications
-// was tried in that place and does not substitute for it.
-//
-// The permission entry createApp seeds is dropped on the way past: its all-zero
-// id is rejected by the authorize endpoint with AADSTS65006. openid, email and
-// profile need no entry at all.
-func configureLoginApp(ctx context.Context, client *http.Client, token, objectID, appID, host string) (string, error) {
+// configureLoginApp sets the login app's redirect URIs to exactly those host
+// needs, exposes the app as a v2 token resource with one delegated scope and one
+// application role, and drops the all-zero permission entry createApp seeds.
+// Returns the role id.
+func configureLoginApp(ctx context.Context, client *http.Client, token string, app loginAppRef, host string) (string, error) {
+	objectID, appID := app.objectID, app.appID
 	web, spa := buildRedirectURIs(host)
 	scopeID := loginAppScopeID(appID)
 	roleID := loginAppRoleID(appID)
@@ -1067,7 +1003,7 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 			"resourceAccess": []map[string]any{{"id": scopeID, "type": "Scope"}},
 		}},
 	}
-	if err := patchLoginApp(ctx, client, token, path, "configureLoginApp", resource); err != nil {
+	if err := patchLoginApp(ctx, client, token, path, resource); err != nil {
 		return "", err
 	}
 
@@ -1082,7 +1018,8 @@ func configureLoginApp(ctx context.Context, client *http.Client, token, objectID
 
 // patchLoginApp applies one PATCH to the login app registration, failing on any
 // status withGraphRetry does not treat as transient.
-func patchLoginApp(ctx context.Context, client *http.Client, token, path, step string, payload map[string]any) error {
+func patchLoginApp(ctx context.Context, client *http.Client, token, path string, payload map[string]any) error {
+	const step = "configureLoginApp"
 	body, statusCode, err := withGraphRetry(ctx, step, nil, func() ([]byte, int, error) {
 		return graphPatch(ctx, client, token, path, payload, nil)
 	})
@@ -1153,13 +1090,6 @@ func awaitLoginAppResource(ctx context.Context, opts *Options, appID, secret str
 // OIDC sign-in, named "camunda-oidc-<namespace>". The caller substitutes its
 // appId and secret for ENTRA_APP_CLIENT_ID / ENTRA_APP_CLIENT_SECRET so every
 // component of this deployment authenticates against it.
-//
-// It exists because the shared QA app registration holds one redirectUris
-// array for every CI deployment at once. Graph offers no conditional write on
-// /applications, so two deployments registering concurrently both read the
-// array, both write their own version, and the later write silently drops the
-// earlier deployment's URIs — which then fails every sign-in with AADSTS50011.
-// A per-namespace app has an array only this deployment writes.
 func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*LoginApp, error) {
 	if err := resolveOpts(&opts); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
@@ -1202,12 +1132,12 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 			Str("objectId", objectID).
 			Str("portalURL", entraPortalAppURL(appID)).
 			Msg("Created the deployment's login app in Entra")
-		if err := awaitAppPropagation(ctx, client, token, displayName, &appID, &objectID); err != nil {
+		if appID, objectID, err = awaitAppPropagation(ctx, client, token, displayName); err != nil {
 			return nil, fmt.Errorf("entra: %w", err)
 		}
 	}
 
-	roleID, err := configureLoginApp(ctx, client, token, objectID, appID, ingressHost)
+	roleID, err := configureLoginApp(ctx, client, token, loginAppRef{appID: appID, objectID: objectID}, ingressHost)
 	if err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
@@ -1222,7 +1152,7 @@ func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (*Log
 	if err := grantAdminConsent(ctx, client, token, appID); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
-	if err := assignAPIAppRole(ctx, client, token, appID, opts.ClientID, roleID); err != nil {
+	if err := assignAPIAppRole(ctx, client, token, opts.ClientID, loginAppRef{appID: appID, roleID: roleID}); err != nil {
 		return nil, fmt.Errorf("entra: %w", err)
 	}
 	if err := awaitLoginAppResource(ctx, &opts, appID, secret); err != nil {

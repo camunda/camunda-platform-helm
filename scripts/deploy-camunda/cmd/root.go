@@ -140,7 +140,7 @@ func NewRootCommand() *cobra.Command {
 	f.StringVar(&flags.Test.TestExclude, "test-exclude", "", "Pipe-separated regex of test suites to exclude (passed as --grep-invert to Playwright)")
 	f.BoolVar(&flags.Secrets.UseVaultBackedSecrets, "use-vault-backed-secrets", false, "Use vault-backed external secrets (selects -vault.yaml suffix files)")
 	// Selection + composition model (new - preferred over deprecated --scenario)
-	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection (see values/identity/ or shell completion)")
+	f.StringVar(&flags.Selection.Identity, "identity", "", "Identity selection (see values/identity/ or shell completion); oidc-qa runs only through matrix run --include-disabled")
 	f.StringVar(&flags.Selection.Persistence, "persistence", "", "Persistence selection (see values/persistence/ or shell completion)")
 	f.StringVar(&flags.Selection.TestPlatform, "test-platform", "", "Test platform selection (see values/platform/ or shell completion)")
 	f.StringSliceVar(&flags.Selection.Features, "features", nil, "Feature selections, comma-separated (see values/features/ or shell completion)")

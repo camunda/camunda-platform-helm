@@ -120,11 +120,6 @@ type RunResult struct {
 	// delete the corresponding Entra app registration.
 	venomOpts *entra.Options
 
-	// loginOpts stores the Entra options used to provision the deployment's own
-	// OIDC login app. Populated only for the QA identity layer. Used during
-	// cleanup to delete that app registration.
-	loginOpts *entra.Options
-
 	// auth0Opts stores the Auth0 options used to provision per-component clients
 	// for Auth0 entries. Populated only when entry.Identity == "auth0". Used
 	// during cleanup to delete the corresponding Auth0 clients.
@@ -1374,11 +1369,11 @@ func cleanupEntry(ctx context.Context, result RunResult) {
 	}
 
 	// Clean up the deployment's own Entra login app (QA identity layer only).
-	if result.loginOpts != nil {
+	if result.venomOpts != nil && result.Entry.Identity == qaEntraIdentity {
 		logging.Logger.Info().
 			Str("namespace", result.Namespace).
 			Msg("Cleaning up the deployment's Entra login app registration")
-		entra.CleanupLoginApp(ctx, *result.loginOpts)
+		entra.CleanupLoginApp(ctx, *result.venomOpts)
 	}
 
 	// Clean up Auth0 clients for Auth0 entries (best-effort, before namespace deletion).
