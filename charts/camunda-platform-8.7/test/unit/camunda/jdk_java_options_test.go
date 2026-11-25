@@ -106,6 +106,25 @@ func TestKeycloakJdkJavaOptionsValueFrom(t *testing.T) {
 	require.NotContains(t, out, `"null -XX:-UseBASE64Intrinsics"`)
 }
 
+func TestKeycloakJdkJavaOptionsLiteralAndValueFrom(t *testing.T) {
+	t.Parallel()
+
+	out := renderJdkOptionsTemplate(t, map[string]string{
+		"identityKeycloak.extraEnvVars[0].name":                        "JDK_JAVA_OPTIONS",
+		"identityKeycloak.extraEnvVars[0].value":                       "-Dfoo=bar",
+		"identityKeycloak.extraEnvVars[1].name":                        "JDK_JAVA_OPTIONS",
+		"identityKeycloak.extraEnvVars[1].valueFrom.secretKeyRef.name": "jvm",
+		"identityKeycloak.extraEnvVars[1].valueFrom.secretKeyRef.key":  "opts",
+	}, "charts/identityKeycloak/templates/statefulset.yaml")
+
+	// The valueFrom entry is kept after the merged literal, so Kubernetes applies it last.
+	require.Equal(t, 2, strings.Count(out, "name: JDK_JAVA_OPTIONS"))
+	merged := strings.Index(out, `"-Dfoo=bar -XX:-UseBASE64Intrinsics"`)
+	secretRef := strings.Index(out, "secretKeyRef:")
+	require.NotEqual(t, -1, merged)
+	require.Greater(t, secretRef, merged)
+}
+
 func TestKeycloakEmptyJdkJavaOptionsValue(t *testing.T) {
 	t.Parallel()
 
