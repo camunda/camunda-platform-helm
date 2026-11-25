@@ -472,6 +472,11 @@ func prepareEntraEntry(ctx context.Context, flags *config.RuntimeFlags, namespac
 			Msg("OIDC Phase 2 — creating venom-entra-credentials K8s secret (PreInstallHook)")
 		return entra.CreateVenomK8sSecret(hookCtx, kubeCtx, namespace, app, audience)
 	})
+	if login != nil {
+		flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
+			return entra.CreateLoginK8sSecret(hookCtx, kubeCtx, namespace, login)
+		})
+	}
 	return opts, loginCreated, nil
 }
 
@@ -485,7 +490,6 @@ func applyEntraCredentials(flags *config.RuntimeFlags, parentClientID, venomAppI
 	audience := parentClientID
 	if login != nil {
 		flags.ExtraEnv["ENTRA_APP_CLIENT_ID"] = login.AppID
-		flags.ExtraEnv["ENTRA_APP_CLIENT_SECRET"] = login.ClientSecret
 		audience = login.AppID
 	}
 	flags.ExtraEnv["ENTRA_PARENT_CLIENT_ID"] = parentClientID

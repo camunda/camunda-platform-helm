@@ -1255,8 +1255,8 @@ func tokenHasRole(tokenResponse []byte, role string) bool {
 
 // EnsureLoginApp provisions a deployment's own Entra app registration for
 // OIDC sign-in, named "camunda-oidc-<namespace>". The caller substitutes its
-// appId and secret for ENTRA_APP_CLIENT_ID / ENTRA_APP_CLIENT_SECRET so every
-// component of this deployment authenticates against it.
+// appId for ENTRA_APP_CLIENT_ID and stores its secret with CreateLoginK8sSecret
+// so every component of this deployment authenticates against it.
 //
 // created reports whether this call registered the app, also when it fails
 // later.
@@ -1354,6 +1354,40 @@ func createVenomK8sSecret(ctx context.Context, kubeContext, namespace, venomClie
 	if err := k8sClient.EnsureOpaqueSecret(ctx, namespace, "venom-entra-credentials", secretData); err != nil {
 		return fmt.Errorf("apply secret: %w", err)
 	}
+	return nil
+}
+
+// LoginAppSecretName and LoginAppSecretKey locate the K8s Secret holding a
+// deployment's login app client secret, which the oidc-qa values layers
+// reference through existingSecret.
+const (
+	LoginAppSecretName = "entra-login-app-credentials"
+	LoginAppSecretKey  = "client-secret"
+)
+
+var createLoginK8sSecretFunc = createLoginK8sSecret
+
+func createLoginK8sSecret(ctx context.Context, kubeContext, namespace, clientSecret string) error {
+	k8sClient, err := kube.NewClient("", kubeContext)
+	if err != nil {
+		return fmt.Errorf("create K8s client: %w", err)
+	}
+	if err := k8sClient.EnsureOpaqueSecret(ctx, namespace, LoginAppSecretName, map[string]string{LoginAppSecretKey: clientSecret}); err != nil {
+		return fmt.Errorf("apply secret: %w", err)
+	}
+	return nil
+}
+
+// CreateLoginK8sSecret stores the login app's client secret in the
+// LoginAppSecretName Secret of namespace.
+func CreateLoginK8sSecret(ctx context.Context, kubeContext, namespace string, app *LoginApp) error {
+	if err := createLoginK8sSecretFunc(ctx, kubeContext, namespace, app.ClientSecret); err != nil {
+		return fmt.Errorf("entra: create login app K8s secret: %w", err)
+	}
+	logging.Logger.Info().
+		Str("namespace", namespace).
+		Str("secretName", LoginAppSecretName).
+		Msg("Login app client secret stored in K8s secret")
 	return nil
 }
 

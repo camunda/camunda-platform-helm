@@ -34,11 +34,10 @@ func TestApplyEntraCredentials(t *testing.T) {
 			login:        &entra.LoginApp{AppID: "login-app", ClientSecret: "login-secret"},
 			wantAudience: "login-app",
 			wantEnv: map[string]string{
-				"ENTRA_APP_CLIENT_ID":     "login-app",
-				"ENTRA_APP_CLIENT_SECRET": "login-secret",
-				"ENTRA_PARENT_CLIENT_ID":  "parent-app",
-				"VENOM_CLIENT_ID":         "venom-app",
-				"CONNECTORS_CLIENT_ID":    "login-app",
+				"ENTRA_APP_CLIENT_ID":    "login-app",
+				"ENTRA_PARENT_CLIENT_ID": "parent-app",
+				"VENOM_CLIENT_ID":        "venom-app",
+				"CONNECTORS_CLIENT_ID":   "login-app",
 			},
 		},
 		{

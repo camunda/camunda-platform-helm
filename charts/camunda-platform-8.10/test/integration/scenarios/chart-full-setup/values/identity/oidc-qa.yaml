@@ -22,14 +22,16 @@ global:
         audience: $ENTRA_APP_CLIENT_ID
         # this existingSecret must be a string literal
         secret:
-          inlineSecret: $ENTRA_APP_CLIENT_SECRET
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
         initialClaimValue: ""
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.identity.contextPath }}"
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          inlineSecret: $ENTRA_APP_CLIENT_SECRET
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.optimize.contextPath }}"
       webModeler:
         clientId: $ENTRA_APP_CLIENT_ID
@@ -42,7 +44,8 @@ global:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          inlineSecret: $ENTRA_APP_CLIENT_SECRET
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.console.contextPath }}"
 
@@ -57,7 +60,8 @@ orchestration:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          inlineSecret: $ENTRA_APP_CLIENT_SECRET
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
     initialization:
       defaultRoles:
         admin:
@@ -74,7 +78,8 @@ connectors:
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         secret:
-          inlineSecret: $ENTRA_APP_CLIENT_SECRET
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
 console:

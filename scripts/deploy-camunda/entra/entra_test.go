@@ -2402,6 +2402,35 @@ func TestEnsureLoginApp_ReportsCreatedOnFailure(t *testing.T) {
 	}
 }
 
+func TestCreateLoginK8sSecret(t *testing.T) {
+	var gotContext, gotNamespace, gotSecret string
+	orig := createLoginK8sSecretFunc
+	createLoginK8sSecretFunc = func(_ context.Context, kubeContext, namespace, clientSecret string) error {
+		gotContext, gotNamespace, gotSecret = kubeContext, namespace, clientSecret
+		return nil
+	}
+	t.Cleanup(func() { createLoginK8sSecretFunc = orig })
+
+	if err := CreateLoginK8sSecret(context.Background(), "kube-ctx", "test-ns", &LoginApp{AppID: "login-app-id", ClientSecret: "login-secret"}); err != nil {
+		t.Fatalf("CreateLoginK8sSecret: %v", err)
+	}
+	if gotContext != "kube-ctx" || gotNamespace != "test-ns" || gotSecret != "login-secret" {
+		t.Errorf("secret written with context=%q namespace=%q secret=%q", gotContext, gotNamespace, gotSecret)
+	}
+}
+
+func TestCreateLoginK8sSecret_PropagatesError(t *testing.T) {
+	orig := createLoginK8sSecretFunc
+	createLoginK8sSecretFunc = func(context.Context, string, string, string) error {
+		return fmt.Errorf("forbidden")
+	}
+	t.Cleanup(func() { createLoginK8sSecretFunc = orig })
+
+	if err := CreateLoginK8sSecret(context.Background(), "kube-ctx", "test-ns", &LoginApp{ClientSecret: "login-secret"}); err == nil {
+		t.Fatal("expected an error when the secret cannot be written")
+	}
+}
+
 // TestEnsureLoginApp_RequiresIngressHost guards against provisioning an app
 // with no redirect URI, which would fail every sign-in with AADSTS50011.
 func TestEnsureLoginApp_RequiresIngressHost(t *testing.T) {
