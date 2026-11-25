@@ -641,10 +641,15 @@ func loginAppScopeID(appID string) string {
 	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("camunda-login-app-scope:"+appID)).String()
 }
 
-// appRoleAssignRetryable treats a duplicate assignment as terminal.
+// appRoleAssignRetryable treats a duplicate assignment as terminal and retries
+// the 400 Graph returns while the login app's new role is not yet replicated.
 func appRoleAssignRetryable(statusCode int, body []byte, err error) bool {
 	if isDuplicateAppRoleAssignment(statusCode, body) {
 		return false
+	}
+	if statusCode == http.StatusBadRequest &&
+		bytes.Contains(body, []byte("Permission being assigned was not found")) {
+		return true
 	}
 	return defaultRetryable(statusCode, body, err)
 }

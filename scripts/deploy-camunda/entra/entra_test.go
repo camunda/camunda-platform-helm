@@ -2400,3 +2400,24 @@ func TestFindAppDoublesSingleQuotes(t *testing.T) {
 		t.Errorf("$filter = %q, want %q", filter, want)
 	}
 }
+
+func TestAppRoleAssignRetryable(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+		want   bool
+	}{
+		{"role not yet replicated", http.StatusBadRequest, `{"error":{"code":"Request_BadRequest","message":"Permission being assigned was not found on application"}}`, true},
+		{"duplicate assignment", http.StatusBadRequest, `{"error":{"message":"Permission being assigned already exists on the object"}}`, false},
+		{"generic bad request", http.StatusBadRequest, `{"error":{"code":"Request_BadRequest","message":"Invalid principal"}}`, false},
+		{"throttled", http.StatusTooManyRequests, ``, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := appRoleAssignRetryable(tc.status, []byte(tc.body), nil); got != tc.want {
+				t.Errorf("appRoleAssignRetryable(%d) = %v, want %v", tc.status, got, tc.want)
+			}
+		})
+	}
+}
