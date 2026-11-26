@@ -5,7 +5,7 @@ repos:
     hooks:
       - id: action-pin-spacing
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: c92afdf2c6ca336aaa8f39e2bd8d48f62dbd8e1f  # frozen: v1.31.1
+    rev: c7d31dc612dffdd4d3b2f2b88b9660d3ab057ee8  # frozen: v1.33.1
     hooks:
       - id: zizmor
         args: [--no-progress, --min-severity=high, --config=.github/zizmor.yml]
