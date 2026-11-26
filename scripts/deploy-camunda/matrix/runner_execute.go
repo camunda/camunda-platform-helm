@@ -285,8 +285,10 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 
 	var venomOpts *entra.Options
 	if entra.IsOIDCEntry(entry.Auth, entry.Identity) {
-		venomOpts, err = prepareEntraEntry(ctx, flags, namespace, kubeCtx)
+		var loginCreated bool
+		venomOpts, loginCreated, err = prepareEntraEntry(ctx, flags, namespace, kubeCtx, entry.Identity)
 		if err != nil {
+			cleanupEntraApps(ctx, venomOpts, loginCreated)
 			return RunResult{Entry: entry, Namespace: namespace, KubeContext: kubeCtx, Error: err}
 		}
 	}
@@ -390,6 +392,23 @@ func executeEntry(ctx context.Context, entry Entry, opts RunOptions) RunResult {
 	return finishEntry(ctx, result, opts)
 }
 
+// cleanupEntraApps deletes an entry's venom app and, when deleteLoginApp is
+// set, its login app. It runs on a context detached from ctx's cancellation,
+// bounded by entraCleanupTimeout.
+func cleanupEntraApps(ctx context.Context, venomOpts *entra.Options, deleteLoginApp bool) {
+	if venomOpts == nil {
+		return
+	}
+	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), entraCleanupTimeout)
+	defer cancel()
+	entra.CleanupVenomApp(cleanupCtx, *venomOpts)
+	if deleteLoginApp {
+		entra.CleanupLoginApp(cleanupCtx, *venomOpts)
+	}
+}
+
+const entraCleanupTimeout = 5 * time.Minute
+
 func finishEntry(ctx context.Context, result RunResult, opts RunOptions) RunResult {
 	if opts.Cleanup {
 		if opts.OnPhaseChange != nil {
@@ -415,9 +434,15 @@ func readIdentityEnv(provider, envFile string) map[string]string {
 	return values
 }
 
-func prepareEntraEntry(ctx context.Context, flags *config.RuntimeFlags, namespace, kubeCtx string) (*entra.Options, error) {
+// qaEntraIdentity is the identity layer whose deployments own their Entra app
+// registration instead of sharing the QA one.
+const qaEntraIdentity = "oidc-qa"
+
+// prepareEntraEntry provisions an entry's Entra apps. loginCreated reports
+// whether it registered the oidc-qa login app.
+func prepareEntraEntry(ctx context.Context, flags *config.RuntimeFlags, namespace, kubeCtx, identity string) (opts *entra.Options, loginCreated bool, err error) {
 	envMap := readIdentityEnv("Entra", flags.EnvFile)
-	opts := entra.Options{
+	opts = &entra.Options{
 		Namespace: namespace, KubeContext: kubeCtx, SkipK8sSecret: true,
 		DirectoryID:  envMap["ENTRA_APP_DIRECTORY_ID"],
 		ClientID:     envMap["ENTRA_APP_CLIENT_ID"],
@@ -425,35 +450,68 @@ func prepareEntraEntry(ctx context.Context, flags *config.RuntimeFlags, namespac
 	}
 	logging.Logger.Info().Str("namespace", namespace).
 		Msg("OIDC entry detected — provisioning venom Entra app (Phase 1: API + env vars)")
-	app, err := entra.EnsureVenomApp(ctx, opts)
+	app, err := entra.EnsureVenomApp(ctx, *opts)
 	if err != nil {
-		return nil, fmt.Errorf("entra: provision venom app: %w", err)
+		return opts, false, fmt.Errorf("entra: provision venom app: %w", err)
 	}
-	audience := opts.ClientID
-	if audience == "" {
-		audience = os.Getenv("ENTRA_APP_CLIENT_ID")
+	if opts.ClientID == "" {
+		opts.ClientID = os.Getenv("ENTRA_APP_CLIENT_ID")
 	}
-	if flags.ExtraEnv == nil {
-		flags.ExtraEnv = make(map[string]string)
+
+	var login *entra.LoginApp
+	if identity == qaEntraIdentity {
+		login, loginCreated, err = entra.EnsureLoginApp(ctx, *opts, resolveIngressHost(flags))
+		if err != nil {
+			return opts, loginCreated, fmt.Errorf("entra: provision login app: %w", err)
+		}
 	}
-	flags.ExtraEnv["VENOM_CLIENT_ID"] = app.AppID
-	flags.ExtraEnv["CONNECTORS_CLIENT_ID"] = audience
+
+	audience := applyEntraCredentials(flags, opts.ClientID, app.AppID, login)
 	flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
 		logging.Logger.Info().Str("namespace", namespace).
 			Msg("OIDC Phase 2 — creating venom-entra-credentials K8s secret (PreInstallHook)")
 		return entra.CreateVenomK8sSecret(hookCtx, kubeCtx, namespace, app, audience)
 	})
-	return &opts, nil
+	if login != nil {
+		flags.PreInstallHooks = append(flags.PreInstallHooks, func(hookCtx context.Context) error {
+			return entra.CreateLoginK8sSecret(hookCtx, kubeCtx, namespace, login)
+		})
+	}
+	return opts, loginCreated, nil
+}
+
+// applyEntraCredentials writes the Entra client ids the values layers resolve
+// into flags.ExtraEnv and returns the audience component tokens are issued for:
+// the login app's id when login is set, else the parent app's.
+func applyEntraCredentials(flags *config.RuntimeFlags, parentClientID, venomAppID string, login *entra.LoginApp) string {
+	if flags.ExtraEnv == nil {
+		flags.ExtraEnv = make(map[string]string)
+	}
+	audience := parentClientID
+	if login != nil {
+		flags.ExtraEnv["ENTRA_APP_CLIENT_ID"] = login.AppID
+		audience = login.AppID
+	}
+	flags.ExtraEnv["ENTRA_PARENT_CLIENT_ID"] = parentClientID
+	flags.ExtraEnv["VENOM_CLIENT_ID"] = venomAppID
+	flags.ExtraEnv["CONNECTORS_CLIENT_ID"] = audience
+	return audience
+}
+
+// resolveIngressHost resolves the deployment's ingress hostname for the
+// identity providers that register redirect URIs.
+func resolveIngressHost(flags *config.RuntimeFlags) string {
+	if host := flags.ResolveIngressHostname(); host != "" {
+		return host
+	}
+	if host := os.Getenv("CAMUNDA_HOSTNAME"); host != "" {
+		return host
+	}
+	return os.Getenv("TEST_INGRESS_HOST")
 }
 
 func prepareAuth0Entry(ctx context.Context, flags *config.RuntimeFlags, namespace, kubeCtx string) (*auth0.Options, error) {
-	ingressHost := flags.ResolveIngressHostname()
-	if ingressHost == "" {
-		ingressHost = os.Getenv("CAMUNDA_HOSTNAME")
-	}
-	if ingressHost == "" {
-		ingressHost = os.Getenv("TEST_INGRESS_HOST")
-	}
+	ingressHost := resolveIngressHost(flags)
 	envMap := readIdentityEnv("Auth0", flags.EnvFile)
 	opts := auth0.Options{
 		Namespace: namespace, KubeContext: kubeCtx, IngressHost: ingressHost, SkipK8sSecret: true,

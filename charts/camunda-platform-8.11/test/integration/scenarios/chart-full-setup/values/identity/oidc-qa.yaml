@@ -5,6 +5,9 @@
 global:
   annotations:
     keycloak-token-url: "https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/oauth2/v2.0/token"
+  security:
+    authentication:
+      method: oidc
   identity:
     auth:
       issuer: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/v2.0
@@ -19,29 +22,30 @@ global:
         audience: $ENTRA_APP_CLIENT_ID
         # this existingSecret must be a string literal
         secret:
-          inlineSecret: $ENTRA_APP_CLIENT_SECRET
-        initialClaimValue: $INITIAL_CLAIM_VALUE
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
+        initialClaimValue: ""
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.identity.contextPath }}"
       optimize:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.optimize.contextPath }}"
       webModeler:
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         publicApiAudience: $ENTRA_APP_CLIENT_ID
-        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.webModeler.contextPath }}"
+        redirectUrl: "https://{{ .Values.global.host }}{{ .Values.camundaHub.contextPath | default .Values.webModeler.contextPath }}"
       console:
         wellKnown: https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.console.contextPath }}"
 
@@ -52,16 +56,19 @@ orchestration:
       oidc:
         redirectUrl: "https://{{ .Values.global.host }}{{ .Values.orchestration.contextPath }}"
         usernameClaim: oid
+        clientIdClaim: azp
         clientId: $ENTRA_APP_CLIENT_ID
         audience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
     initialization:
       defaultRoles:
         admin:
           users:
-            - $INITIAL_CLAIM_VALUE
+            - $ENTRA_USER_OBJECT_ID
+          clients:
+            - $ENTRA_PARENT_CLIENT_ID
 
 connectors:
   security:
@@ -71,11 +78,43 @@ connectors:
         audience: $ENTRA_APP_CLIENT_ID
         clientApiAudience: $ENTRA_APP_CLIENT_ID
         secret:
-          existingSecret: integration-test-credentials
-          existingSecretKey: entra-child-app-client-secret
+          existingSecret: entra-login-app-credentials
+          existingSecretKey: client-secret
         tokenScope: $ENTRA_APP_CLIENT_ID/.default
 
 console:
   env:
     - name: CAMUNDA_IDENTITY_JWKS_URL
       value: https://login.microsoftonline.com/$ENTRA_APP_DIRECTORY_ID/discovery/v2.0/keys
+
+identity:
+  env:
+    - name: IDENTITY_MAPPINGRULES_0_NAME
+      value: "QA E2E component access"
+    - name: IDENTITY_MAPPINGRULES_0_CLAIMNAME
+      value: "tid"
+    - name: IDENTITY_MAPPINGRULES_0_CLAIMVALUE
+      value: "$ENTRA_APP_DIRECTORY_ID"
+    - name: IDENTITY_MAPPINGRULES_0_OPERATOR
+      value: "EQUALS"
+    - name: IDENTITY_MAPPINGRULES_0_RULETYPE
+      value: "ROLE"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_0
+      value: "ManagementIdentity"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_1
+      value: "Hub"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_2
+      value: "Hub Admin"
+    - name: IDENTITY_MAPPINGRULES_0_APPLIEDROLENAMES_3
+      value: "Optimize"
+
+optimize:
+  env:
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_0
+      value: "openid"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_1
+      value: "profile"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_2
+      value: "email"
+    - name: CAMUNDA_SECURITY_AUTHENTICATION_OIDC_SCOPE_3
+      value: "$ENTRA_APP_CLIENT_ID/.default"

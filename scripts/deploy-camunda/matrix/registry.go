@@ -401,6 +401,16 @@ func ResolveScenario(flags *config.RuntimeFlags, root *config.RootConfig) error 
 	return nil
 }
 
+// RejectDirectQAEntra refuses a direct deploy on the oidc-qa identity layer,
+// whether it came from --identity or a registry scenario: only matrix run
+// provisions the deployment's own Entra login app and ENTRA_PARENT_CLIENT_ID.
+func RejectDirectQAEntra(flags *config.RuntimeFlags) error {
+	if flags.Selection.Identity != qaEntraIdentity {
+		return nil
+	}
+	return fmt.Errorf("identity %q provisions its own Entra login app; use matrix run --include-disabled", qaEntraIdentity)
+}
+
 func selectionDifferences(declared, effective config.SelectionFlags) []string {
 	var differences []string
 	for _, field := range []struct{ name, declared, effective string }{

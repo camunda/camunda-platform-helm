@@ -185,6 +185,25 @@ func TestResolveScenarioInvalidMatch(t *testing.T) {
 	}, nil), "parse manifest")
 }
 
+func TestResolveScenarioRejectsQAEntra(t *testing.T) {
+	chart, err := filepath.Abs("../../../charts/camunda-platform-8.10")
+	require.NoError(t, err)
+	flags := &config.RuntimeFlags{
+		Chart:      config.ChartFlags{ChartPath: chart},
+		Deployment: config.DeploymentFlags{Scenarios: []string{"qa-entra"}, Flow: "install", Platform: "gke"},
+	}
+	require.NoError(t, ResolveScenario(flags, nil))
+	require.ErrorContains(t, RejectDirectQAEntra(flags), "use matrix run")
+
+	explicit := &config.RuntimeFlags{
+		Selection: config.SelectionFlags{Identity: "oidc-qa", Persistence: "elasticsearch"},
+	}
+	require.ErrorContains(t, RejectDirectQAEntra(explicit), "use matrix run")
+	require.NoError(t, RejectDirectQAEntra(&config.RuntimeFlags{
+		Selection: config.SelectionFlags{Identity: "oidc"},
+	}))
+}
+
 func TestResolveScenarioDeclaredFeatureAndScript(t *testing.T) {
 	repoRoot := t.TempDir()
 	require.NoError(t, os.CopyFS(repoRoot, os.DirFS("testdata/registry-good")))

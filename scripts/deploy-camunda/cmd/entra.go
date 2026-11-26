@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// newEntraCommand creates the "entra" parent command with ensure-venom-app and cleanup-venom-app subcommands.
+// newEntraCommand creates the "entra" parent command and its subcommands.
 func newEntraCommand() *cobra.Command {
 	entraCmd := &cobra.Command{
 		Use:   "entra",
@@ -34,6 +34,7 @@ func newEntraCommand() *cobra.Command {
 
 	entraCmd.AddCommand(newEntraEnsureCommand())
 	entraCmd.AddCommand(newEntraCleanupCommand())
+	entraCmd.AddCommand(newEntraCleanupLoginAppCommand())
 	entraCmd.AddCommand(newEntraUpdateRedirectURIsCommand())
 
 	return entraCmd
@@ -103,10 +104,9 @@ Environment variables (or set in .env file):
 }
 
 // newEntraUpdateRedirectURIsCommand creates the "entra update-redirect-uris" subcommand.
-// It replaces the bash-based Taskfile task that was accumulating redirect URIs
-// unboundedly. This Go implementation prunes stale CI URIs before adding the
-// current deployment's URIs, preventing the Microsoft Graph API limit from
-// being exceeded.
+// It replaces the current host's redirect URIs, keeps other deployments' URIs,
+// and evicts the oldest CI deployments only when the app would exceed Entra's
+// redirect URI limit.
 func newEntraUpdateRedirectURIsCommand() *cobra.Command {
 	var (
 		ingressHost string
@@ -123,10 +123,14 @@ func newEntraUpdateRedirectURIsCommand() *cobra.Command {
 This command:
 1. Authenticates to Microsoft Graph API using parent app credentials.
 2. Fetches the current web and SPA redirect URIs from the app registration.
-3. Removes stale CI redirect URIs (those matching *.ci.distro.ultrawombat.com).
+3. Replaces the current host's redirect URIs; other deployments' URIs are kept.
 4. Removes malformed URIs (e.g., trailing commas from data corruption).
 5. Adds the redirect URIs for the current deployment's ingress host.
-6. PATCHes the updated URI lists back to the app registration.
+6. If web, SPA and public-client URIs together exceed Entra's 256-URI limit,
+   evicts whole CI deployments (*.ci.distro.ultrawombat.com), oldest first.
+7. PATCHes the updated URI lists back to the app registration.
+8. Reads the app back up to 6 times, 2-5s apart; if no read contains this
+   host's URIs, repeats from step 3, failing after 3 writes.
 
 Environment variables (or set in .env file):
   ENTRA_APP_DIRECTORY_ID  - Entra tenant/directory ID
@@ -160,6 +164,27 @@ Environment variables (or set in .env file):
 
 // newEntraCleanupCommand creates the "entra cleanup-venom-app" subcommand.
 func newEntraCleanupCommand() *cobra.Command {
+	return newEntraAppCleanupCommand(
+		"cleanup-venom-app",
+		"Delete the per-namespace venom Entra app registration",
+		"Delete the venom Entra app registration for a namespace.",
+		entra.CleanupVenomApp,
+	)
+}
+
+// newEntraCleanupLoginAppCommand creates the "entra cleanup-login-app" subcommand.
+func newEntraCleanupLoginAppCommand() *cobra.Command {
+	return newEntraAppCleanupCommand(
+		"cleanup-login-app",
+		"Delete the per-namespace Entra login app registration (camunda-oidc-<namespace>)",
+		"Delete the Entra login app registration a qa-entra deployment provisions for itself.",
+		entra.CleanupLoginApp,
+	)
+}
+
+// newEntraAppCleanupCommand builds a best-effort cleanup subcommand that runs
+// cleanup for the --namespace flag.
+func newEntraAppCleanupCommand(use, short, summary string, cleanup func(context.Context, entra.Options)) *cobra.Command {
 	var (
 		namespace string
 		logLevel  string
@@ -167,9 +192,9 @@ func newEntraCleanupCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "cleanup-venom-app",
-		Short: "Delete the per-namespace venom Entra app registration",
-		Long: `Delete the venom Entra app registration for a namespace.
+		Use:   use,
+		Short: short,
+		Long: summary + `
 This is a best-effort cleanup — errors are logged but do not cause a non-zero exit.
 
 Environment variables (or set in .env file):
@@ -181,13 +206,7 @@ Environment variables (or set in .env file):
 				return err
 			}
 			loadEnvFile(envFile)
-
-			opts := entra.Options{
-				Namespace: namespace,
-			}
-
-			// CleanupVenomApp is best-effort — it logs warnings but doesn't return errors.
-			entra.CleanupVenomApp(context.Background(), opts)
+			cleanup(context.Background(), entra.Options{Namespace: namespace})
 			return nil
 		},
 	}

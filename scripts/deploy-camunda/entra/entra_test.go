@@ -16,12 +16,14 @@ package entra
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -59,13 +61,102 @@ func jsonResponse(w http.ResponseWriter, status int, body any) {
 	_ = json.NewEncoder(w).Encode(body)
 }
 
+// noRedirectVerifyWait removes the wait before the redirect URI read-back.
+func noRedirectVerifyWait(t *testing.T) {
+	t.Helper()
+	origDelay, origJitter := redirectVerifyDelay, redirectVerifyJitter
+	redirectVerifyDelay, redirectVerifyJitter = 0, 0
+	t.Cleanup(func() { redirectVerifyDelay, redirectVerifyJitter = origDelay, origJitter })
+}
+
+// fakeRedirectApp is a Graph application whose GET returns what the last
+// PATCH wrote. afterPatch, when set, runs after each PATCH is stored.
+// getStatusAfterPatch, when non-zero, is the status every GET returns once a
+// PATCH has been stored. staleReads GETs after each PATCH return the
+// pre-PATCH state, like a lagging Graph replica.
+type fakeRedirectApp struct {
+	mu                  sync.Mutex
+	app                 redirectURIApp
+	prePatch            redirectURIApp
+	patches             int
+	afterPatch          func(f *fakeRedirectApp)
+	getStatusAfterPatch int
+	getFailuresLeft     int
+	staleReads          int
+	staleLeft           int
+}
+
+func (f *fakeRedirectApp) handlers() map[string]http.HandlerFunc {
+	return map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			if f.patches > 0 && f.getStatusAfterPatch != 0 && f.getFailuresLeft != 0 {
+				f.getFailuresLeft--
+				jsonResponse(w, f.getStatusAfterPatch, map[string]any{
+					"error": map[string]string{"code": "serviceNotAvailable"},
+				})
+				return
+			}
+			if f.staleLeft > 0 {
+				f.staleLeft--
+				jsonResponse(w, 200, f.prePatch)
+				return
+			}
+			jsonResponse(w, 200, f.app)
+		},
+		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			var patch redirectURIApp
+			_ = json.NewDecoder(r.Body).Decode(&patch)
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			f.prePatch = f.app
+			f.staleLeft = f.staleReads
+			f.app.Web, f.app.Spa = patch.Web, patch.Spa
+			f.patches++
+			if f.afterPatch != nil {
+				f.afterPatch(f)
+			}
+			w.WriteHeader(204)
+		},
+	}
+}
+
+// redirectTestHost is the ingress host runUpdateRedirectURIs registers.
+const redirectTestHost = "new-ns" + ciDomainSuffix
+
+func runUpdateRedirectURIs(t *testing.T, f *fakeRedirectApp) error {
+	t.Helper()
+	noRedirectVerifyWait(t)
+	srv := newTestServer(t, f.handlers())
+	t.Cleanup(srv.Close)
+	origGraph, origLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = srv.URL, srv.URL
+	t.Cleanup(func() { graphBaseURL, loginBaseURL = origGraph, origLogin })
+	return UpdateRedirectURIs(context.Background(), RedirectURIOptions{
+		ObjectID:     "parent-obj-id",
+		IngressHost:  redirectTestHost,
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	})
+}
+
 // tokenHandler returns a handler that responds with a valid access token.
 func tokenHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, 200, map[string]string{
-			"access_token": "test-bearer-token",
+			"access_token": testAccessToken(loginAppRoleValue),
 		})
 	}
+}
+
+// testAccessToken returns an unsigned JWT whose roles claim holds roles.
+func testAccessToken(roles ...string) string {
+	payload, _ := json.Marshal(map[string]any{"roles": roles})
+	return "e30." + base64.RawURLEncoding.EncodeToString(payload) + ".sig"
 }
 
 func TestIsOIDCEntry(t *testing.T) {
@@ -167,8 +258,8 @@ func TestAcquireBearerToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if token != "test-bearer-token" {
-		t.Errorf("got token %q, want %q", token, "test-bearer-token")
+	if want := testAccessToken(loginAppRoleValue); token != want {
+		t.Errorf("got token %q, want %q", token, want)
 	}
 }
 
@@ -338,6 +429,77 @@ func TestRotateCredentials(t *testing.T) {
 	}
 }
 
+func TestRotateCredentials_AddsBeforeRemoving(t *testing.T) {
+	shrinkRetryTimings(t)
+	var calls []string
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-123": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []map[string]string{
+				{"keyId": "old-key-1"}, {"keyId": "old-key-2"},
+			}})
+		},
+		"POST /applications/obj-123/removePassword": func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]string
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode removePassword body: %v", err)
+			}
+			calls = append(calls, "remove "+body["keyId"])
+			w.WriteHeader(204)
+		},
+		"POST /applications/obj-123/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			calls = append(calls, "add")
+			jsonResponse(w, 200, map[string]string{"keyId": "new-key", "secretText": "new-secret-value"})
+		},
+	})
+
+	if _, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-123"); err != nil {
+		t.Fatalf("rotateCredentials: %v", err)
+	}
+	if want := []string{"add", "remove old-key-1", "remove old-key-2"}; !slices.Equal(calls, want) {
+		t.Errorf("calls = %v, want %v", calls, want)
+	}
+}
+
+func TestRotateCredentials_KeepsOldSecretWhenAddFails(t *testing.T) {
+	shrinkRetryTimings(t)
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-123": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []map[string]string{{"keyId": "old-key-1"}}})
+		},
+		"POST /applications/obj-123/removePassword": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("removed the old credential although no new one was added")
+			w.WriteHeader(204)
+		},
+		"POST /applications/obj-123/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 403, map[string]any{"error": map[string]string{"code": "Authorization_RequestDenied"}})
+		},
+	})
+
+	if _, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-123"); err == nil {
+		t.Fatal("expected an error when addPassword fails")
+	}
+}
+
+func TestRotateCredentials_FailsWhenRemovalFails(t *testing.T) {
+	shrinkRetryTimings(t)
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-123": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []map[string]string{{"keyId": "old-key-1"}}})
+		},
+		"POST /applications/obj-123/removePassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 403, map[string]any{"error": map[string]string{"code": "Authorization_RequestDenied"}})
+		},
+		"POST /applications/obj-123/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"secretText": "new-secret-value"})
+		},
+	})
+
+	_, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-123")
+	if err == nil || !strings.Contains(err.Error(), "old-key-1") {
+		t.Fatalf("error = %v, want a removal failure naming old-key-1", err)
+	}
+}
+
 // shrinkRetryTimings scales the graph retry knobs down to millisecond scale
 // so retry tests complete in milliseconds, not minutes.
 func shrinkRetryTimings(t *testing.T) {
@@ -399,6 +561,49 @@ func TestRotateCredentials_RetriesOn404ThenSucceeds(t *testing.T) {
 	}
 	if got := addAttempts.Load(); got != flakyAttempts+1 {
 		t.Errorf("addPassword attempts = %d, want %d (retry loop did not retry through 404s)", got, flakyAttempts+1)
+	}
+}
+
+// TestRotateCredentials_RetriesCredentialGetOn404 verifies that the initial
+// credential read is retried while a newly-created app returns 404.
+func TestRotateCredentials_RetriesCredentialGetOn404(t *testing.T) {
+	shrinkRetryTimings(t)
+
+	var getAttempts atomic.Int32
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"GET /applications/obj-new": func(w http.ResponseWriter, r *http.Request) {
+			if getAttempts.Add(1) == 1 {
+				jsonResponse(w, 404, map[string]any{
+					"error": map[string]string{"code": "Request_ResourceNotFound"},
+				})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{
+				"passwordCredentials": []map[string]string{{"keyId": "old-key"}},
+			})
+		},
+		"POST /applications/obj-new/removePassword": func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(204)
+		},
+		"POST /applications/obj-new/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 201, map[string]string{"secretText": "fresh-secret"})
+		},
+	})
+	defer srv.Close()
+
+	origGraph := graphBaseURL
+	graphBaseURL = srv.URL
+	defer func() { graphBaseURL = origGraph }()
+
+	secret, err := rotateCredentials(context.Background(), srv.Client(), "token", "obj-new")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if secret != "fresh-secret" {
+		t.Errorf("secret = %q, want %q", secret, "fresh-secret")
+	}
+	if got := getAttempts.Load(); got != 2 {
+		t.Errorf("credential GET attempts = %d, want 2", got)
 	}
 }
 
@@ -1146,26 +1351,6 @@ func TestIsValidURI(t *testing.T) {
 	}
 }
 
-func TestIsCIDomainURI(t *testing.T) {
-	tests := []struct {
-		uri  string
-		want bool
-	}{
-		{"https://my-ns.ci.distro.ultrawombat.com/identity/auth/login-callback", true},
-		{"https://other.ci.distro.ultrawombat.com/operate/identity-callback", true},
-		{"https://production.example.com/callback", false},
-		{"https://staging.distribution.aws.camunda.cloud/callback", false},
-		{"", false},
-	}
-	for _, tc := range tests {
-		t.Run(tc.uri, func(t *testing.T) {
-			if got := isCIDomainURI(tc.uri); got != tc.want {
-				t.Errorf("isCIDomainURI(%q) = %v, want %v", tc.uri, got, tc.want)
-			}
-		})
-	}
-}
-
 func TestBuildRedirectURIs(t *testing.T) {
 	web, spa := buildRedirectURIs("my-ns.ci.distro.ultrawombat.com")
 
@@ -1204,9 +1389,10 @@ func TestFilterRedirectURIs(t *testing.T) {
 	existing := []string{
 		// Non-CI URI — should be preserved.
 		"https://production.example.com/callback",
-		// Stale CI URI — should be removed.
-		"https://old-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
-		"https://old-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+		// Another live CI deployment — should be preserved.
+		"https://other-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+		// Current host — should be replaced by newURIs.
+		"https://new-ns.ci.distro.ultrawombat.com/stale-callback",
 		// Malformed URI with trailing comma — should be removed.
 		"https://broken.ci.distro.ultrawombat.com/callback,",
 		// Empty string — should be removed.
@@ -1222,10 +1408,11 @@ func TestFilterRedirectURIs(t *testing.T) {
 		"https://new-ns.ci.distro.ultrawombat.com/operate/identity-callback",
 	}
 
-	result := filterRedirectURIs(existing, newURIs)
+	result := filterRedirectURIs(existing, newURIs, "new-ns.ci.distro.ultrawombat.com")
 
 	expected := []string{
 		"https://production.example.com/callback",
+		"https://other-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
 		"https://staging.distribution.aws.camunda.cloud/callback",
 		"https://new-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
 		"https://new-ns.ci.distro.ultrawombat.com/operate/identity-callback",
@@ -1241,12 +1428,123 @@ func TestFilterRedirectURIs(t *testing.T) {
 	}
 }
 
+func TestCapRedirectURIs_SharedBudgetWithPublicClient(t *testing.T) {
+	host := "new-ns" + ciDomainSuffix
+	var web, spa []string
+	for i := range 120 {
+		web = append(web, fmt.Sprintf("https://web-%d%s/callback", i, ciDomainSuffix))
+	}
+	for i := range 118 {
+		spa = append(spa, fmt.Sprintf("https://spa-%d%s/callback", i, ciDomainSuffix))
+	}
+	for i := range 17 {
+		web = append(web, fmt.Sprintf("https://prod-%d.example.com/callback", i))
+	}
+	newWeb, newSpa := buildRedirectURIs(host)
+	web = filterRedirectURIs(web, newWeb, host)
+	spa = filterRedirectURIs(spa, newSpa, host)
+	const publicClient = 1
+
+	web, spa = capRedirectURIs(web, spa, publicClient, host)
+
+	if got := len(web) + len(spa) + publicClient; got > maxRedirectURIs {
+		t.Errorf("total redirect URIs = %d, want <= %d", got, maxRedirectURIs)
+	}
+	for _, uri := range append(newWeb, newSpa...) {
+		if !slices.Contains(web, uri) && !slices.Contains(spa, uri) {
+			t.Errorf("current host URI dropped: %s", uri)
+		}
+	}
+	for i := range 17 {
+		if uri := fmt.Sprintf("https://prod-%d.example.com/callback", i); !slices.Contains(web, uri) {
+			t.Errorf("non-CI URI dropped: %s", uri)
+		}
+	}
+	if slices.Contains(web, "https://web-0"+ciDomainSuffix+"/callback") {
+		t.Error("oldest CI web URI was not pruned first")
+	}
+}
+
+func TestCapRedirectURIs_EvictsOldestDeploymentWhole(t *testing.T) {
+	var web, spa []string
+	for i := 1; i <= 40; i++ {
+		host := fmt.Sprintf("ns-%d%s", i, ciDomainSuffix)
+		newWeb, newSpa := buildRedirectURIs(host)
+		web = filterRedirectURIs(web, newWeb, host)
+		spa = filterRedirectURIs(spa, newSpa, host)
+		web, spa = capRedirectURIs(web, spa, 0, host)
+	}
+
+	if got := len(web) + len(spa); got > maxRedirectURIs {
+		t.Fatalf("total redirect URIs = %d, want <= %d", got, maxRedirectURIs)
+	}
+	perHost := len(webRedirectPaths) + len(spaRedirectPaths)
+	keep := maxRedirectURIs / perHost
+	for i := 1; i <= 40; i++ {
+		host := fmt.Sprintf("ns-%d%s", i, ciDomainSuffix)
+		wantWeb, wantSpa := buildRedirectURIs(host)
+		n := 0
+		for _, uri := range append(wantWeb, wantSpa...) {
+			if slices.Contains(web, uri) || slices.Contains(spa, uri) {
+				n++
+			}
+		}
+		retained := i > 40-keep
+		if retained && n != perHost {
+			t.Errorf("host %d kept %d of %d URIs, want all", i, n, perHost)
+		}
+		if !retained && n != 0 {
+			t.Errorf("host %d kept %d URIs, want it evicted whole", i, n)
+		}
+	}
+}
+
+func TestCapRedirectURIs_MatchesOnParsedHostname(t *testing.T) {
+	host := "new-ns" + ciDomainSuffix
+	queryOnly := "https://old-ns" + ciDomainSuffix + "?flow=oidc"
+	pathMention := "https://production.example.com/auth" + ciDomainSuffix + "/callback"
+	web := []string{queryOnly, pathMention}
+	for i := range maxRedirectURIs {
+		web = append(web, fmt.Sprintf("https://keep-%d.example.com/cb", i))
+	}
+	newWeb, newSpa := buildRedirectURIs(host)
+	web = filterRedirectURIs(web, newWeb, host)
+	spa := filterRedirectURIs(nil, newSpa, host)
+
+	done := make(chan struct{})
+	go func() {
+		web, spa = capRedirectURIs(web, spa, 0, host)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("capRedirectURIs did not terminate")
+	}
+
+	if slices.Contains(web, queryOnly) {
+		t.Errorf("query-only CI URI was not evicted: %s", queryOnly)
+	}
+	if !slices.Contains(web, pathMention) {
+		t.Errorf("non-CI host with CI domain in its path was evicted: %s", pathMention)
+	}
+}
+
+func TestCapRedirectURIs_UnderLimitUnchanged(t *testing.T) {
+	web := []string{"https://a" + ciDomainSuffix + "/cb"}
+	spa := []string{"https://b" + ciDomainSuffix + "/cb"}
+	gotWeb, gotSpa := capRedirectURIs(web, spa, 0, "new-ns"+ciDomainSuffix)
+	if !slices.Equal(gotWeb, web) || !slices.Equal(gotSpa, spa) {
+		t.Errorf("lists changed under the limit: web=%v spa=%v", gotWeb, gotSpa)
+	}
+}
+
 func TestFilterRedirectURIs_EmptyExisting(t *testing.T) {
 	newURIs := []string{
 		"https://ns.ci.distro.ultrawombat.com/callback",
 	}
 
-	result := filterRedirectURIs(nil, newURIs)
+	result := filterRedirectURIs(nil, newURIs, "ns.ci.distro.ultrawombat.com")
 	if len(result) != 1 {
 		t.Fatalf("expected 1 URI, got %d: %v", len(result), result)
 	}
@@ -1261,7 +1559,7 @@ func TestFilterRedirectURIs_DeduplicatesNewURIs(t *testing.T) {
 		"https://ns.ci.distro.ultrawombat.com/callback", // duplicate
 	}
 
-	result := filterRedirectURIs(nil, newURIs)
+	result := filterRedirectURIs(nil, newURIs, "ns.ci.distro.ultrawombat.com")
 	if len(result) != 1 {
 		t.Fatalf("expected 1 URI after dedup, got %d: %v", len(result), result)
 	}
@@ -1342,11 +1640,16 @@ func TestResolveRedirectOpts_EnvFallback(t *testing.T) {
 }
 
 func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
+	noRedirectVerifyWait(t)
 	var patchReceived map[string]any
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			if patchReceived != nil {
+				jsonResponse(w, 200, patchReceived)
+				return
+			}
 			jsonResponse(w, 200, map[string]any{
 				"web": map[string]any{
 					"redirectUris": []string{
@@ -1396,7 +1699,7 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 		t.Fatal("expected PATCH request, got none")
 	}
 
-	// Verify web URIs: production preserved, stale CI removed, new added.
+	// Verify web URIs: production and other CI hosts preserved, new added.
 	webData, ok := patchReceived["web"].(map[string]any)
 	if !ok {
 		t.Fatal("missing 'web' in PATCH payload")
@@ -1411,10 +1714,10 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 		webStrings[i] = u.(string)
 	}
 
-	// Should contain production + 5 new web URIs = 6 total.
-	// Old CI URIs and corrupt URI should be removed.
-	if len(webStrings) != 6 {
-		t.Errorf("web URI count = %d, want 6, got: %v", len(webStrings), webStrings)
+	// Should contain production + 2 other-host CI URIs + 5 new web URIs = 8.
+	// Only the corrupt URI should be removed.
+	if len(webStrings) != 8 {
+		t.Errorf("web URI count = %d, want 8, got: %v", len(webStrings), webStrings)
 	}
 
 	// Verify production URI is preserved.
@@ -1423,10 +1726,13 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 		t.Error("production URI was not preserved in web URIs")
 	}
 
-	// Verify stale CI URI was removed.
-	for _, u := range webStrings {
-		if strings.Contains(u, "old-ns.ci.distro.ultrawombat.com") {
-			t.Errorf("stale CI URI should have been removed: %s", u)
+	// Verify another CI deployment's URIs were preserved.
+	for _, want := range []string{
+		"https://old-ns.ci.distro.ultrawombat.com/identity/auth/login-callback",
+		"https://old-ns.ci.distro.ultrawombat.com/operate/identity-callback",
+	} {
+		if !slices.Contains(webStrings, want) {
+			t.Errorf("other CI host URI should have been preserved: %s", want)
 		}
 	}
 
@@ -1447,13 +1753,179 @@ func TestUpdateRedirectURIs_HappyPath(t *testing.T) {
 		t.Fatal("missing 'redirectUris' in spa payload")
 	}
 
-	// Should contain production + 2 new SPA URIs = 3 total.
-	if len(spaURIs) != 3 {
+	// Should contain production + 1 other-host CI URI + 2 new SPA URIs = 4.
+	if len(spaURIs) != 4 {
 		spaStrings := make([]string, len(spaURIs))
 		for i, u := range spaURIs {
 			spaStrings[i] = u.(string)
 		}
-		t.Errorf("spa URI count = %d, want 3, got: %v", len(spaURIs), spaStrings)
+		t.Errorf("spa URI count = %d, want 4, got: %v", len(spaURIs), spaStrings)
+	}
+}
+
+func TestUpdateRedirectURIs_OverLimitReservesPublicClient(t *testing.T) {
+	var web, spa []string
+	for i := range 36 {
+		w, sp := buildRedirectURIs(fmt.Sprintf("ns-%d%s", i, ciDomainSuffix))
+		web = append(web, w...)
+		spa = append(spa, sp...)
+	}
+	for i := range 4 {
+		web = append(web, fmt.Sprintf("https://prod-%d.example.com/callback", i))
+	}
+	publicClient := []string{"https://login.microsoftonline.com/common/oauth2/nativeclient"}
+	var patchReceived struct {
+		Web struct {
+			RedirectURIs []string `json:"redirectUris"`
+		} `json:"web"`
+		Spa struct {
+			RedirectURIs []string `json:"redirectUris"`
+		} `json:"spa"`
+	}
+
+	noRedirectVerifyWait(t)
+	patched := false
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			if patched {
+				web, spa = patchReceived.Web.RedirectURIs, patchReceived.Spa.RedirectURIs
+			}
+			jsonResponse(w, 200, map[string]any{
+				"web":          map[string]any{"redirectUris": web},
+				"spa":          map[string]any{"redirectUris": spa},
+				"publicClient": map[string]any{"redirectUris": publicClient},
+			})
+		},
+		"PATCH /applications/parent-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewDecoder(r.Body).Decode(&patchReceived)
+			patched = true
+			w.WriteHeader(204)
+		},
+	})
+	defer srv.Close()
+
+	origGraph, origLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = srv.URL, srv.URL
+	defer func() { graphBaseURL, loginBaseURL = origGraph, origLogin }()
+
+	host := "new-ns" + ciDomainSuffix
+	err := UpdateRedirectURIs(context.Background(), RedirectURIOptions{
+		ObjectID:     "parent-obj-id",
+		IngressHost:  host,
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := len(patchReceived.Web.RedirectURIs) + len(patchReceived.Spa.RedirectURIs) + len(publicClient)
+	if got > maxRedirectURIs {
+		t.Errorf("web+spa+publicClient = %d, want <= %d", got, maxRedirectURIs)
+	}
+	newWeb, newSpa := buildRedirectURIs(host)
+	for _, uri := range newWeb {
+		if !slices.Contains(patchReceived.Web.RedirectURIs, uri) {
+			t.Errorf("current host web URI missing from PATCH: %s", uri)
+		}
+	}
+	for _, uri := range newSpa {
+		if !slices.Contains(patchReceived.Spa.RedirectURIs, uri) {
+			t.Errorf("current host SPA URI missing from PATCH: %s", uri)
+		}
+	}
+	oldWeb, _ := buildRedirectURIs("ns-0" + ciDomainSuffix)
+	if slices.Contains(patchReceived.Web.RedirectURIs, oldWeb[0]) {
+		t.Error("oldest CI deployment was not evicted")
+	}
+}
+
+func TestUpdateRedirectURIs_RewritesAfterConcurrentOverwrite(t *testing.T) {
+	host := redirectTestHost
+	otherWeb, otherSpa := buildRedirectURIs("other-ns" + ciDomainSuffix)
+	f := &fakeRedirectApp{}
+	f.afterPatch = func(f *fakeRedirectApp) {
+		if f.patches == 1 {
+			f.app.Web.RedirectURIs = slices.Clone(otherWeb)
+			f.app.Spa.RedirectURIs = slices.Clone(otherSpa)
+		}
+	}
+
+	if err := runUpdateRedirectURIs(t, f); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if f.patches != 2 {
+		t.Errorf("PATCH count = %d, want 2", f.patches)
+	}
+	if !hasHostRedirectURIs(f.app, host) {
+		t.Error("current host URIs missing after rewrite")
+	}
+	if !hasHostRedirectURIs(f.app, "other-ns"+ciDomainSuffix) {
+		t.Error("concurrent writer's URIs dropped by the rewrite")
+	}
+}
+
+func TestUpdateRedirectURIs_WaitsOutStaleReadsWithoutRewriting(t *testing.T) {
+	host := redirectTestHost
+	otherWeb, otherSpa := buildRedirectURIs("other-ns" + ciDomainSuffix)
+	f := &fakeRedirectApp{staleReads: redirectVerifyReads - 1}
+	f.app.Web.RedirectURIs, f.app.Spa.RedirectURIs = otherWeb, otherSpa
+
+	if err := runUpdateRedirectURIs(t, f); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if f.patches != 1 {
+		t.Errorf("PATCH count = %d, want 1", f.patches)
+	}
+	if !hasHostRedirectURIs(f.app, host) || !hasHostRedirectURIs(f.app, "other-ns"+ciDomainSuffix) {
+		t.Error("redirect URIs of a host are missing after stale reads")
+	}
+}
+
+func TestUpdateRedirectURIs_FailsWhenOverwrittenEveryAttempt(t *testing.T) {
+	f := &fakeRedirectApp{}
+	f.afterPatch = func(f *fakeRedirectApp) {
+		f.app.Web.RedirectURIs, f.app.Spa.RedirectURIs = nil, nil
+	}
+
+	err := runUpdateRedirectURIs(t, f)
+
+	if err == nil || !strings.Contains(err.Error(), "concurrent update") {
+		t.Fatalf("error = %v, want concurrent update failure", err)
+	}
+	if f.patches != redirectVerifyAttempts {
+		t.Errorf("PATCH count = %d, want %d", f.patches, redirectVerifyAttempts)
+	}
+}
+
+func TestUpdateRedirectURIs_FailsWhenVerificationReadFails(t *testing.T) {
+	shrinkRetryTimings(t)
+	f := &fakeRedirectApp{getStatusAfterPatch: 503, getFailuresLeft: -1}
+
+	err := runUpdateRedirectURIs(t, f)
+
+	if err == nil || !strings.Contains(err.Error(), "status=503") {
+		t.Fatalf("error = %v, want verification read failure with status=503", err)
+	}
+	if f.patches != 1 {
+		t.Errorf("PATCH count = %d, want 1", f.patches)
+	}
+}
+
+func TestUpdateRedirectURIs_RetriesTransientVerificationRead(t *testing.T) {
+	shrinkRetryTimings(t)
+	f := &fakeRedirectApp{getStatusAfterPatch: 503, getFailuresLeft: 2}
+
+	if err := runUpdateRedirectURIs(t, f); err != nil {
+		t.Fatalf("UpdateRedirectURIs: %v", err)
+	}
+	if f.patches != 1 {
+		t.Errorf("PATCH count = %d, want 1", f.patches)
 	}
 }
 
@@ -1544,5 +2016,742 @@ func TestGraphPatch(t *testing.T) {
 	}
 	if receivedBody["key"] != "value" {
 		t.Errorf("body key = %q, want %q", receivedBody["key"], "value")
+	}
+}
+
+// TestEnsureLoginApp_ReplacesRedirectURIs asserts the deployment's own app is
+// created for the namespace and that its redirect URIs are written as a full
+// replacement holding only this host's URIs — the property that makes a
+// concurrent deployment unable to drop them.
+func TestEnsureLoginApp_ReplacesRedirectURIs(t *testing.T) {
+	const host = "gke-qaen-1234-8-10-qaen.ci.distro.ultrawombat.com"
+
+	patched := map[string]any{}
+	var grants []map[string]any
+	var roleAssignment map[string]any
+	spCreated := false
+	created := false
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			if !created {
+				jsonResponse(w, 200, map[string]any{"value": []any{}})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"appId": "login-app-id", "id": "login-obj-id"},
+			}})
+		},
+		"POST /applications": func(w http.ResponseWriter, r *http.Request) {
+			created = true
+			jsonResponse(w, 201, map[string]string{
+				"appId": "login-app-id",
+				"id":    "login-obj-id",
+			})
+		},
+		"GET /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []any{}})
+		},
+		"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode PATCH body: %v", err)
+			}
+			mergePatch(patched, body)
+			w.WriteHeader(http.StatusNoContent)
+		},
+		"POST /applications/login-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"secretText": "login-secret"})
+		},
+		"POST /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			var grant map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&grant); err != nil {
+				t.Errorf("decode grant body: %v", err)
+			}
+			grants = append(grants, grant)
+			jsonResponse(w, 201, map[string]string{"id": "grant-id"})
+		},
+		"PATCH /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			spCreated = true
+			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
+		},
+		"GET /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "sp-id"})
+		},
+		"GET /servicePrincipals(appId='00000003-0000-0000-c000-000000000000')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "graph-sp-id"})
+		},
+		"GET /servicePrincipals(appId='parent-client-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "parent-sp-id"})
+		},
+		"POST /servicePrincipals/sp-id/appRoleAssignedTo": func(w http.ResponseWriter, r *http.Request) {
+			if err := json.NewDecoder(r.Body).Decode(&roleAssignment); err != nil {
+				t.Errorf("decode app role assignment body: %v", err)
+			}
+			jsonResponse(w, 201, map[string]string{"id": "assignment-id"})
+		},
+	})
+	defer srv.Close()
+
+	origGraph, origLogin, origSleep := graphBaseURL, loginBaseURL, propagationSleepDuration
+	graphBaseURL, loginBaseURL, propagationSleepDuration = srv.URL, srv.URL, 0
+	defer func() {
+		graphBaseURL, loginBaseURL, propagationSleepDuration = origGraph, origLogin, origSleep
+	}()
+
+	app, created, err := EnsureLoginApp(context.Background(), Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client-id",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	}, host)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !created {
+		t.Error("created = false, want true for a newly registered app")
+	}
+	if app.AppID != "login-app-id" || app.ClientSecret != "login-secret" {
+		t.Errorf("app = %+v, want appId login-app-id and secret login-secret", app)
+	}
+	if !spCreated {
+		t.Error("expected a service principal for the login app")
+	}
+
+	if got, _ := patched["identifierUris"].([]any); len(got) != 1 || got[0] != "api://login-app-id" {
+		t.Errorf("identifierUris = %v, want [api://login-app-id]", patched["identifierUris"])
+	}
+	api, ok := patched["api"].(map[string]any)
+	if !ok {
+		t.Fatalf("PATCH body has no api block: %v", patched)
+	}
+	if v := api["requestedAccessTokenVersion"]; v != float64(2) {
+		t.Errorf("requestedAccessTokenVersion = %v, want 2 (a v1 token's issuer fails validation)", v)
+	}
+	scopes, _ := api["oauth2PermissionScopes"].([]any)
+	if len(scopes) != 1 {
+		t.Fatalf("oauth2PermissionScopes = %v, want exactly one; without a scope of its own the app is not a valid resource for \"<clientId>/.default\" and authorize fails with AADSTS650057", api["oauth2PermissionScopes"])
+	}
+	scope, _ := scopes[0].(map[string]any)
+	scopeID, _ := scope["id"].(string)
+	if scopeID == "" {
+		t.Fatalf("scope = %v, want an id", scope)
+	}
+	if scope["type"] != "User" {
+		t.Errorf("scope type = %v, want User", scope["type"])
+	}
+
+	required, _ := patched["requiredResourceAccess"].([]any)
+	if len(required) != 1 {
+		t.Fatalf("requiredResourceAccess = %v, want the app's own scope; authorize reads the valid-resource list off the client, not off the resource", required)
+	}
+	entry, _ := required[0].(map[string]any)
+	if entry["resourceAppId"] != "login-app-id" {
+		t.Errorf("resourceAppId = %v, want login-app-id", entry["resourceAppId"])
+	}
+	access, _ := entry["resourceAccess"].([]any)
+	if len(access) != 1 {
+		t.Fatalf("resourceAccess = %v, want one entry", access)
+	}
+	if got, _ := access[0].(map[string]any); got["id"] != scopeID || got["type"] != "Scope" {
+		t.Errorf("resourceAccess[0] = %v, want the exposed scope id %s as a Scope", got, scopeID)
+	}
+
+	if len(grants) != 2 {
+		t.Fatalf("oauth2PermissionGrants = %v, want two; consent lives on the service principal, and a run-created one starts with an empty ledger", grants)
+	}
+	for _, grant := range grants {
+		if grant["consentType"] != "AllPrincipals" {
+			t.Errorf("consentType = %v, want AllPrincipals; a per-user grant leaves every other pool account prompted", grant["consentType"])
+		}
+		if grant["clientId"] != "sp-id" {
+			t.Errorf("clientId = %v, want sp-id", grant["clientId"])
+		}
+	}
+	if grants[0]["resourceId"] != "graph-sp-id" || grants[0]["scope"] != "openid profile email" {
+		t.Errorf("first grant = %v, want the Microsoft Graph sign-in scopes", grants[0])
+	}
+	if grants[1]["resourceId"] != "sp-id" || grants[1]["scope"] != "user_impersonation" {
+		t.Errorf("second grant = %v, want the app's own scope", grants[1])
+	}
+
+	roles, ok := patched["appRoles"].([]any)
+	if !ok || len(roles) != 1 {
+		t.Fatalf("appRoles = %v, want exactly one; without it Entra refuses the parent app a token for this deployment", patched["appRoles"])
+	}
+	role, _ := roles[0].(map[string]any)
+	if role["value"] != loginAppRoleValue {
+		t.Errorf("app role value = %v, want %s", role["value"], loginAppRoleValue)
+	}
+	if members, _ := role["allowedMemberTypes"].([]any); len(members) != 1 || members[0] != "Application" {
+		t.Errorf("allowedMemberTypes = %v, want [Application]; a User role cannot back client credentials", role["allowedMemberTypes"])
+	}
+	if role["id"] != loginAppRoleID("login-app-id") {
+		t.Errorf("app role id = %v, want the id derived from the app id so re-deploys keep the assignment valid", role["id"])
+	}
+	if roleAssignment == nil {
+		t.Fatalf("no appRoleAssignedTo POST; the parent app would still mint tokens with its own audience")
+	}
+	if roleAssignment["principalId"] != "parent-sp-id" || roleAssignment["resourceId"] != "sp-id" {
+		t.Errorf("assignment = %v, want the parent app's principal on the login app", roleAssignment)
+	}
+	if roleAssignment["appRoleId"] != loginAppRoleID("login-app-id") {
+		t.Errorf("assignment appRoleId = %v, want the role configureLoginApp wrote", roleAssignment["appRoleId"])
+	}
+
+	wantWeb, wantSpa := buildRedirectURIs(host)
+	gotWeb := patchedURIs(t, patched, "web")
+	gotSpa := patchedURIs(t, patched, "spa")
+	if !slices.Equal(gotWeb, wantWeb) {
+		t.Errorf("web redirectUris = %v, want exactly %v", gotWeb, wantWeb)
+	}
+	if !slices.Equal(gotSpa, wantSpa) {
+		t.Errorf("spa redirectUris = %v, want exactly %v", gotSpa, wantSpa)
+	}
+}
+
+// TestEnsureLoginApp_ReprovisionsReusedApp deploys twice to one namespace: the
+// second run reuses the app, so it must keep the scope id the first run exposed
+// and treat the consent grants and role assignment that already exist as done.
+func TestEnsureLoginApp_ReprovisionsReusedApp(t *testing.T) {
+	const host = "gke-qaen-1234-8-10-qaen.ci.distro.ultrawombat.com"
+
+	created := false
+	var scopeIDs []string
+	grants := map[string]bool{}
+	assigned := false
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			if !created {
+				jsonResponse(w, 200, map[string]any{"value": []any{}})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"appId": "login-app-id", "id": "login-obj-id"},
+			}})
+		},
+		"POST /applications": func(w http.ResponseWriter, r *http.Request) {
+			created = true
+			jsonResponse(w, 201, map[string]string{"appId": "login-app-id", "id": "login-obj-id"})
+		},
+		"GET /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"passwordCredentials": []any{}})
+		},
+		"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode PATCH body: %v", err)
+			}
+			if api, ok := body["api"].(map[string]any); ok {
+				scopes, _ := api["oauth2PermissionScopes"].([]any)
+				if len(scopes) == 1 {
+					scope, _ := scopes[0].(map[string]any)
+					id, _ := scope["id"].(string)
+					scopeIDs = append(scopeIDs, id)
+				}
+			}
+			w.WriteHeader(http.StatusNoContent)
+		},
+		"POST /applications/login-obj-id/addPassword": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"secretText": "login-secret"})
+		},
+		"POST /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			var grant map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&grant); err != nil {
+				t.Errorf("decode grant body: %v", err)
+			}
+			key := fmt.Sprintf("%v|%v", grant["resourceId"], grant["scope"])
+			if grants[key] {
+				jsonResponse(w, 409, map[string]any{"error": map[string]string{
+					"code":    "Request_MultipleObjectsWithSameKeyValue",
+					"message": "Permission entry already exists.",
+				}})
+				return
+			}
+			grants[key] = true
+			jsonResponse(w, 201, map[string]string{"id": "grant-id"})
+		},
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			filter := r.URL.Query().Get("$filter")
+			for key := range grants {
+				resource, scope, _ := strings.Cut(key, "|")
+				if strings.Contains(filter, "resourceId eq '"+resource+"'") {
+					jsonResponse(w, 200, map[string]any{"value": []any{
+						map[string]string{"id": "grant-" + resource, "scope": scope},
+					}})
+					return
+				}
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{}})
+		},
+		"PATCH /oauth2PermissionGrants/": func(w http.ResponseWriter, r *http.Request) {
+			t.Errorf("unexpected grant update %s: the existing grants already hold every scope", r.URL.Path)
+		},
+		"PATCH /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 201, map[string]string{"id": "sp-id"})
+		},
+		"GET /servicePrincipals(appId='login-app-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "sp-id"})
+		},
+		"GET /servicePrincipals(appId='00000003-0000-0000-c000-000000000000')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "graph-sp-id"})
+		},
+		"GET /servicePrincipals(appId='parent-client-id')": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]string{"id": "parent-sp-id"})
+		},
+		"POST /servicePrincipals/sp-id/appRoleAssignedTo": func(w http.ResponseWriter, r *http.Request) {
+			if assigned {
+				jsonResponse(w, 400, map[string]any{"error": map[string]string{
+					"code":    "Request_BadRequest",
+					"message": "Permission being assigned already exists on the object",
+				}})
+				return
+			}
+			assigned = true
+			jsonResponse(w, 201, map[string]string{"id": "assignment-id"})
+		},
+	})
+	defer srv.Close()
+
+	origGraph, origLogin, origSleep := graphBaseURL, loginBaseURL, propagationSleepDuration
+	graphBaseURL, loginBaseURL, propagationSleepDuration = srv.URL, srv.URL, 0
+	defer func() {
+		graphBaseURL, loginBaseURL, propagationSleepDuration = origGraph, origLogin, origSleep
+	}()
+
+	opts := Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client-id",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	}
+	for run := 1; run <= 2; run++ {
+		_, created, err := EnsureLoginApp(context.Background(), opts, host)
+		if err != nil {
+			t.Fatalf("run %d: unexpected error: %v", run, err)
+		}
+		if created != (run == 1) {
+			t.Errorf("run %d: created = %v, want %v", run, created, run == 1)
+		}
+	}
+
+	if len(scopeIDs) != 2 {
+		t.Fatalf("scope ids written = %v, want one per run", scopeIDs)
+	}
+	if scopeIDs[0] != scopeIDs[1] {
+		t.Errorf("scope id changed between runs (%s -> %s); Entra refuses to drop an enabled scope", scopeIDs[0], scopeIDs[1])
+	}
+	if scopeIDs[0] != loginAppScopeID("login-app-id") {
+		t.Errorf("scope id = %s, want the id derived from the app id", scopeIDs[0])
+	}
+}
+
+// TestEnsureLoginApp_ReportsCreatedOnFailure checks that a failure after the
+// lookup reports whether this call registered the app, so the caller deletes
+// only an app it created.
+func TestEnsureLoginApp_ReportsCreatedOnFailure(t *testing.T) {
+	shrinkRetryTimings(t)
+	origSleep := propagationSleepDuration
+	propagationSleepDuration = 0
+	t.Cleanup(func() { propagationSleepDuration = origSleep })
+
+	for _, tc := range []struct {
+		name        string
+		exists      bool
+		wantCreated bool
+	}{
+		{name: "reused app", exists: true, wantCreated: false},
+		{name: "new app", exists: false, wantCreated: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			exists := tc.exists
+			srv := withTestGraph(t, map[string]http.HandlerFunc{
+				"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+				"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+					if !exists {
+						jsonResponse(w, 200, map[string]any{"value": []any{}})
+						return
+					}
+					jsonResponse(w, 200, map[string]any{"value": []any{
+						map[string]string{"appId": "login-app-id", "id": "login-obj-id"},
+					}})
+				},
+				"POST /applications": func(w http.ResponseWriter, r *http.Request) {
+					exists = true
+					jsonResponse(w, 201, map[string]string{"appId": "login-app-id", "id": "login-obj-id"})
+				},
+				"PATCH /applications/login-obj-id": func(w http.ResponseWriter, r *http.Request) {
+					jsonResponse(w, 403, map[string]any{"error": map[string]string{"code": "Authorization_RequestDenied"}})
+				},
+			})
+
+			login, created, err := EnsureLoginApp(context.Background(), testLoginOpts(srv), "host.example.com")
+			if err == nil {
+				t.Fatal("expected an error when configuring the login app fails")
+			}
+			if login != nil {
+				t.Errorf("login = %+v, want nil on failure", login)
+			}
+			if created != tc.wantCreated {
+				t.Errorf("created = %v, want %v", created, tc.wantCreated)
+			}
+		})
+	}
+}
+
+func TestCreateLoginK8sSecret(t *testing.T) {
+	var gotContext, gotNamespace, gotSecret string
+	orig := createLoginK8sSecretFunc
+	createLoginK8sSecretFunc = func(_ context.Context, kubeContext, namespace, clientSecret string) error {
+		gotContext, gotNamespace, gotSecret = kubeContext, namespace, clientSecret
+		return nil
+	}
+	t.Cleanup(func() { createLoginK8sSecretFunc = orig })
+
+	if err := CreateLoginK8sSecret(context.Background(), "kube-ctx", "test-ns", &LoginApp{AppID: "login-app-id", ClientSecret: "login-secret"}); err != nil {
+		t.Fatalf("CreateLoginK8sSecret: %v", err)
+	}
+	if gotContext != "kube-ctx" || gotNamespace != "test-ns" || gotSecret != "login-secret" {
+		t.Errorf("secret written with context=%q namespace=%q secret=%q", gotContext, gotNamespace, gotSecret)
+	}
+}
+
+func TestCreateLoginK8sSecret_PropagatesError(t *testing.T) {
+	orig := createLoginK8sSecretFunc
+	createLoginK8sSecretFunc = func(context.Context, string, string, string) error {
+		return fmt.Errorf("forbidden")
+	}
+	t.Cleanup(func() { createLoginK8sSecretFunc = orig })
+
+	if err := CreateLoginK8sSecret(context.Background(), "kube-ctx", "test-ns", &LoginApp{ClientSecret: "login-secret"}); err == nil {
+		t.Fatal("expected an error when the secret cannot be written")
+	}
+}
+
+// TestEnsureLoginApp_RequiresIngressHost guards against provisioning an app
+// with no redirect URI, which would fail every sign-in with AADSTS50011.
+func TestEnsureLoginApp_RequiresIngressHost(t *testing.T) {
+	_, _, err := EnsureLoginApp(context.Background(), Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client-id",
+		ClientSecret: "parent-secret",
+	}, "")
+	if err == nil {
+		t.Fatal("expected an error when the ingress host is empty")
+	}
+}
+
+// mergePatch applies one PATCH body the way Graph does: a complex type such as
+// api keeps the members the body leaves out, so successive writes accumulate.
+func mergePatch(into, body map[string]any) {
+	for key, value := range body {
+		nested, isMap := value.(map[string]any)
+		existing, wasMap := into[key].(map[string]any)
+		if isMap && wasMap {
+			mergePatch(existing, nested)
+			continue
+		}
+		into[key] = value
+	}
+}
+
+func patchedURIs(t *testing.T, patched map[string]any, platform string) []string {
+	t.Helper()
+	block, ok := patched[platform].(map[string]any)
+	if !ok {
+		t.Fatalf("PATCH body has no %q block: %v", platform, patched)
+	}
+	raw, ok := block["redirectUris"].([]any)
+	if !ok {
+		t.Fatalf("PATCH %q block has no redirectUris: %v", platform, block)
+	}
+	uris := make([]string, 0, len(raw))
+	for _, u := range raw {
+		uris = append(uris, u.(string))
+	}
+	return uris
+}
+
+func TestPermissionGrantRetryable(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+		want   bool
+	}{
+		{"unreplicated service principal", http.StatusBadRequest, `{"error":{"code":"Request_BadRequest","message":"Specified resourceId was not found."}}`, true},
+		{"duplicate grant", http.StatusBadRequest, `{"error":{"message":"Permission entry already exists."}}`, false},
+		{"duplicate grant conflict", http.StatusConflict, `{"error":{"message":"Permission entry already exists."}}`, false},
+		{"generic bad request", http.StatusBadRequest, `{"error":{"code":"Request_BadRequest","message":"Invalid scope"}}`, false},
+		{"forbidden", http.StatusForbidden, `{"error":{"code":"Authorization_RequestDenied"}}`, false},
+		{"throttled", http.StatusTooManyRequests, ``, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := permissionGrantRetryable(tc.status, []byte(tc.body), nil); got != tc.want {
+				t.Errorf("permissionGrantRetryable(%d) = %v, want %v", tc.status, got, tc.want)
+			}
+		})
+	}
+}
+
+func withTestGraph(t *testing.T, handlers map[string]http.HandlerFunc) *httptest.Server {
+	t.Helper()
+	srv := newTestServer(t, handlers)
+	t.Cleanup(srv.Close)
+	origGraph, origLogin := graphBaseURL, loginBaseURL
+	graphBaseURL, loginBaseURL = srv.URL, srv.URL
+	t.Cleanup(func() {
+		graphBaseURL, loginBaseURL = origGraph, origLogin
+	})
+	return srv
+}
+
+func testLoginOpts(srv *httptest.Server) Options {
+	return Options{
+		Namespace:    "test-ns",
+		DirectoryID:  "test-tenant",
+		ClientID:     "parent-client",
+		ClientSecret: "parent-secret",
+		HTTPClient:   srv.Client(),
+	}
+}
+
+func TestCleanupLoginApp_AppExists(t *testing.T) {
+	var filter string
+	deleted := false
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			filter = r.URL.Query().Get("$filter")
+			jsonResponse(w, 200, map[string]any{
+				"value": []map[string]string{{"appId": "login-app", "id": "login-obj"}},
+			})
+		},
+		"DELETE /applications/login-obj": func(w http.ResponseWriter, r *http.Request) {
+			deleted = true
+			w.WriteHeader(204)
+		},
+	})
+
+	CleanupLoginApp(context.Background(), testLoginOpts(srv))
+
+	if want := "displayName eq 'camunda-oidc-test-ns'"; filter != want {
+		t.Errorf("$filter = %q, want %q", filter, want)
+	}
+	if !deleted {
+		t.Error("expected the login app to be deleted")
+	}
+}
+
+func TestCleanupLoginApp_AppNotFound(t *testing.T) {
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"value": []any{}})
+		},
+		"DELETE /applications/": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("unexpected DELETE when no login app exists")
+		},
+	})
+
+	CleanupLoginApp(context.Background(), testLoginOpts(srv))
+}
+
+func TestCleanupLoginApp_InvalidOpts(t *testing.T) {
+	t.Setenv("ENTRA_APP_DIRECTORY_ID", "")
+	t.Setenv("ENTRA_APP_CLIENT_ID", "")
+	t.Setenv("ENTRA_APP_CLIENT_SECRET", "")
+
+	CleanupLoginApp(context.Background(), Options{})
+}
+
+func TestCleanupLoginApp_RejectsNamespaceOutsideDNS1123(t *testing.T) {
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("unexpected token request for an invalid namespace")
+		},
+	})
+	opts := testLoginOpts(srv)
+	opts.Namespace = "x' or displayName eq 'Parent App"
+
+	CleanupLoginApp(context.Background(), opts)
+}
+
+func TestFindAppDoublesSingleQuotes(t *testing.T) {
+	var filter string
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			filter = r.URL.Query().Get("$filter")
+			jsonResponse(w, 200, map[string]any{"value": []any{}})
+		},
+	})
+
+	if _, _, err := findApp(context.Background(), srv.Client(), "token", "a' or displayName eq 'b"); err != nil {
+		t.Fatalf("findApp: %v", err)
+	}
+	if want := "displayName eq 'a'' or displayName eq ''b'"; filter != want {
+		t.Errorf("$filter = %q, want %q", filter, want)
+	}
+}
+
+func TestAppRoleAssignRetryable(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+		want   bool
+	}{
+		{"role not yet replicated", http.StatusBadRequest, `{"error":{"code":"Request_BadRequest","message":"Permission being assigned was not found on application"}}`, true},
+		{"duplicate assignment", http.StatusBadRequest, `{"error":{"message":"Permission being assigned already exists on the object"}}`, false},
+		{"generic bad request", http.StatusBadRequest, `{"error":{"code":"Request_BadRequest","message":"Invalid principal"}}`, false},
+		{"throttled", http.StatusTooManyRequests, ``, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := appRoleAssignRetryable(tc.status, []byte(tc.body), nil); got != tc.want {
+				t.Errorf("appRoleAssignRetryable(%d) = %v, want %v", tc.status, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestEnsureGrantScopes_AddsMissingScopes(t *testing.T) {
+	var filter, patchedPath, patchedScope string
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			filter = r.URL.Query().Get("$filter")
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"id": "grant-1", "scope": "openid profile"},
+			}})
+		},
+		"PATCH /oauth2PermissionGrants/grant-1": func(w http.ResponseWriter, r *http.Request) {
+			patchedPath = r.URL.Path
+			var body map[string]string
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode PATCH body: %v", err)
+			}
+			patchedScope = body["scope"]
+			w.WriteHeader(http.StatusNoContent)
+		},
+	})
+
+	if err := ensureGrantScopes(context.Background(), srv.Client(), "token", permissionGrant{clientID: "client-sp", resourceID: "graph-sp", scope: "openid profile email"}); err != nil {
+		t.Fatalf("ensureGrantScopes: %v", err)
+	}
+	if want := "clientId eq 'client-sp' and resourceId eq 'graph-sp' and consentType eq 'AllPrincipals'"; filter != want {
+		t.Errorf("$filter = %q, want %q", filter, want)
+	}
+	if patchedPath != "/oauth2PermissionGrants/grant-1" || patchedScope != "openid profile email" {
+		t.Errorf("PATCH %s scope=%q, want /oauth2PermissionGrants/grant-1 scope=%q", patchedPath, patchedScope, "openid profile email")
+	}
+}
+
+func TestEnsureGrantScopes_LeavesCompleteGrant(t *testing.T) {
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"id": "grant-1", "scope": "email openid profile offline_access"},
+			}})
+		},
+		"PATCH /oauth2PermissionGrants/": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("unexpected PATCH for a grant that already holds every scope")
+		},
+	})
+
+	if err := ensureGrantScopes(context.Background(), srv.Client(), "token", permissionGrant{clientID: "client-sp", resourceID: "graph-sp", scope: "openid profile email"}); err != nil {
+		t.Fatalf("ensureGrantScopes: %v", err)
+	}
+}
+
+func TestEnsureGrantScopes_RetriesUntilGrantIsVisible(t *testing.T) {
+	shrinkRetryTimings(t)
+	const staleReads = 2
+	reads := 0
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			reads++
+			if reads <= staleReads {
+				jsonResponse(w, 200, map[string]any{"value": []any{}})
+				return
+			}
+			jsonResponse(w, 200, map[string]any{"value": []any{
+				map[string]string{"id": "grant-1", "scope": "openid profile email"},
+			}})
+		},
+	})
+
+	if err := ensureGrantScopes(context.Background(), srv.Client(), "token", permissionGrant{clientID: "client-sp", resourceID: "graph-sp", scope: "openid profile email"}); err != nil {
+		t.Fatalf("ensureGrantScopes: %v", err)
+	}
+	if reads != staleReads+1 {
+		t.Errorf("grant reads = %d, want %d", reads, staleReads+1)
+	}
+}
+
+func TestEnsureGrantScopes_FailsWhenGrantNeverVisible(t *testing.T) {
+	shrinkRetryTimings(t)
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"GET /oauth2PermissionGrants": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"value": []any{}})
+		},
+	})
+
+	if err := ensureGrantScopes(context.Background(), srv.Client(), "token", permissionGrant{clientID: "client-sp", resourceID: "graph-sp", scope: "openid"}); err == nil {
+		t.Fatal("expected an error when Graph never returns the grant")
+	}
+}
+
+func TestAwaitLoginAppResource_RetriesUntilIssued(t *testing.T) {
+	origTimeout, origInterval := loginAppResourceTimeout, loginAppResourceInterval
+	loginAppResourceTimeout, loginAppResourceInterval = 5*time.Second, time.Millisecond
+	t.Cleanup(func() { loginAppResourceTimeout, loginAppResourceInterval = origTimeout, origInterval })
+
+	const failures = 3
+	attempts := map[string]int{}
+	srv := withTestGraph(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": func(w http.ResponseWriter, r *http.Request) {
+			if err := r.ParseForm(); err != nil {
+				t.Errorf("parse form: %v", err)
+			}
+			clientID := r.PostForm.Get("client_id")
+			wantSecret := map[string]string{"login-app": "login-secret", "parent-client": "parent-secret"}[clientID]
+			if wantSecret == "" {
+				t.Errorf("unexpected client_id %q", clientID)
+			}
+			for field, want := range map[string]string{
+				"client_secret": wantSecret,
+				"grant_type":    "client_credentials",
+				"scope":         "api://login-app/.default",
+			} {
+				if got := r.PostForm.Get(field); got != want {
+					t.Errorf("%s: %s = %q, want %q", clientID, field, got, want)
+				}
+			}
+			attempts[clientID]++
+			switch {
+			case attempts[clientID] <= failures:
+				jsonResponse(w, 400, map[string]string{"error": "invalid_resource", "error_description": "AADSTS500011"})
+			case clientID == "parent-client" && attempts[clientID] <= 2*failures:
+				jsonResponse(w, 200, map[string]any{"access_token": testAccessToken(), "expires_in": 3600})
+			default:
+				jsonResponse(w, 200, map[string]any{"access_token": testAccessToken(loginAppRoleValue), "expires_in": 3600})
+			}
+		},
+	})
+
+	opts := testLoginOpts(srv)
+	if err := awaitLoginAppResource(context.Background(), &opts, "login-app", "login-secret"); err != nil {
+		t.Fatalf("awaitLoginAppResource: %v", err)
+	}
+	if attempts["login-app"] != failures+1 {
+		t.Errorf("login app token requests = %d, want %d", attempts["login-app"], failures+1)
+	}
+	if attempts["parent-client"] != 2*failures+1 {
+		t.Errorf("parent token requests = %d, want %d (must wait for the role claim)", attempts["parent-client"], 2*failures+1)
 	}
 }

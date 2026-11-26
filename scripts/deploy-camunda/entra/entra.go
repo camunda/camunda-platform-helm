@@ -21,6 +21,7 @@ package entra
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,8 +29,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
@@ -54,6 +59,28 @@ var retryMaxAttempts = 15
 // propagationSleepDuration is the sleep between propagation-check attempts after
 // creating a new app registration. Exposed as a variable so tests can set it to zero.
 var propagationSleepDuration = 2 * time.Second
+
+// loginAppResourceTimeout / loginAppResourceInterval bound the wait for the
+// token service to serve the login app as its own resource.
+var (
+	loginAppResourceTimeout  = 10 * time.Minute
+	loginAppResourceInterval = 10 * time.Second
+)
+
+// redirectVerifyDelay and redirectVerifyJitter set the wait between writing the
+// redirect URIs and reading them back. Variables so tests can set them to zero.
+var (
+	redirectVerifyDelay  = 2 * time.Second
+	redirectVerifyJitter = 3 * time.Second
+)
+
+// redirectVerifyAttempts bounds how often UpdateRedirectURIs rewrites the URIs
+// when a concurrent registration removed them.
+const redirectVerifyAttempts = 3
+
+// redirectVerifyReads is how many read-backs follow each write before the URIs
+// count as removed; Graph reads can return a replica's pre-write state.
+const redirectVerifyReads = 6
 
 // loginBaseURL is the Microsoft identity platform base URL. It is a variable
 // so tests can override it with a local httptest server URL.
@@ -128,8 +155,13 @@ func resolveOpts(opts *Options) error {
 	if opts.Namespace == "" {
 		return fmt.Errorf("namespace is required")
 	}
+	if !namespacePattern.MatchString(opts.Namespace) {
+		return fmt.Errorf("namespace %q is not a valid DNS-1123 label", opts.Namespace)
+	}
 	return nil
 }
+
+var namespacePattern = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`)
 
 func httpClient(opts *Options) *http.Client {
 	if opts.HTTPClient != nil {
@@ -203,27 +235,43 @@ func acquireBearerToken(ctx context.Context, opts *Options) (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-// graphGet performs a GET request to the Graph API.
+// graphGet performs a GET request to the Graph API and rejects non-2xx responses.
 func graphGet(ctx context.Context, client *http.Client, token, path string) ([]byte, error) {
+	body, statusCode, err := graphGetStatus(ctx, client, token, path)
+	if err != nil {
+		return nil, err
+	}
+	if statusCode < 200 || statusCode >= 300 {
+		return nil, fmt.Errorf("GET %s failed (status=%d): %s", path, statusCode, string(body))
+	}
+	return body, nil
+}
+
+// graphGetStatus performs a GET request to the Graph API and returns the
+// response whatever its status.
+func graphGetStatus(ctx context.Context, client *http.Client, token, path string) ([]byte, int, error) {
 	reqURL := graphBaseURL + path
 	logging.Logger.Debug().Str("method", "GET").Str("url", reqURL).Msg("Graph API request")
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	logging.Logger.Debug().Int("statusCode", resp.StatusCode).Int("bodyLen", len(body)).Msg("Graph API GET response")
-	return body, err
+	if err != nil {
+		return nil, resp.StatusCode, err
+	}
+	return body, resp.StatusCode, nil
 }
 
 // retryPredicate decides whether to retry a Graph response. statusCode and
@@ -422,7 +470,7 @@ func graphDelete(ctx context.Context, client *http.Client, token, path string) (
 func findApp(ctx context.Context, client *http.Client, token, displayName string) (string, string, error) {
 	logging.Logger.Debug().Str("displayName", displayName).Msg("Searching for existing Entra app registration")
 
-	path := fmt.Sprintf("/applications?$filter=displayName%%20eq%%20'%s'", url.PathEscape(displayName))
+	path := fmt.Sprintf("/applications?$filter=displayName%%20eq%%20'%s'", url.PathEscape(strings.ReplaceAll(displayName, "'", "''")))
 	body, err := graphGet(ctx, client, token, path)
 	if err != nil {
 		return "", "", fmt.Errorf("search for app %q: %w", displayName, err)
@@ -501,13 +549,15 @@ func createApp(ctx context.Context, client *http.Client, token, displayName, par
 	return result.AppID, result.ID, nil
 }
 
-// rotateCredentials removes all existing password credentials and adds a fresh one.
-// Returns the secret text of the new credential.
+// rotateCredentials adds a fresh password credential, then removes every
+// credential the app held before. Returns the secret text of the new credential.
 func rotateCredentials(ctx context.Context, client *http.Client, token, objectID string) (string, error) {
 	logging.Logger.Debug().Str("objectId", objectID).Msg("Fetching existing password credentials")
 
-	// Fetch existing credentials.
-	body, err := graphGet(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
+	appPath := fmt.Sprintf("/applications/%s", objectID)
+	body, _, err := withGraphRetry(ctx, "getAppCredentials", nil, func() ([]byte, int, error) {
+		return graphGetStatus(ctx, client, token, appPath)
+	})
 	if err != nil {
 		return "", fmt.Errorf("get app credentials: %w", err)
 	}
@@ -526,18 +576,7 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 		Str("objectId", objectID).
 		Msg("Found existing password credentials")
 
-	// Remove existing credentials to avoid accumulation.
-	for _, cred := range appDetails.PasswordCredentials {
-		logging.Logger.Debug().Str("keyId", cred.KeyID).Msg("Removing old password credential")
-		removePayload := map[string]string{"keyId": cred.KeyID}
-		if _, _, err := graphPost(ctx, client, token, fmt.Sprintf("/applications/%s/removePassword", objectID), removePayload); err != nil {
-			logging.Logger.Warn().Err(err).Str("keyId", cred.KeyID).Msg("failed to remove old credential (continuing)")
-		}
-	}
-
-	// Add a new client secret. Graph's backend is eventually consistent after
-	// an app registration is created, so addPassword may return 404 for tens
-	// of seconds after POST /applications succeeds. Retry with backoff.
+	// addPassword may return 404 for tens of seconds after POST /applications.
 	logging.Logger.Debug().Str("objectId", objectID).Msg("Adding new password credential")
 	addPayload := map[string]any{
 		"passwordCredential": map[string]string{
@@ -560,11 +599,262 @@ func rotateCredentials(ctx context.Context, client *http.Client, token, objectID
 		return "", fmt.Errorf("parse addPassword response: %w (status=%d)", err, statusCode)
 	}
 	if secretResult.SecretText == "" {
-		return "", fmt.Errorf("addPassword returned empty secret (status=%d body=%s)", statusCode, string(secretBody))
+		return "", fmt.Errorf("addPassword returned empty secret (status=%d)", statusCode)
+	}
+
+	removePath := fmt.Sprintf("/applications/%s/removePassword", objectID)
+	for _, cred := range appDetails.PasswordCredentials {
+		logging.Logger.Debug().Str("keyId", cred.KeyID).Msg("Removing old password credential")
+		removePayload := map[string]string{"keyId": cred.KeyID}
+		if _, _, err := withGraphRetry(ctx, "removePassword", nil, func() ([]byte, int, error) {
+			return graphPost(ctx, client, token, removePath, removePayload)
+		}); err != nil {
+			return "", fmt.Errorf("remove old password %s: %w", cred.KeyID, err)
+		}
 	}
 
 	logging.Logger.Debug().Str("objectId", objectID).Msg("New password credential added successfully")
 	return secretResult.SecretText, nil
+}
+
+// graphAppID is the well-known application id of Microsoft Graph.
+const graphAppID = "00000003-0000-0000-c000-000000000000"
+
+// loginAppDelegatedScopes are the delegated permissions a sign-in needs: the
+// OIDC trio from Microsoft Graph, and the app's own scope, which every
+// component asks for as "<clientId>/.default".
+const (
+	graphSignInScopes = "openid profile email"
+	loginAppSelfScope = "user_impersonation"
+)
+
+// loginAppRoleValue is the app role each login app exposes to the parent app.
+const loginAppRoleValue = "camunda.api.access"
+
+// loginAppRoleID derives a stable role id from the app id.
+func loginAppRoleID(appID string) string {
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("camunda-login-app-role:"+appID)).String()
+}
+
+// loginAppScopeID derives a stable user_impersonation scope id from the app id.
+func loginAppScopeID(appID string) string {
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("camunda-login-app-scope:"+appID)).String()
+}
+
+// appRoleAssignRetryable treats a duplicate assignment as terminal and retries
+// the 400 Graph returns while the login app's new role is not yet replicated.
+func appRoleAssignRetryable(statusCode int, body []byte, err error) bool {
+	if isDuplicateAppRoleAssignment(statusCode, body) {
+		return false
+	}
+	if statusCode == http.StatusBadRequest &&
+		bytes.Contains(body, []byte("Permission being assigned was not found")) {
+		return true
+	}
+	return defaultRetryable(statusCode, body, err)
+}
+
+func isDuplicateAppRoleAssignment(statusCode int, body []byte) bool {
+	if statusCode != http.StatusBadRequest && statusCode != http.StatusConflict {
+		return false
+	}
+	return bytes.Contains(body, []byte("Permission being assigned already exists"))
+}
+
+// assignAPIAppRole assigns the login app's API role to the parent app's service
+// principal.
+func assignAPIAppRole(ctx context.Context, client *http.Client, token, parentClientID string, app loginAppRef) error {
+	appID, roleID := app.appID, app.roleID
+	resourceSPID, err := servicePrincipalID(ctx, client, token, appID)
+	if err != nil {
+		return fmt.Errorf("assign api app role: %w", err)
+	}
+	principalSPID, err := servicePrincipalID(ctx, client, token, parentClientID)
+	if err != nil {
+		return fmt.Errorf("assign api app role: %w", err)
+	}
+
+	path := fmt.Sprintf("/servicePrincipals/%s/appRoleAssignedTo", resourceSPID)
+	payload := map[string]any{
+		"principalId": principalSPID,
+		"resourceId":  resourceSPID,
+		"appRoleId":   roleID,
+	}
+	body, statusCode, err := withGraphRetry(ctx, "assignAPIAppRole", appRoleAssignRetryable, func() ([]byte, int, error) {
+		return graphPost(ctx, client, token, path, payload)
+	})
+	if isDuplicateAppRoleAssignment(statusCode, body) {
+		logging.Logger.Debug().Str("appId", appID).Msg("API app role already assigned to the parent app")
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("assign api app role: %w", err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("assign api app role failed (status=%d): %s", statusCode, string(body))
+	}
+
+	logging.Logger.Info().
+		Str("appId", appID).
+		Str("role", loginAppRoleValue).
+		Msg("Assigned the login app's API role to the parent app")
+	return nil
+}
+
+// permissionGrantRetryable treats a duplicate grant as terminal and retries the
+// 400 Graph returns for a not-yet-replicated service principal.
+func permissionGrantRetryable(statusCode int, body []byte, err error) bool {
+	if isDuplicatePermissionGrant(statusCode, body) {
+		return false
+	}
+	if statusCode == http.StatusBadRequest &&
+		bytes.Contains(body, []byte("Specified resourceId was not found")) {
+		return true
+	}
+	return defaultRetryable(statusCode, body, err)
+}
+
+func isDuplicatePermissionGrant(statusCode int, body []byte) bool {
+	if statusCode != http.StatusBadRequest && statusCode != http.StatusConflict {
+		return false
+	}
+	return bytes.Contains(body, []byte("Permission entry already exists"))
+}
+
+// grantAdminConsent records AllPrincipals consent for the login app's delegated
+// scopes. Requires DelegatedPermissionGrant.ReadWrite.All on the parent app.
+func grantAdminConsent(ctx context.Context, client *http.Client, token, appID string) error {
+	clientSPID, err := servicePrincipalID(ctx, client, token, appID)
+	if err != nil {
+		return fmt.Errorf("grant admin consent: %w", err)
+	}
+	graphSPID, err := servicePrincipalID(ctx, client, token, graphAppID)
+	if err != nil {
+		return fmt.Errorf("grant admin consent: %w", err)
+	}
+
+	for _, grant := range []struct {
+		resourceID string
+		scope      string
+	}{
+		{graphSPID, graphSignInScopes},
+		{clientSPID, loginAppSelfScope},
+	} {
+		payload := map[string]any{
+			"clientId":    clientSPID,
+			"consentType": "AllPrincipals",
+			"resourceId":  grant.resourceID,
+			"scope":       grant.scope,
+		}
+		body, statusCode, err := withGraphRetry(ctx, "grantAdminConsent", permissionGrantRetryable, func() ([]byte, int, error) {
+			return graphPost(ctx, client, token, "/oauth2PermissionGrants", payload)
+		})
+		if isDuplicatePermissionGrant(statusCode, body) {
+			if err := ensureGrantScopes(ctx, client, token, permissionGrant{clientID: clientSPID, resourceID: grant.resourceID, scope: grant.scope}); err != nil {
+				return fmt.Errorf("grant admin consent for %q: %w", grant.scope, err)
+			}
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("grant admin consent for %q: %w", grant.scope, err)
+		}
+		if statusCode >= 300 {
+			return fmt.Errorf("grant admin consent for %q failed (status=%d): %s", grant.scope, statusCode, string(body))
+		}
+	}
+
+	logging.Logger.Info().
+		Str("appId", appID).
+		Str("scopes", graphSignInScopes+" "+loginAppSelfScope).
+		Msg("Consented the login app for all principals")
+	return nil
+}
+
+// permissionGrant names an AllPrincipals delegated grant by client and resource
+// service principal ids and its space-separated scopes.
+type permissionGrant struct {
+	clientID   string
+	resourceID string
+	scope      string
+}
+
+// ensureGrantScopes adds any of grant.scope's entries missing from the existing
+// AllPrincipals grant of grant.clientID on grant.resourceID.
+func ensureGrantScopes(ctx context.Context, client *http.Client, token string, grant permissionGrant) error {
+	clientSPID, resourceID, scope := grant.clientID, grant.resourceID, grant.scope
+	filter := fmt.Sprintf("clientId eq '%s' and resourceId eq '%s' and consentType eq 'AllPrincipals'", clientSPID, resourceID)
+	path := "/oauth2PermissionGrants?$filter=" + strings.ReplaceAll(url.QueryEscape(filter), "+", "%20")
+	var result struct {
+		Value []struct {
+			ID    string `json:"id"`
+			Scope string `json:"scope"`
+		} `json:"value"`
+	}
+	_, _, err := withGraphRetry(ctx, "readExistingGrant", nil, func() ([]byte, int, error) {
+		body, statusCode, err := graphGetStatus(ctx, client, token, path)
+		if err != nil || statusCode < 200 || statusCode >= 300 {
+			return body, statusCode, err
+		}
+		if err := json.Unmarshal(body, &result); err != nil {
+			return body, statusCode, fmt.Errorf("decode existing grant: %w", err)
+		}
+		if len(result.Value) == 0 {
+			return body, http.StatusNotFound, nil
+		}
+		return body, statusCode, nil
+	})
+	if err != nil {
+		return fmt.Errorf("read the existing grant of client %s on %s: %w", clientSPID, resourceID, err)
+	}
+	existing := result.Value[0]
+	have := strings.Fields(existing.Scope)
+	merged := have
+	for want := range strings.FieldsSeq(scope) {
+		if !slices.Contains(merged, want) {
+			merged = append(merged, want)
+		}
+	}
+	if len(merged) == len(have) {
+		logging.Logger.Debug().Str("grantId", existing.ID).Str("scope", existing.Scope).Msg("Admin consent already granted")
+		return nil
+	}
+	newScope := strings.Join(merged, " ")
+	body, statusCode, err := withGraphRetry(ctx, "updateGrantScopes", nil, func() ([]byte, int, error) {
+		return graphPatch(ctx, client, token, "/oauth2PermissionGrants/"+url.PathEscape(existing.ID), map[string]string{"scope": newScope}, nil)
+	})
+	if err != nil {
+		return fmt.Errorf("update grant scopes: %w", err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("update grant scopes failed (status=%d): %s", statusCode, string(body))
+	}
+	logging.Logger.Info().Str("grantId", existing.ID).Str("scope", newScope).Msg("Extended the existing admin consent grant")
+	return nil
+}
+
+// servicePrincipalID resolves an application id to its service principal object
+// id, retrying 404s.
+func servicePrincipalID(ctx context.Context, client *http.Client, token, appID string) (string, error) {
+	path := fmt.Sprintf("/servicePrincipals(appId='%s')?$select=id", url.PathEscape(appID))
+	body, statusCode, err := withGraphRetry(ctx, "servicePrincipalID", servicePrincipalUpsertRetryable, func() ([]byte, int, error) {
+		return graphGetStatus(ctx, client, token, path)
+	})
+	if err != nil {
+		return "", fmt.Errorf("look up service principal for %s: %w", appID, err)
+	}
+	if statusCode >= 300 {
+		return "", fmt.Errorf("look up service principal for %s failed (status=%d): %s", appID, statusCode, string(body))
+	}
+	var sp struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(body, &sp); err != nil {
+		return "", fmt.Errorf("decode service principal for %s: %w", appID, err)
+	}
+	if sp.ID == "" {
+		return "", fmt.Errorf("service principal for %s has no id", appID)
+	}
+	return sp.ID, nil
 }
 
 // ensureServicePrincipal ensures a service principal exists for the given appId.
@@ -642,26 +932,10 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 			Str("portalURL", portalURL).
 			Msg("Created venom app in Entra")
 
-		propogated := false
-		attempts := 0
-		successes := 0
-
-		for !propogated && attempts < 45 && successes < 5 {
-			foundAppID, foundObjID, findErr := findApp(ctx, client, token, displayName)
-			if findErr != nil {
-				logging.Logger.Warn().Err(findErr).Msg("Error while checking for app registration propagation")
-			}
-			if foundAppID != "" && foundObjID != "" {
-				appID = foundAppID
-				objectID = foundObjID
-				propogated = true
-				// success counter is used to ensure that the app is consistently found across multiple attempts, indicating that it has fully propagated through the system.
-				successes++
-			} else {
-				successes = 0
-			}
-			attempts++
-			time.Sleep(propagationSleepDuration)
+		if foundAppID, foundObjID, waitErr := awaitAppPropagation(ctx, client, token, displayName); waitErr != nil {
+			logging.Logger.Warn().Err(waitErr).Msg("Continuing before the venom app registration propagated")
+		} else {
+			appID, objectID = foundAppID, foundObjID
 		}
 
 	}
@@ -713,53 +987,354 @@ func EnsureVenomApp(ctx context.Context, opts Options) (*VenomApp, error) {
 	}, nil
 }
 
+// awaitAppPropagation polls findApp until displayName resolves, then writes the
+// found ids to appID and objectID.
+func awaitAppPropagation(ctx context.Context, client *http.Client, token, displayName string) (string, string, error) {
+	for range 45 {
+		foundAppID, foundObjID, err := findApp(ctx, client, token, displayName)
+		if err != nil {
+			logging.Logger.Warn().Err(err).Msg("Error while checking for app registration propagation")
+		}
+		if foundAppID != "" && foundObjID != "" {
+			return foundAppID, foundObjID, nil
+		}
+		select {
+		case <-ctx.Done():
+			return "", "", ctx.Err()
+		case <-time.After(propagationSleepDuration):
+		}
+	}
+	return "", "", fmt.Errorf("app registration %q did not propagate", displayName)
+}
+
 // CleanupVenomApp deletes the venom Entra app registration for a namespace.
 // Errors are logged but not returned — cleanup is best-effort.
 func CleanupVenomApp(ctx context.Context, opts Options) {
+	cleanupApp(ctx, opts, appDisplayName, "venom")
+}
+
+// CleanupLoginApp deletes a deployment's own Entra login app registration.
+// Errors are logged but not returned — cleanup is best-effort.
+func CleanupLoginApp(ctx context.Context, opts Options) {
+	cleanupApp(ctx, opts, loginAppDisplayName, "login")
+}
+
+// cleanupApp deletes the app registration displayName(opts.Namespace) names.
+// Errors are logged, not returned.
+func cleanupApp(ctx context.Context, opts Options, displayName func(string) string, kind string) {
+	log := logging.Logger.With().Str("app", kind).Logger()
 	if err := resolveOpts(&opts); err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra cleanup: invalid options, skipping")
+		log.Warn().Err(err).Msg("entra cleanup: invalid options, skipping")
 		return
 	}
 
-	displayName := appDisplayName(opts.Namespace)
+	name := displayName(opts.Namespace)
+	client := httpClient(&opts)
+	log.Info().Str("namespace", opts.Namespace).Str("displayName", name).Msg("Cleaning up Entra app registration")
+
+	token, err := acquireBearerToken(ctx, &opts)
+	if err != nil {
+		log.Warn().Err(err).Msg("entra cleanup: failed to obtain bearer token")
+		return
+	}
+
+	_, objectID, err := findApp(ctx, client, token, name)
+	if err != nil {
+		log.Warn().Err(err).Msg("entra cleanup: failed to search for app")
+		return
+	}
+	if objectID == "" {
+		log.Info().Str("displayName", name).Msg("No Entra app found, nothing to clean up")
+		return
+	}
+
+	log.Debug().Str("objectId", objectID).Str("displayName", name).Msg("Sending DELETE request for app registration")
+	statusCode, err := graphDelete(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
+	if err != nil {
+		log.Warn().Err(err).Str("objectId", objectID).Msg("entra cleanup: delete request failed")
+		return
+	}
+	if statusCode == 204 || statusCode == 404 {
+		log.Info().Str("displayName", name).Int("status", statusCode).Msg("Successfully deleted Entra app")
+	} else {
+		log.Warn().Str("displayName", name).Int("status", statusCode).Msg("Unexpected status when deleting Entra app")
+	}
+}
+
+// loginAppRef identifies a login app registration and, once configured, its API role.
+type loginAppRef struct {
+	appID    string
+	objectID string
+	roleID   string
+}
+
+// loginAppDisplayName returns the deterministic Entra app display name of a
+// deployment's own OIDC login app.
+func loginAppDisplayName(namespace string) string {
+	return "camunda-oidc-" + namespace
+}
+
+// LoginApp holds the result of provisioning a deployment's own Entra app
+// registration for user sign-in and component M2M tokens.
+type LoginApp struct {
+	// AppID is the Entra application (client) ID of the login app.
+	AppID string
+	// ObjectID is the Entra object ID of the login app registration.
+	ObjectID string
+	// ClientSecret is the generated client secret for the login app.
+	ClientSecret string
+}
+
+// configureLoginApp sets the login app's redirect URIs to exactly those host
+// needs, exposes the app as a v2 token resource with one delegated scope and one
+// application role, and drops the all-zero permission entry createApp seeds.
+// Returns the role id.
+func configureLoginApp(ctx context.Context, client *http.Client, token string, app loginAppRef, host string) (string, error) {
+	objectID, appID := app.objectID, app.appID
+	web, spa := buildRedirectURIs(host)
+	scopeID := loginAppScopeID(appID)
+	roleID := loginAppRoleID(appID)
+	path := fmt.Sprintf("/applications/%s", objectID)
+
+	resource := map[string]any{
+		"web":            map[string]any{"redirectUris": web},
+		"spa":            map[string]any{"redirectUris": spa},
+		"identifierUris": []string{"api://" + appID},
+		"appRoles": []map[string]any{{
+			"id":                 roleID,
+			"isEnabled":          true,
+			"allowedMemberTypes": []string{"Application"},
+			"value":              loginAppRoleValue,
+			"displayName":        "Call Camunda APIs",
+			"description":        "Allow an application to call this deployment's Camunda APIs.",
+		}},
+		"api": map[string]any{
+			"requestedAccessTokenVersion": 2,
+			"oauth2PermissionScopes": []map[string]any{{
+				"id":                      scopeID,
+				"isEnabled":               true,
+				"type":                    "User",
+				"value":                   "user_impersonation",
+				"adminConsentDisplayName": "Access Camunda",
+				"adminConsentDescription": "Allow the application to access Camunda on behalf of the signed-in user.",
+				"userConsentDisplayName":  "Access Camunda",
+				"userConsentDescription":  "Allow the application to access Camunda on your behalf.",
+			}},
+		},
+		"requiredResourceAccess": []map[string]any{{
+			"resourceAppId":  appID,
+			"resourceAccess": []map[string]any{{"id": scopeID, "type": "Scope"}},
+		}},
+	}
+	if err := patchLoginApp(ctx, client, token, path, resource); err != nil {
+		return "", err
+	}
+
+	logging.Logger.Info().
+		Str("host", host).
+		Str("identifierUri", "api://"+appID).
+		Int("webURIs", len(web)).
+		Int("spaURIs", len(spa)).
+		Msg("Configured the deployment's own login app")
+	return roleID, nil
+}
+
+// patchLoginApp applies one PATCH to the login app registration, failing on any
+// status withGraphRetry does not treat as transient.
+func patchLoginApp(ctx context.Context, client *http.Client, token, path string, payload map[string]any) error {
+	const step = "configureLoginApp"
+	body, statusCode, err := withGraphRetry(ctx, step, nil, func() ([]byte, int, error) {
+		return graphPatch(ctx, client, token, path, payload, nil)
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", step, err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("%s failed (status=%d): %s", step, statusCode, string(body))
+	}
+	return nil
+}
+
+// tokenProbe is a client-credentials token request for api://<resourceAppID>.
+// When role is set, the issued token must carry it in its roles claim.
+type tokenProbe struct {
+	clientID, secret, resourceAppID, role string
+}
+
+// awaitLoginAppResource polls the token endpoint until Entra issues the
+// login app a token for itself, and the parent app a token for the login app
+// carrying the role assignAPIAppRole granted it.
+func awaitLoginAppResource(ctx context.Context, opts *Options, appID, secret string) error {
+	probes := []tokenProbe{
+		{clientID: appID, secret: secret, resourceAppID: appID},
+		{clientID: opts.ClientID, secret: opts.ClientSecret, resourceAppID: appID, role: loginAppRoleValue},
+	}
+	for _, probe := range probes {
+		if err := awaitTokenProbe(ctx, opts, probe); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func awaitTokenProbe(ctx context.Context, opts *Options, probe tokenProbe) error {
+	tokenURL := fmt.Sprintf("%s/%s/oauth2/v2.0/token", loginBaseURL, opts.DirectoryID)
+	data := url.Values{
+		"client_id":     {probe.clientID},
+		"scope":         {"api://" + probe.resourceAppID + "/.default"},
+		"client_secret": {probe.secret},
+		"grant_type":    {"client_credentials"},
+	}
+	client := httpClient(opts)
+	deadline := time.Now().Add(loginAppResourceTimeout)
+	var lastErr string
+	for attempt := 1; time.Now().Before(deadline); attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenURL, strings.NewReader(data.Encode()))
+		if err != nil {
+			return fmt.Errorf("create login app probe request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = err.Error()
+		} else {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			lastErr = string(body)
+			if resp.StatusCode < 300 {
+				if probe.role == "" || tokenHasRole(body, probe.role) {
+					logging.Logger.Info().
+						Str("clientId", probe.clientID).
+						Str("resource", probe.resourceAppID).
+						Int("attempts", attempt).
+						Msg("Entra issues a token for the login app")
+					return nil
+				}
+				lastErr = fmt.Sprintf("token has no %q role yet", probe.role)
+			}
+			logging.Logger.Debug().
+				Int("attempt", attempt).
+				Int("statusCode", resp.StatusCode).
+				Str("clientId", probe.clientID).
+				Msg("Login app token not issued as required yet")
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(loginAppResourceInterval):
+		}
+	}
+	return fmt.Errorf("client %s got no token for login app %s: %s", probe.clientID, probe.resourceAppID, lastErr)
+}
+
+// tokenHasRole reports whether the access token in a token endpoint response
+// carries role in its roles claim.
+func tokenHasRole(tokenResponse []byte, role string) bool {
+	var resp struct {
+		AccessToken string `json:"access_token"`
+	}
+	if err := json.Unmarshal(tokenResponse, &resp); err != nil {
+		return false
+	}
+	parts := strings.Split(resp.AccessToken, ".")
+	if len(parts) != 3 {
+		return false
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return false
+	}
+	var claims struct {
+		Roles []string `json:"roles"`
+	}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return false
+	}
+	return slices.Contains(claims.Roles, role)
+}
+
+// EnsureLoginApp provisions a deployment's own Entra app registration for
+// OIDC sign-in, named "camunda-oidc-<namespace>". The caller substitutes its
+// appId for ENTRA_APP_CLIENT_ID and stores its secret with CreateLoginK8sSecret
+// so every component of this deployment authenticates against it.
+//
+// created reports whether this call registered the app, also when it fails
+// later.
+func EnsureLoginApp(ctx context.Context, opts Options, ingressHost string) (login *LoginApp, created bool, err error) {
+	if err := resolveOpts(&opts); err != nil {
+		return nil, false, fmt.Errorf("entra: %w", err)
+	}
+	if ingressHost == "" {
+		return nil, false, fmt.Errorf("entra: ingress host is required to provision the login app")
+	}
+
+	displayName := loginAppDisplayName(opts.Namespace)
 	client := httpClient(&opts)
 
 	logging.Logger.Info().
 		Str("namespace", opts.Namespace).
 		Str("displayName", displayName).
-		Msg("Cleaning up venom Entra app registration")
+		Str("ingressHost", ingressHost).
+		Msg("Ensuring the deployment's own Entra login app")
 
-	// Acquire bearer token.
 	token, err := acquireBearerToken(ctx, &opts)
 	if err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra cleanup: failed to obtain bearer token")
-		return
+		return nil, false, fmt.Errorf("entra: %w", err)
 	}
 
-	// Find the app.
-	_, objectID, err := findApp(ctx, client, token, displayName)
+	appID, objectID, err := findApp(ctx, client, token, displayName)
 	if err != nil {
-		logging.Logger.Warn().Err(err).Msg("entra cleanup: failed to search for app")
-		return
+		return nil, false, fmt.Errorf("entra: %w", err)
 	}
-	if objectID == "" {
-		logging.Logger.Info().Str("displayName", displayName).Msg("No Entra app found, nothing to clean up")
-		return
-	}
-
-	// Delete the app.
-	logging.Logger.Debug().Str("objectId", objectID).Str("displayName", displayName).Msg("Sending DELETE request for app registration")
-	statusCode, err := graphDelete(ctx, client, token, fmt.Sprintf("/applications/%s", objectID))
-	if err != nil {
-		logging.Logger.Warn().Err(err).Str("objectId", objectID).Msg("entra cleanup: delete request failed")
-		return
-	}
-
-	if statusCode == 204 || statusCode == 404 {
-		logging.Logger.Info().Str("displayName", displayName).Int("status", statusCode).Msg("Successfully deleted Entra app")
+	if appID != "" {
+		logging.Logger.Info().
+			Str("appId", appID).
+			Str("objectId", objectID).
+			Str("portalURL", entraPortalAppURL(appID)).
+			Msg("Reusing the existing login app for this namespace")
 	} else {
-		logging.Logger.Warn().Str("displayName", displayName).Int("status", statusCode).Msg("Unexpected status when deleting Entra app")
+		appID, objectID, err = createApp(ctx, client, token, displayName, opts.ClientID)
+		if err != nil {
+			return nil, false, fmt.Errorf("entra: %w", err)
+		}
+		created = true
+		logging.Logger.Info().
+			Str("appId", appID).
+			Str("objectId", objectID).
+			Str("portalURL", entraPortalAppURL(appID)).
+			Msg("Created the deployment's login app in Entra")
+		if appID, objectID, err = awaitAppPropagation(ctx, client, token, displayName); err != nil {
+			return nil, created, fmt.Errorf("entra: %w", err)
+		}
 	}
+
+	roleID, err := configureLoginApp(ctx, client, token, loginAppRef{appID: appID, objectID: objectID}, ingressHost)
+	if err != nil {
+		return nil, created, fmt.Errorf("entra: %w", err)
+	}
+
+	secret, err := rotateCredentials(ctx, client, token, objectID)
+	if err != nil {
+		return nil, created, fmt.Errorf("entra: %w", err)
+	}
+	if err := ensureServicePrincipal(ctx, client, token, appID); err != nil {
+		return nil, created, fmt.Errorf("entra: %w", err)
+	}
+	if err := grantAdminConsent(ctx, client, token, appID); err != nil {
+		return nil, created, fmt.Errorf("entra: %w", err)
+	}
+	if err := assignAPIAppRole(ctx, client, token, opts.ClientID, loginAppRef{appID: appID, roleID: roleID}); err != nil {
+		return nil, created, fmt.Errorf("entra: %w", err)
+	}
+	if err := awaitLoginAppResource(ctx, &opts, appID, secret); err != nil {
+		return nil, created, fmt.Errorf("entra: %w", err)
+	}
+
+	logging.Logger.Info().
+		Str("ENTRA_APP_CLIENT_ID", appID).
+		Msg("Login app provisioned — callers should override ENTRA_APP_CLIENT_ID/SECRET via ExtraEnv")
+
+	return &LoginApp{AppID: appID, ObjectID: objectID, ClientSecret: secret}, created, nil
 }
 
 // createVenomK8sSecret creates or updates the venom-entra-credentials Opaque
@@ -779,6 +1354,40 @@ func createVenomK8sSecret(ctx context.Context, kubeContext, namespace, venomClie
 	if err := k8sClient.EnsureOpaqueSecret(ctx, namespace, "venom-entra-credentials", secretData); err != nil {
 		return fmt.Errorf("apply secret: %w", err)
 	}
+	return nil
+}
+
+// LoginAppSecretName and LoginAppSecretKey locate the K8s Secret holding a
+// deployment's login app client secret, which the oidc-qa values layers
+// reference through existingSecret.
+const (
+	LoginAppSecretName = "entra-login-app-credentials"
+	LoginAppSecretKey  = "client-secret"
+)
+
+var createLoginK8sSecretFunc = createLoginK8sSecret
+
+func createLoginK8sSecret(ctx context.Context, kubeContext, namespace, clientSecret string) error {
+	k8sClient, err := kube.NewClient("", kubeContext)
+	if err != nil {
+		return fmt.Errorf("create K8s client: %w", err)
+	}
+	if err := k8sClient.EnsureOpaqueSecret(ctx, namespace, LoginAppSecretName, map[string]string{LoginAppSecretKey: clientSecret}); err != nil {
+		return fmt.Errorf("apply secret: %w", err)
+	}
+	return nil
+}
+
+// CreateLoginK8sSecret stores the login app's client secret in the
+// LoginAppSecretName Secret of namespace.
+func CreateLoginK8sSecret(ctx context.Context, kubeContext, namespace string, app *LoginApp) error {
+	if err := createLoginK8sSecretFunc(ctx, kubeContext, namespace, app.ClientSecret); err != nil {
+		return fmt.Errorf("entra: create login app K8s secret: %w", err)
+	}
+	logging.Logger.Info().
+		Str("namespace", namespace).
+		Str("secretName", LoginAppSecretName).
+		Msg("Login app client secret stored in K8s secret")
 	return nil
 }
 
@@ -909,12 +1518,6 @@ func buildRedirectURIs(host string) (web []string, spa []string) {
 	return web, spa
 }
 
-// isCIDomainURI returns true if the URI belongs to a CI deployment
-// (contains the CI ingress domain suffix).
-func isCIDomainURI(uri string) bool {
-	return strings.Contains(uri, ciDomainSuffix)
-}
-
 // isValidURI returns true if the URI is a well-formed redirect URI.
 // It rejects URIs with trailing commas (data corruption) and empty strings.
 func isValidURI(uri string) bool {
@@ -927,24 +1530,78 @@ func isValidURI(uri string) bool {
 	return true
 }
 
+// uriHost returns the lowercased hostname of uri, or "" if it has none.
+func uriHost(uri string) string {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(u.Hostname())
+}
+
+// isHostURI returns true if the URI's hostname is exactly the given host.
+func isHostURI(uri, host string) bool {
+	h := uriHost(uri)
+	return h != "" && h == strings.ToLower(host)
+}
+
+// maxRedirectURIs is Entra's limit on redirect URIs per app registration,
+// counted across all platform types.
+// https://learn.microsoft.com/en-us/entra/identity-platform/reply-url#maximum-number-of-redirect-uris
+const maxRedirectURIs = 256
+
+// isPrunableURI reports whether uri's hostname is a CI host other than host.
+func isPrunableURI(uri, host string) bool {
+	return strings.HasSuffix(uriHost(uri), ciDomainSuffix) && !isHostURI(uri, host)
+}
+
+// oldestPrunableHost returns the host of the first prunable URI in web, then
+// in spa. Registrations append, so list order is registration order.
+func oldestPrunableHost(web, spa []string, host string) string {
+	for _, list := range [][]string{web, spa} {
+		for _, uri := range list {
+			if isPrunableURI(uri, host) {
+				return uriHost(uri)
+			}
+		}
+	}
+	return ""
+}
+
+// capRedirectURIs evicts whole CI deployments, oldest first and from both
+// lists at once, until web, spa and reserved together fit maxRedirectURIs.
+// Non-CI URIs and the current host's URIs are never dropped.
+func capRedirectURIs(web, spa []string, reserved int, host string) ([]string, []string) {
+	for len(web)+len(spa)+reserved > maxRedirectURIs {
+		evict := oldestPrunableHost(web, spa, host)
+		if evict == "" {
+			return web, spa
+		}
+		logging.Logger.Debug().Str("host", evict).Msg("Pruning oldest CI deployment's redirect URIs")
+		drop := func(uri string) bool { return isHostURI(uri, evict) }
+		web = slices.DeleteFunc(web, drop)
+		spa = slices.DeleteFunc(spa, drop)
+	}
+	return web, spa
+}
+
 // filterRedirectURIs filters a list of redirect URIs:
 // - Removes invalid URIs (empty, trailing commas).
-// - Removes stale CI URIs (those matching the CI domain suffix).
-// - Preserves all non-CI URIs (e.g., production, staging).
+// - Removes the current host's URIs, which newURIs re-adds.
+// - Preserves every other host's URIs, other CI deployments included.
 // - Appends the new URIs for the current deployment.
-// - Deduplicates the result.
-func filterRedirectURIs(existing []string, newURIs []string) []string {
+// - Deduplicates the result. capRedirectURIs enforces the Entra limit.
+func filterRedirectURIs(existing []string, newURIs []string, host string) []string {
 	seen := make(map[string]bool)
 	var result []string
 
-	// Keep existing non-CI URIs that are valid.
 	for _, uri := range existing {
 		if !isValidURI(uri) {
 			logging.Logger.Debug().Str("uri", uri).Msg("Removing invalid redirect URI")
 			continue
 		}
-		if isCIDomainURI(uri) {
-			logging.Logger.Debug().Str("uri", uri).Msg("Removing stale CI redirect URI")
+		if isHostURI(uri, host) {
+			logging.Logger.Debug().Str("uri", uri).Msg("Replacing redirect URI of the current host")
 			continue
 		}
 		if !seen[uri] {
@@ -953,7 +1610,6 @@ func filterRedirectURIs(existing []string, newURIs []string) []string {
 		}
 	}
 
-	// Add new URIs for the current deployment.
 	for _, uri := range newURIs {
 		if !seen[uri] {
 			seen[uri] = true
@@ -964,13 +1620,126 @@ func filterRedirectURIs(existing []string, newURIs []string) []string {
 	return result
 }
 
+type redirectURIApp struct {
+	Web struct {
+		RedirectURIs []string `json:"redirectUris"`
+	} `json:"web"`
+	Spa struct {
+		RedirectURIs []string `json:"redirectUris"`
+	} `json:"spa"`
+	PublicClient struct {
+		RedirectURIs []string `json:"redirectUris"`
+	} `json:"publicClient"`
+}
+
+// graphTarget addresses one Graph resource with an authenticated client.
+type graphTarget struct {
+	client *http.Client
+	token  string
+	path   string
+}
+
+func fetchRedirectURIApp(ctx context.Context, g graphTarget) (redirectURIApp, error) {
+	var app redirectURIApp
+	body, _, err := withGraphRetry(ctx, "fetchRedirectURIApp", nil, func() ([]byte, int, error) {
+		return graphGetStatus(ctx, g.client, g.token, g.path)
+	})
+	if err != nil {
+		return app, fmt.Errorf("entra: fetch app registration: %w", err)
+	}
+	if err := json.Unmarshal(body, &app); err != nil {
+		return app, fmt.Errorf("entra: parse app registration: %w", err)
+	}
+	return app, nil
+}
+
+func patchRedirectURIs(ctx context.Context, g graphTarget, app redirectURIApp, host string) error {
+	newWebURIs, newSpaURIs := buildRedirectURIs(host)
+	web := filterRedirectURIs(app.Web.RedirectURIs, newWebURIs, host)
+	spa := filterRedirectURIs(app.Spa.RedirectURIs, newSpaURIs, host)
+	web, spa = capRedirectURIs(web, spa, len(app.PublicClient.RedirectURIs), host)
+
+	logging.Logger.Info().
+		Int("existingWebURIs", len(app.Web.RedirectURIs)).
+		Int("existingSpaURIs", len(app.Spa.RedirectURIs)).
+		Int("finalWebURIs", len(web)).
+		Int("finalSpaURIs", len(spa)).
+		Strs("newWebURIs", newWebURIs).
+		Strs("newSpaURIs", newSpaURIs).
+		Msg("Computed final redirect URI lists")
+
+	payload := map[string]any{
+		"web": map[string]any{"redirectUris": web},
+		"spa": map[string]any{"redirectUris": spa},
+	}
+	body, statusCode, err := graphPatch(ctx, g.client, g.token, g.path, payload, nil)
+	if err != nil {
+		return fmt.Errorf("entra: PATCH redirect URIs: %w", err)
+	}
+	if statusCode >= 300 {
+		return fmt.Errorf("entra: PATCH redirect URIs failed (status=%d): %s", statusCode, string(body))
+	}
+	return nil
+}
+
+// hasHostRedirectURIs reports whether app holds every redirect URI of host.
+func hasHostRedirectURIs(app redirectURIApp, host string) bool {
+	newWebURIs, newSpaURIs := buildRedirectURIs(host)
+	for _, uri := range newWebURIs {
+		if !slices.Contains(app.Web.RedirectURIs, uri) {
+			return false
+		}
+	}
+	for _, uri := range newSpaURIs {
+		if !slices.Contains(app.Spa.RedirectURIs, uri) {
+			return false
+		}
+	}
+	return true
+}
+
+// awaitHostRedirectURIs reads the app back until it contains host's redirect
+// URIs or redirectVerifyReads reads have passed, and returns the last read.
+func awaitHostRedirectURIs(ctx context.Context, g graphTarget, host string) (redirectURIApp, bool, error) {
+	var app redirectURIApp
+	for range redirectVerifyReads {
+		if err := waitRedirectVerify(ctx); err != nil {
+			return app, false, fmt.Errorf("entra: verify redirect URIs: %w", err)
+		}
+		var err error
+		if app, err = fetchRedirectURIApp(ctx, g); err != nil {
+			return app, false, err
+		}
+		if hasHostRedirectURIs(app, host) {
+			return app, true, nil
+		}
+	}
+	return app, false, nil
+}
+
+func waitRedirectVerify(ctx context.Context) error {
+	wait := redirectVerifyDelay
+	if redirectVerifyJitter > 0 {
+		wait += time.Duration(rand.Int63n(int64(redirectVerifyJitter)))
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(wait):
+		return nil
+	}
+}
+
 // UpdateRedirectURIs updates the redirect URIs on the parent Entra app
 // registration. It:
-// 1. Authenticates to Graph API using the parent app credentials.
-// 2. Fetches the current web and SPA redirect URIs.
-// 3. Removes stale CI URIs and invalid/malformed URIs.
-// 4. Adds the redirect URIs for the current deployment's ingress host.
-// 5. PATCHes the updated URI lists back to the app registration.
+//  1. Authenticates to Graph API using the parent app credentials.
+//  2. Fetches the current web, SPA and public-client redirect URIs.
+//  3. Replaces the current host's URIs and removes invalid/malformed URIs.
+//  4. Adds the redirect URIs for the current deployment's ingress host.
+//  5. PATCHes the updated URI lists back to the app registration.
+//  6. Reads the app back up to redirectVerifyReads times, a jittered wait
+//     apart, and repeats from step 3 from the last read when none contains this
+//     host's URIs, failing after redirectVerifyAttempts writes.
 func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 	if err := resolveRedirectOpts(&opts); err != nil {
 		return fmt.Errorf("entra: %w", err)
@@ -986,7 +1755,6 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 		Str("ingressHost", opts.IngressHost).
 		Msg("Updating Entra app redirect URIs")
 
-	// Step 1: Acquire bearer token.
 	authOpts := &Options{
 		DirectoryID:  opts.DirectoryID,
 		ClientID:     opts.ClientID,
@@ -999,67 +1767,34 @@ func UpdateRedirectURIs(ctx context.Context, opts RedirectURIOptions) error {
 		return fmt.Errorf("entra: %w", err)
 	}
 
-	// Step 2: Fetch current app registration.
-	appPath := fmt.Sprintf("/applications/%s", opts.ObjectID)
-	body, err := graphGet(ctx, client, token, appPath)
+	g := graphTarget{client: client, token: token, path: fmt.Sprintf("/applications/%s", opts.ObjectID)}
+	app, err := fetchRedirectURIApp(ctx, g)
 	if err != nil {
-		return fmt.Errorf("entra: fetch app registration: %w", err)
+		return err
 	}
 
-	var appData struct {
-		Web struct {
-			RedirectURIs []string `json:"redirectUris"`
-		} `json:"web"`
-		Spa struct {
-			RedirectURIs []string `json:"redirectUris"`
-		} `json:"spa"`
+	for attempt := 1; ; attempt++ {
+		if err := patchRedirectURIs(ctx, g, app, opts.IngressHost); err != nil {
+			return err
+		}
+		var found bool
+		if app, found, err = awaitHostRedirectURIs(ctx, g, opts.IngressHost); err != nil {
+			return err
+		}
+		if found {
+			logging.Logger.Info().
+				Str("objectId", opts.ObjectID).
+				Int("attempt", attempt).
+				Msg("Successfully updated Entra app redirect URIs")
+			return nil
+		}
+		if attempt == redirectVerifyAttempts {
+			return fmt.Errorf("entra: redirect URIs of %s were removed by a concurrent update %d times in a row",
+				opts.IngressHost, attempt)
+		}
+		logging.Logger.Warn().
+			Str("ingressHost", opts.IngressHost).
+			Int("attempt", attempt).
+			Msg("Redirect URIs removed by a concurrent update, rewriting")
 	}
-	if err := json.Unmarshal(body, &appData); err != nil {
-		return fmt.Errorf("entra: parse app registration: %w", err)
-	}
-
-	logging.Logger.Info().
-		Int("existingWebURIs", len(appData.Web.RedirectURIs)).
-		Int("existingSpaURIs", len(appData.Spa.RedirectURIs)).
-		Msg("Fetched current redirect URIs")
-
-	// Step 3: Build new URIs for the current deployment.
-	newWebURIs, newSpaURIs := buildRedirectURIs(opts.IngressHost)
-
-	// Step 4: Filter and merge.
-	finalWebURIs := filterRedirectURIs(appData.Web.RedirectURIs, newWebURIs)
-	finalSpaURIs := filterRedirectURIs(appData.Spa.RedirectURIs, newSpaURIs)
-
-	logging.Logger.Info().
-		Int("finalWebURIs", len(finalWebURIs)).
-		Int("finalSpaURIs", len(finalSpaURIs)).
-		Strs("newWebURIs", newWebURIs).
-		Strs("newSpaURIs", newSpaURIs).
-		Msg("Computed final redirect URI lists")
-
-	// Step 5: PATCH the app registration.
-	patchPayload := map[string]any{
-		"web": map[string]any{
-			"redirectUris": finalWebURIs,
-		},
-		"spa": map[string]any{
-			"redirectUris": finalSpaURIs,
-		},
-	}
-
-	patchBody, statusCode, err := graphPatch(ctx, client, token, appPath, patchPayload, nil)
-	if err != nil {
-		return fmt.Errorf("entra: PATCH redirect URIs: %w", err)
-	}
-
-	if statusCode >= 300 {
-		return fmt.Errorf("entra: PATCH redirect URIs failed (status=%d): %s", statusCode, string(patchBody))
-	}
-
-	logging.Logger.Info().
-		Int("statusCode", statusCode).
-		Str("objectId", opts.ObjectID).
-		Msg("Successfully updated Entra app redirect URIs")
-
-	return nil
 }

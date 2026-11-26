@@ -589,31 +589,17 @@ jobs:
       # Install
       ##########################################################################################################
 
-      - name: Helm - Install - Configure Helm with Entra Values
-        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
+      - name: Helm - Install - Register Entra Redirect URIs
+        if: (inputs.auth == 'oidc' || inputs.scenario == 'oidc' || inputs.test-identity == 'oidc') && inputs.test-identity != 'auth0' && inputs.scenario != 'auth0' && inputs.test-identity != 'oidc-qa' && !(inputs.scenario == 'qa-entra' && contains(fromJSON('["camunda-platform-8.10","camunda-platform-8.11"]'), inputs.camunda-helm-dir))
         timeout-minutes: 5
         env:
-          TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
-          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-          TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
-          EXTRA_VALUES: ${{ inputs.extra-values }}
-          # Selection + composition model environment variables (new - preferred)
-          TEST_IDENTITY: ${{ inputs.test-identity }}
-          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
-          TEST_FEATURES: ${{ inputs.test-features }}
-          TEST_HELM_EXTRA_ARGS: >-
-            ${{ env.TEST_HELM_EXTRA_ARGS }}
-            ${{ steps.setup.outputs.legacy-ingress-arg }}
-            --set global.host=${{ steps.setup.outputs.ingress-host }}
           ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
           ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
           ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
-          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
+          set -euo pipefail
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
@@ -1027,31 +1013,17 @@ jobs:
       ##########################################################################################################
       # Upgrade
       ##########################################################################################################
-      - name: Helm - Upgrade - Configure Helm with Entra Values
-        if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.values-config == '{}'
+      - name: Helm - Upgrade - Register Entra Redirect URIs
+        if: (inputs.auth == 'oidc' || inputs.test-identity == 'oidc') && inputs.test-identity != 'auth0' && inputs.scenario != 'auth0' && inputs.test-identity != 'oidc-qa' && !(inputs.scenario == 'qa-entra' && contains(fromJSON('["camunda-platform-8.10","camunda-platform-8.11"]'), inputs.camunda-helm-dir))
         timeout-minutes: 5
         env:
-          TEST_CHART_FLOW: ${{ inputs.flow }}
           TEST_INGRESS_HOST: ${{ steps.setup.outputs.ingress-host }}
-          TEST_VALUES_SCENARIO: "${{ inputs.scenario }}"
-          TEST_AUTH_TYPE: ${{ inputs.auth }}
-          INFRA_TYPE: ${{ inputs.infra-type }}
-          EXTRA_VALUES: ${{ inputs.extra-values }}
-          # Selection + composition model environment variables (new - preferred)
-          TEST_IDENTITY: ${{ inputs.test-identity }}
-          TEST_PERSISTENCE: ${{ inputs.test-persistence }}
-          TEST_PLATFORM: ${{ inputs.test-platform || inputs.distro-platform }}
-          TEST_FEATURES: ${{ inputs.test-features }}
-          TEST_HELM_EXTRA_ARGS: >-
-            ${{ env.TEST_HELM_EXTRA_ARGS }}
-            ${{ steps.setup.outputs.legacy-ingress-arg }}
-            --set global.host=${{ steps.setup.outputs.ingress-host }}
           ENTRA_APP_CLIENT_ID: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_ID }}
           ENTRA_APP_CLIENT_SECRET: ${{ steps.setup.outputs.ENTRA_APP_CLIENT_SECRET }}
           ENTRA_APP_OBJECT_ID: ${{ steps.setup.outputs.ENTRA_APP_OBJECT_ID }}
           ENTRA_APP_DIRECTORY_ID: ${{ steps.setup.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
-          echo "$EXTRA_VALUES" > /tmp/extra-values-file.yaml
+          set -euo pipefail
           deploy-camunda entra update-redirect-uris \
             --ingress-host "$TEST_INGRESS_HOST" \
             --log-level info
@@ -2127,6 +2099,19 @@ jobs:
           ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
         run: |
           deploy-camunda entra cleanup-venom-app \
+            --namespace "$TEST_NAMESPACE" \
+            --log-level info
+
+      - name: CI Cleanup - Delete the deployment's Entra login app registration
+        if: always() && (inputs.scenario == 'qa-entra' || inputs.test-identity == 'oidc-qa') && inputs.always-delete-namespace && (env.CI_DEPLOYMENT_TTL == '' || inputs.distro-type != 'kubernetes')
+        continue-on-error: true
+        env:
+          ENTRA_APP_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
+        run: |
+          set -euo pipefail
+          deploy-camunda entra cleanup-login-app \
             --namespace "$TEST_NAMESPACE" \
             --log-level info
 

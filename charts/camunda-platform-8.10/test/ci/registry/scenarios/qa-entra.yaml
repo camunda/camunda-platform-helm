@@ -1,0 +1,18 @@
+name: qa-entra
+auth: oidc
+flows:
+  - install
+identity: oidc-qa
+persistence: elasticsearch
+features:
+  - postgresql-companion
+  - qa-entra
+platforms:
+  - gke
+infra-type:
+  gke: qa-workloads
+qa: true
+image-tags: true
+dependencies:
+  - postgresql-qa
+  - elasticsearch-qa
