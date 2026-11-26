@@ -47,6 +47,13 @@ const hasAnySuite =
   hasSmSmokeSuite || hasHubWebModelerSuite || hasTopologyOrchestrationSuite;
 const testDir = hasAnySuite ? smTestDir : "./empty-test-dir";
 
+// entra-login.spec drives the Microsoft Entra ID browser login and needs the
+// Entra credentials only the oidc (qa-entra) deployment supplies; on any other
+// auth type those fields are empty and it fails deterministically. Keep it out
+// of full-suite unless this deployment is actually oidc-backed.
+const entraLoginTestIgnore =
+  process.env.TEST_AUTH_TYPE === "oidc" ? [] : ["**/entra-login.spec.{ts,js}"];
+
 // When SM-8.11 is missing, create a fallback directory with skipped tests so
 // Playwright exits with code 0 instead of failing on "No tests found".
 // Named smoke-tests.spec.js so it matches both the "smoke-tests" and
@@ -87,6 +94,7 @@ export default defineConfig(
     retries: 1,
     timeout: 6 * 60 * 1000,
     workers: "100%",
+    extraTestIgnore: entraLoginTestIgnore,
     extraProjects: [
       {
         name: "physical-tenants",
