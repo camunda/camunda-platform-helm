@@ -932,6 +932,7 @@
       "registry.camunda.cloud/vendor-ee/postgres-exporter:0.21.1-debian-12-r0",
       "registry.camunda.cloud/vendor-ee/postgresql:18.7.0-debian-12-r7"
     ],
+    "release_date": "2026-11-26",
     "helm_cli": "3.22.1,4.3.2",
     "release_tag": "camunda-platform-8.9-14.12.6"
   }
