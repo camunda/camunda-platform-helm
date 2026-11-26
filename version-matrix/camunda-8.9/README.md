@@ -7,6 +7,7 @@ Standard support until 2027-10-12
 
 | Helm Chart | Camunda | Released | Helm CLI | Helm Values | Release Notes |
 |---|---|---|---|---|---|
+| [14.12.6](#helm-chart-14126) | 8.9.30 | _pending_ | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.2](https://github.com/helm/helm/releases/tag/v4.3.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.6?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.6) |
 | [14.12.5](#helm-chart-14125) | 8.9.30 | 2026-11-25 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.2](https://github.com/helm/helm/releases/tag/v4.3.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.5?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.5) |
 | [14.12.4](#helm-chart-14124) | 8.9.30 | 2026-11-24 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.2](https://github.com/helm/helm/releases/tag/v4.3.2) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.4?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.4) |
 | [14.12.3](#helm-chart-14123) | 8.9.29 | 2026-11-19 | [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.1](https://github.com/helm/helm/releases/tag/v4.3.1) | [ArtifactHub](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.3?modal=values) | [Changelog](https://github.com/camunda/camunda-platform-helm/releases/tag/camunda-platform-8.9-14.12.3) |
@@ -46,6 +47,41 @@ _Enterprise images replace the matching Non-Camunda (Bitnami OSS) images when us
 
 
 ---
+
+## Helm chart 14.12.6
+
+Supported versions:
+
+- Camunda applications: [8.9](https://github.com/camunda/camunda/releases?q=tag%3A8.9&expanded=true)
+- Camunda version matrix: [8.9](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.9)
+- Helm values: [14.12.6](https://artifacthub.io/packages/helm/camunda/camunda-platform/14.12.6?modal=values)
+- Helm CLI: [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1), [4.3.2](https://github.com/helm/helm/releases/tag/v4.3.2)
+
+Camunda images:
+
+- docker.io/camunda/camunda:8.9.30
+- docker.io/camunda/connectors-bundle:8.9.23
+- docker.io/camunda/console:8.9.133
+- docker.io/camunda/identity:8.9.16
+- docker.io/camunda/optimize:8.9.30
+- docker.io/camunda/web-modeler-restapi:8.9.17
+- docker.io/camunda/web-modeler-websockets:8.9.17
+- registry.camunda.cloud/keycloak-ee/keycloak:26.7.2
+
+Non-Camunda images:
+
+- docker.io/bitnamilegacy/elasticsearch:8.18.0
+- docker.io/bitnamilegacy/os-shell:12-debian-12-r43
+- docker.io/bitnamilegacy/postgresql:14.18.0-debian-12-r0
+- docker.io/bitnamilegacy/postgresql:15.10.0-debian-12-r2
+
+Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.9/self-managed/deployment/helm/configure/registry-and-images/install-bitnami-enterprise-images/)):
+
+- registry.camunda.cloud/keycloak-ee/keycloak:26.8.2
+- registry.camunda.cloud/vendor-ee/elasticsearch:8.19.26
+- registry.camunda.cloud/vendor-ee/os-shell:12-debian-12-r84
+- registry.camunda.cloud/vendor-ee/postgres-exporter:0.21.1-debian-12-r0
+- registry.camunda.cloud/vendor-ee/postgresql:18.7.0-debian-12-r7
 
 ## Helm chart 14.12.5
 
