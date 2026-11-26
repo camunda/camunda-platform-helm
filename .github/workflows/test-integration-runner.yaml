@@ -453,6 +453,20 @@ jobs:
           rm -rf "/tmp/${tarball}" "/tmp/${tarball}.sha256sum" /tmp/linux-amd64
           helm version --short
 
+      - name: Import GitHub App credentials from Vault
+        id: distro-ci-app
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secrets: |
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_ID;
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_KEY;
+          exportEnv: false
+
       - name: CI Setup - Shared integration test setup
         id: setup
         uses: ./.github/actions/integration-test-setup
@@ -475,8 +489,8 @@ jobs:
           VAULT_JWT_PATH:   ${{ secrets.VAULT_JWT_PATH }}
           VAULT_JWT_ROLE:   ${{ secrets.VAULT_JWT_ROLE }}
           VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_ID:        ${{ steps.distro-ci-app.outputs.APP_ID }}
+          GH_APP_KEY:       ${{ steps.distro-ci-app.outputs.APP_KEY }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
@@ -965,6 +979,20 @@ jobs:
           rm -rf "/tmp/${tarball}" "/tmp/${tarball}.sha256sum" /tmp/linux-amd64
           helm version --short
 
+      - name: Import GitHub App credentials from Vault
+        id: distro-ci-app
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secrets: |
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_ID;
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_KEY;
+          exportEnv: false
+
       - name: CI Setup - Shared integration test setup
         id: setup
         uses: ./.github/actions/integration-test-setup
@@ -988,8 +1016,8 @@ jobs:
           VAULT_JWT_PATH:   ${{ secrets.VAULT_JWT_PATH }}
           VAULT_JWT_ROLE:   ${{ secrets.VAULT_JWT_ROLE }}
           VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_ID:        ${{ steps.distro-ci-app.outputs.APP_ID }}
+          GH_APP_KEY:       ${{ steps.distro-ci-app.outputs.APP_KEY }}
           ROSA_URL:         ${{ secrets[inputs.server-url] }}
           ROSA_USER:        ${{ secrets[inputs.username] }}
           ROSA_PASS:        ${{ secrets[inputs.password] }}
@@ -1291,12 +1319,26 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
           exportEnv: false
 
+      - name: Import GitHub App credentials from Vault
+        id: distro-ci-app
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secrets: |
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_ID;
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_KEY;
+          exportEnv: false
+
       - name: Run Playwright E2E Tests
         uses: ./.github/actions/playwright-e2e-tests
         timeout-minutes: ${{ matrix.suite == 'full' && 50 || matrix.suite == 'api' && 40 || 25 }}
         env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_ID:        ${{ steps.distro-ci-app.outputs.APP_ID }}
+          GH_APP_KEY:       ${{ steps.distro-ci-app.outputs.APP_KEY }}
           GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
           GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
           GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -1400,12 +1442,26 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
           exportEnv: false
 
+      - name: Import GitHub App credentials from Vault
+        id: distro-ci-app
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secrets: |
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_ID;
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_KEY;
+          exportEnv: false
+
       - name: Run full E2E suite (shadow)
         uses: ./.github/actions/playwright-e2e-tests
         timeout-minutes: 40
         env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_ID:        ${{ steps.distro-ci-app.outputs.APP_ID }}
+          GH_APP_KEY:       ${{ steps.distro-ci-app.outputs.APP_KEY }}
           GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
           GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
           GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -1550,11 +1606,25 @@ jobs:
           owner: camunda
           repositories: c8-cross-component-e2e-tests
 
+      - name: Import GitHub App credentials from Vault
+        id: distro-ci-app
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secrets: |
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_ID;
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_KEY;
+          exportEnv: false
+
       - name: Run Playwright E2E Tests (multi-namespace topology)
         uses: ./.github/actions/playwright-e2e-tests
         env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_ID:        ${{ steps.distro-ci-app.outputs.APP_ID }}
+          GH_APP_KEY:       ${{ steps.distro-ci-app.outputs.APP_KEY }}
           GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
           GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
           GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -1651,11 +1721,25 @@ jobs:
             secret/data/products/distribution/ci DISTRO_CI_GCP_SERVICE_ACCOUNT;
           exportEnv: false
 
+      - name: Import GitHub App credentials from Vault
+        id: distro-ci-app
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secrets: |
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_ID;
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_KEY;
+          exportEnv: false
+
       - name: Run Playwright E2E Tests
         uses: ./.github/actions/playwright-e2e-tests
         env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_ID:        ${{ steps.distro-ci-app.outputs.APP_ID }}
+          GH_APP_KEY:       ${{ steps.distro-ci-app.outputs.APP_KEY }}
           GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
           GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
           GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -1969,6 +2053,20 @@ jobs:
             secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
           exportEnv: false
 
+      - name: Import GitHub App credentials from Vault
+        id: distro-ci-app
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secrets: |
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_ID;
+            secret/data/products/distribution/ci/github-app-manage-gh-envs APP_KEY;
+          exportEnv: false
+
       - name: CI Setup - Authenticate to cluster
         id: cluster-auth
         uses: ./.github/actions/cluster-auth
@@ -1976,8 +2074,8 @@ jobs:
           platform: ${{ inputs.distro-platform }}
           auth-data: ${{ inputs.auth-data }}
         env:
-          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
-          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_ID:        ${{ steps.distro-ci-app.outputs.APP_ID }}
+          GH_APP_KEY:       ${{ steps.distro-ci-app.outputs.APP_KEY }}
           GKE_CLUSTER_NAME: ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
           GKE_CLUSTER_LOC:  ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
           GKE_WIP:          ${{ steps.test-credentials-secret.outputs.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
