@@ -82,6 +82,11 @@ export default defineConfig(
     version: "SM-8.11",
     testDir,
     includeSetupProject: true,
+    // entra-login drives a Microsoft Entra ID (OIDC) sign-in and needs
+    // DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_USERNAME, which no chart scenario
+    // provisions (the Keycloak deploy only sets the FIRSTUSER *password*), so
+    // the full-suite glob would always hit its credential precondition assert.
+    extraTestIgnore: ["**/entra-login.spec.{ts,js}"],
     tasklistV2Header: true,
     fullyParallel: true,
     retries: 1,
