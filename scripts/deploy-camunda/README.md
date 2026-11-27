@@ -898,6 +898,11 @@ Two commands cover most first-pass debugging:
   kube-context reachability, docker creds, vault-mapping vars,
   scenario `$PLACEHOLDER`s, companion vars. `--fix` prompts for
   missing vars and writes them to `.env`. Exits non-zero on any ✗.
+  `--format json` (default `text`) prints one `deploy-camunda/v1`
+  `Result` envelope instead: every check in `outputs.checks`, unset
+  variable names in `outputs.missingEnv`, each ✗ in `errors`, and
+  `slots: []`. Values of secrets are never included. Not combinable
+  with `--fix`.
 - `deploy-camunda config env --show-origin` — effective env table
   with source per key; secrets masked unless `--unmask`.
 
@@ -915,7 +920,7 @@ For a full command reference and operational patterns, see
 | `deploy-camunda config init --from-example <name>` | Non-interactively drop an embedded starter file into place. |
 | `deploy-camunda config init --non-interactive` | Verify an existing config file + run `doctor` without any prompting. Suitable for CI. |
 | `deploy-camunda config init --list-examples` | List the embedded starter templates. |
-| `deploy-camunda doctor [--fix]` | Preflight checklist. |
+| `deploy-camunda doctor [--fix] [--format text\|json]` | Preflight checklist. |
 | `deploy-camunda config env [--show-origin] [--unmask]` | Show effective env variables with provenance. |
 | `deploy-camunda config set/get/list/use/create/show` | Manage deployment profiles. |
 | `deploy-camunda watch --namespace <ns> --kube-context <ctx>` | Poll a running deploy and diagnose CrashLoopBackOff / ImagePullBackOff live. Use the same explicit context as the deploy. |
