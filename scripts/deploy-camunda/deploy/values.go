@@ -58,7 +58,7 @@ func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, 
 		return nil, nil
 	}
 
-	sourceFiles, err := commonValuesSourceFiles(commonDir)
+	sourceFiles, err := deployer.CommonValuesFilesIn(commonDir)
 	if err != nil {
 		return sourceFiles, nil
 	}
@@ -108,59 +108,6 @@ func processCommonValues(ctx context.Context, scenarioPath, outputDir, envFile, 
 		Msg("✅ [processCommonValues] all common values files processed")
 
 	return processedFiles, nil
-}
-
-func commonValuesSourceFiles(commonDir string) ([]string, error) {
-	// Collect common values files in order
-	var sourceFiles []string
-
-	// First, add predefined common files in order (if they exist)
-	for _, fileName := range deployer.CommonValuesFiles {
-		p := filepath.Join(commonDir, fileName)
-		if _, err := os.Stat(p); err == nil {
-			logging.Logger.Debug().
-				Str("file", p).
-				Msg("🔍 [processCommonValues] found predefined common values file")
-			sourceFiles = append(sourceFiles, p)
-		}
-	}
-
-	// Then, discover any additional values-*.yaml files not in the predefined list
-	entries, err := os.ReadDir(commonDir)
-	if err != nil {
-		logging.Logger.Debug().
-			Err(err).
-			Str("commonDir", commonDir).
-			Msg("⚠️ [processCommonValues] failed to read common directory")
-		return sourceFiles, err
-	}
-
-	predefinedSet := make(map[string]bool)
-	for _, f := range deployer.CommonValuesFiles {
-		predefinedSet[f] = true
-	}
-
-	var additionalFiles []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if predefinedSet[name] {
-			continue
-		}
-		if strings.HasPrefix(name, "values-") && strings.HasSuffix(name, ".yaml") {
-			p := filepath.Join(commonDir, name)
-			logging.Logger.Debug().
-				Str("file", p).
-				Msg("🔍 [processCommonValues] found additional common values file")
-			additionalFiles = append(additionalFiles, p)
-		}
-	}
-
-	// Sort additional files for deterministic ordering
-	sort.Strings(additionalFiles)
-	return append(sourceFiles, additionalFiles...), nil
 }
 
 func platformValuesSourceFiles(commonDir, platform string) []string {

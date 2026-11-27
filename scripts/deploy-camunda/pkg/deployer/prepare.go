@@ -171,27 +171,38 @@ func resolveCommonValues(scenarioDir string) []string {
 		return nil
 	}
 
-	var files []string
+	files, _ := CommonValuesFilesIn(commonDir)
 
-	// First, add predefined common files in order (if they exist)
+	logging.Logger.Debug().
+		Strs("commonFiles", files).
+		Int("count", len(files)).
+		Msg("✅ [resolveCommonValues] resolved common values files")
+
+	return files
+}
+
+// CommonValuesFilesIn returns the predefined CommonValuesFiles present in
+// commonDir, in order, followed by any other values-*.yaml files sorted by name.
+// When commonDir cannot be listed it returns the predefined files found and the error.
+func CommonValuesFilesIn(commonDir string) ([]string, error) {
+	var files []string
 	for _, fileName := range CommonValuesFiles {
 		p := filepath.Join(commonDir, fileName)
 		if _, err := os.Stat(p); err == nil {
 			logging.Logger.Debug().
 				Str("file", p).
-				Msg("🔍 [resolveCommonValues] found predefined common values file")
+				Msg("🔍 [CommonValuesFilesIn] found predefined common values file")
 			files = append(files, p)
 		}
 	}
 
-	// Then, discover any additional values-*.yaml files not in the predefined list
 	entries, err := os.ReadDir(commonDir)
 	if err != nil {
 		logging.Logger.Debug().
 			Err(err).
 			Str("commonDir", commonDir).
-			Msg("⚠️ [resolveCommonValues] failed to read common directory")
-		return files
+			Msg("⚠️ [CommonValuesFilesIn] failed to read common directory")
+		return files, err
 	}
 
 	predefinedSet := make(map[string]bool)
@@ -205,30 +216,20 @@ func resolveCommonValues(scenarioDir string) []string {
 			continue
 		}
 		name := entry.Name()
-		// Skip if already in predefined list
 		if predefinedSet[name] {
 			continue
 		}
-		// Include any other values-*.yaml files
 		if strings.HasPrefix(name, "values-") && strings.HasSuffix(name, ".yaml") {
 			p := filepath.Join(commonDir, name)
 			logging.Logger.Debug().
 				Str("file", p).
-				Msg("🔍 [resolveCommonValues] found additional common values file")
+				Msg("🔍 [CommonValuesFilesIn] found additional common values file")
 			additionalFiles = append(additionalFiles, p)
 		}
 	}
 
-	// Sort additional files for deterministic ordering
 	sort.Strings(additionalFiles)
-	files = append(files, additionalFiles...)
-
-	logging.Logger.Debug().
-		Strs("commonFiles", files).
-		Int("count", len(files)).
-		Msg("✅ [resolveCommonValues] resolved common values files")
-
-	return files
+	return append(files, additionalFiles...), nil
 }
 
 func overlayIfExists(scenarioDir, fileName string) string {
