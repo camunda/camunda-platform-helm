@@ -198,7 +198,6 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 # ------------------------------------------------------------------------------
 # Build arguments
 # ------------------------------------------------------------------------------
-ARG ZBCTL_VERSION=v8.6.0
 ARG PLAYWRIGHT_VERSION=1.61.0
 # Keep in sync with .tool-versions (golang).
 ARG GO_VERSION=1.27.4
@@ -309,7 +308,7 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
 # ==============================================================================
 # BROWSER INSTALLATION STRATEGY:
 #
-# 1. Install playwright and zbctl globally via npm
+# 1. Install playwright globally via npm
 # 2. Run 'playwright install chromium' which downloads:
 #    - chromium-XXXX/ (357 MB) - Full browser
 #    - chromium_headless_shell-XXXX/ (110 MB) - Headless-only
@@ -323,7 +322,7 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dea
 #
 # NOTE: We keep ffmpeg as it's required for trace recording
 # ==============================================================================
-RUN npm install -g playwright@${PLAYWRIGHT_VERSION} zbctl@${ZBCTL_VERSION#v} \
+RUN npm install -g playwright@${PLAYWRIGHT_VERSION} \
     && mkdir -p /ms-playwright \
     && npx playwright install chromium \
     # Delete full Chromium browser - keep only headless shell
@@ -415,7 +414,6 @@ RUN echo "=== Verifying tool installations ===" \
     && yq --version \
     && gke-gcloud-auth-plugin --version \
     && aws-iam-authenticator version \
-    && (zbctl version 2>/dev/null || true) \
     && go version \
     && echo "=== Checking browser installation ===" \
     && ls -la /ms-playwright/ \

@@ -11,7 +11,7 @@ The main CI runner image used for `install`, `upgrade`, and `cleanup` jobs in th
 **Registry:** `ghcr.io/camunda/team-distribution/ci-runner`
 
 **Included tools:**
-- All tools from `.tool-versions` (golang, helm, kubectl, oc, task, yq, zbctl, jq, bats, kustomize, etc.)
+- All tools from `.tool-versions` (golang, helm, kubectl, oc, task, yq, jq, bats, kustomize, etc.)
 - Google Cloud CLI (gcloud) with GKE auth plugin
 - AWS CLI v2
 - System utilities (curl, git, make, gettext-base, etc.)
@@ -25,7 +25,7 @@ Extended Playwright image with additional CI tools for running integration and E
 **Base image:** `mcr.microsoft.com/playwright:v1.57.0-noble`
 
 **Additional tools:**
-- Subset of tools from `.tool-versions` (helm, kubectl, oc, task, yq, zbctl, jq)
+- Subset of tools from `.tool-versions` (helm, kubectl, oc, task, yq, jq)
 - Google Cloud CLI and AWS CLI for cluster authentication
 - System utilities (gettext-base for envsubst)
 

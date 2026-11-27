@@ -415,7 +415,7 @@ jobs:
       - name: Configure curl and wget
         uses: ./.github/actions/setup-curl
 
-      # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
+      # Tools (golang, helm, kubectl, oc, task, yq) are pre-installed in the CI runner container image
       # See: .github/docker/ci-runner/Dockerfile
       # The per-scenario helm-version input below can override the pre-baked helm when set in ci-test-config.yaml.
       # When no override is provided, fall back to the helm version pinned in .tool-versions.
@@ -927,7 +927,7 @@ jobs:
           chmod +x "${RUNNER_TEMP}/bin/deploy-camunda"
           echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
 
-      # Tools (golang, helm, kubectl, oc, task, yq, zbctl) are pre-installed in the CI runner container image
+      # Tools (golang, helm, kubectl, oc, task, yq) are pre-installed in the CI runner container image
       # See: .github/docker/ci-runner/Dockerfile
       # The per-scenario helm-version input below can override the pre-baked helm when set in ci-test-config.yaml.
       # When no override is provided, fall back to the helm version pinned in .tool-versions.

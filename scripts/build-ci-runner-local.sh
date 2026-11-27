@@ -231,7 +231,6 @@ TASK_VERSION=$(extract_version "task")
 KUSTOMIZE_VERSION=$(extract_version "kustomize")
 OC_VERSION=$(extract_version "oc")
 KIND_VERSION=$(extract_version "kind")
-ZBCTL_VERSION=$(extract_version "zbctl")
 ORAS_VERSION=$(extract_version "oras")
 HELM_CT_VERSION=$(extract_version "helm-ct")
 HELM_CR_VERSION=$(extract_version "helm-cr")
@@ -248,7 +247,6 @@ CI_BUILD_ARGS="--build-arg GOLANG_VERSION=${GOLANG_VERSION} \
     --build-arg KUSTOMIZE_VERSION=${KUSTOMIZE_VERSION} \
     --build-arg OC_VERSION=${OC_VERSION} \
     --build-arg KIND_VERSION=${KIND_VERSION} \
-    --build-arg ZBCTL_VERSION=${ZBCTL_VERSION} \
     --build-arg ORAS_VERSION=${ORAS_VERSION} \
     --build-arg HELM_CT_VERSION=${HELM_CT_VERSION} \
     --build-arg HELM_CR_VERSION=${HELM_CR_VERSION} \
@@ -261,8 +259,7 @@ PW_BUILD_ARGS="--build-arg HELM_VERSION=${HELM_VERSION} \
     --build-arg JQ_VERSION=${JQ_VERSION} \
     --build-arg YQ_VERSION=${YQ_VERSION} \
     --build-arg TASK_VERSION=${TASK_VERSION} \
-    --build-arg OC_VERSION=${OC_VERSION} \
-    --build-arg ZBCTL_VERSION=${ZBCTL_VERSION}"
+    --build-arg OC_VERSION=${OC_VERSION}"
 
 echo "=========================================="
 echo "Building CI Runner Docker Images"
