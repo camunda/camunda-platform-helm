@@ -1692,6 +1692,7 @@
       "registry.camunda.cloud/vendor-ee/postgresql:14.25.0-debian-12-r8",
       "registry.camunda.cloud/vendor-ee/postgresql:15.20.0-debian-12-r8"
     ],
+    "release_date": "2026-11-27",
     "helm_cli": "3.22.1",
     "release_tag": "camunda-platform-8.8-13.14.9"
   }
