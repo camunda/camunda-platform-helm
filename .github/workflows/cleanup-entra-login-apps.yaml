@@ -13,12 +13,21 @@ on:
         description: Keep app registrations younger than this (Go duration, e.g. 24h).
         type: string
         default: 24h
+  pull_request:
+    paths:
+      - .github/workflows/cleanup-entra-login-apps.yaml
+      - scripts/deploy-camunda/entra/sweep*.go
+      - scripts/deploy-camunda/cmd/entra.go
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+  DRY_RUN: ${{ github.event_name != 'schedule' && (github.event_name != 'workflow_dispatch' || inputs.dry-run) }}
   MAX_AGE: ${{ inputs.max-age || '24h' }}
 
 jobs:
