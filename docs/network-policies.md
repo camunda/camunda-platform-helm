@@ -580,7 +580,8 @@ endpoint. A value without a port uses 443.
 ### Real-image leg — D1–D4
 
 The runner uses busybox stand-ins. The real-image leg installs the full 8.11 chart with
-the real Camunda images on distroci and re-checks enforcement against the real pods.
+the real Camunda images on distroci and re-checks enforcement against the real pods,
+with Identity and Keycloak on so that the proof includes a real browser login.
 **This leg is executed by the human operator from a Mac**, not by the agent hosts, which
 have no Docker credentials for the private registry. The variables and commands are:
 
@@ -590,7 +591,29 @@ REL=netpol
 CHART=./charts/camunda-platform-8.11
 SC=$CHART/test/integration/scenarios/networkpolicy
 CTX=distro-ci
+DOMAIN=ci.distro.ultrawombat.com
+export CAMUNDA_HOSTNAME=$NS.$DOMAIN
 ```
+
+`DOMAIN` is the distroci entry of `ValidIngressBaseDomains` in
+`scripts/deploy-camunda/config/config.go` (`ci.distro.ultrawombat.com`; the other entry,
+`distribution.aws.camunda.cloud`, is the EKS zone). Without `--ingress-subdomain`,
+deploy-camunda joins the namespace and the base domain into `CAMUNDA_HOSTNAME`, so the
+host is `$NS.$DOMAIN`; the companion Keycloak below needs the same value.
+
+The topology is one broker plus Connectors, Elasticsearch, and Identity with Keycloak
+and its database; Optimize and Camunda Hub (Web Modeler) are off. Two values layers
+produce it:
+
+- `--identity keycloak` (`values/identity/keycloak.yaml`) turns on Identity, OIDC and the
+  `/auth/` ingress route, and sets `publicIssuerUrl` to
+  `https://$CAMUNDA_HOSTNAME/auth/realms/camunda-platform`.
+- `--features networkpolicy` (`values/features/networkpolicy.yaml`) turns on ingress
+  policies and turns off `optimize` and `camundaHub`, which `base.yaml` and the keycloak
+  layer turn on. deploy-camunda merges feature layers after the identity layer.
+
+Do not layer `$SC/values-real.yaml` on top: it sets `identity.enabled: false`, which
+removes Identity and its policy, and leaves only `netpol-zeebe` and `netpol-connectors`.
 
 Pre-checks:
 
@@ -601,20 +624,79 @@ deploy-camunda doctor
 
 `--extra-values` takes comma-separated files or is repeated; `doctor` confirms the
 config, the kube context, the Docker credentials and the scenario's `$PLACEHOLDER`s
-before the first install.
+before the first install. The keycloak layer reads `$RDBMS_POSTGRESQL_USERNAME` and
+`$RDBMS_POSTGRESQL_PASSWORD`; set them in the `.env` file or the shell.
 
-D1 — baseline with policies off:
+Credentials pre-check. The identity/keycloak layer and the Keycloak companion read the
+secret `integration-test-credentials` in `$NS`. Check that it exists and list its key
+names only; never print the values:
+
+```bash
+kubectl --context $CTX -n $NS get secret integration-test-credentials \
+  -o go-template='{{range $k, $v := .data}}{{$k}}{{"\n"}}{{end}}'
+```
+
+The rendered chart and the companions read these keys:
+
+| Key | Read by |
+|---|---|
+| `identity-keycloak-admin-password` | the chart's Identity, and the Keycloak companion (`auth.passwordSecretKey`) |
+| `identity-admin-client-token` | Identity (`global.identity.auth.admin`) |
+| `identity-admin-client-password` | `base.yaml` admin client |
+| `identity-user-password` | `base.yaml` demo user |
+| `identity-connectors-client-token` | Connectors and Identity |
+| `identity-orchestration-client-token` | Orchestration and Identity |
+
+The console and Optimize client tokens are not read, because those components are off.
+If the secret or a key is missing, stop and create the secret before D1.
+
+Keycloak dependencies. The registry declares the Keycloak dependencies in
+`charts/camunda-platform-8.11/test/ci/registry/dependencies/`; `alwaysgreen.yaml` is the
+keycloak scenario that pins the issuer and uses all three:
+
+| Dependency | Chart | Release | Values file |
+|---|---|---|---|
+| `keycloak-fixed-issuer` | `charts/internal-keycloak-26` | `keycloak` | `test/integration/companion-values/keycloak-fixed-issuer.yaml` (reads `CAMUNDA_HOSTNAME`; Keycloak's own PostgreSQL is a sub-component of this release) |
+| `postgresql` | `charts/internal-postgresql` | `postgresql` | `test/integration/companion-values/postgresql.yaml` (reads `RDBMS_POSTGRESQL_USERNAME`, `RDBMS_POSTGRESQL_PASSWORD`; holds the Identity database) |
+| `elasticsearch` | `elastic/elasticsearch` 8.5.1 from `https://helm.elastic.co` | `elasticsearch` | `test/integration/companion-values/elasticsearch-9.yaml` |
+
+`keycloak-fixed-issuer` is required rather than `keycloak`: it pins `KC_HOSTNAME` to
+`https://$CAMUNDA_HOSTNAME/auth`, so the issuer is the same for the browser and for the
+pods. The single-deploy command has no flag for companion charts: deploy-camunda installs
+them only for a registry scenario selected by name (`matrix run`, or `--scenario <name>`
+for a scenario in the registry). `chart-full-setup` is not a registry scenario, and
+`--scenario alwaysgreen` would also layer the `alwaysgreen` node pool. Install the three
+companions into `$NS` once before D1, from the repository root:
+
+```bash
+kubectl --context $CTX create namespace $NS
+helm repo add elastic https://helm.elastic.co
+for v in keycloak-fixed-issuer postgresql; do
+  envsubst < test/integration/companion-values/$v.yaml > /tmp/$v.yaml
+done
+helm --kube-context $CTX -n $NS install keycloak charts/internal-keycloak-26 -f /tmp/keycloak-fixed-issuer.yaml
+helm --kube-context $CTX -n $NS install postgresql charts/internal-postgresql -f /tmp/postgresql.yaml
+helm --kube-context $CTX -n $NS install elasticsearch elastic/elasticsearch --version 8.5.1 \
+  -f test/integration/companion-values/elasticsearch-9.yaml
+```
+
+D1 — baseline with policies off (no `--features networkpolicy`):
 
 ```bash
 deploy-camunda --chart-path $CHART --namespace $NS --release $REL --kube-context $CTX \
-  --scenario chart-full-setup --identity basic --persistence elasticsearch
+  --scenario chart-full-setup --identity keycloak --persistence elasticsearch \
+  --ingress-base-domain $DOMAIN
 ```
+
+D1 renders Optimize and Camunda Hub, because only the networkpolicy feature layer turns
+them off.
 
 D2 — ingress policies:
 
 ```bash
 deploy-camunda --chart-path $CHART --namespace $NS --release $REL --kube-context $CTX \
-  --scenario chart-full-setup --identity basic --persistence elasticsearch \
+  --scenario chart-full-setup --identity keycloak --persistence elasticsearch \
+  --features networkpolicy --ingress-base-domain $DOMAIN \
   --extra-values $SC/values-extrarules.yaml
 ```
 
@@ -622,7 +704,8 @@ D3 — egress policies:
 
 ```bash
 deploy-camunda --chart-path $CHART --namespace $NS --release $REL --kube-context $CTX \
-  --scenario chart-full-setup --identity basic --persistence elasticsearch \
+  --scenario chart-full-setup --identity keycloak --persistence elasticsearch \
+  --features networkpolicy --ingress-base-domain $DOMAIN \
   --extra-values $SC/values-egress.yaml,$SC/values-egress-extrarules.yaml
 ```
 
@@ -630,13 +713,21 @@ D4 — allowed namespaces:
 
 ```bash
 deploy-camunda --chart-path $CHART --namespace $NS --release $REL --kube-context $CTX \
-  --scenario chart-full-setup --identity basic --persistence elasticsearch \
+  --scenario chart-full-setup --identity keycloak --persistence elasticsearch \
+  --features networkpolicy --ingress-base-domain $DOMAIN \
   --extra-values $SC/values-allowed-namespaces.yaml
 ```
 
-`--identity basic` disables Identity and Camunda Hub, so the expected policy list is one
-per enabled component: `netpol-zeebe` (orchestration), `netpol-connectors` and
-`netpol-optimize`.
+With `--features networkpolicy` the expected policy list is one per enabled component:
+`netpol-zeebe` (orchestration), `netpol-connectors` and `netpol-identity`. Keycloak,
+PostgreSQL and Elasticsearch are separate releases and get no policy.
+
+The policies block the ingress controller's namespace unless it is allowed (see
+[Ingress controller](#ingress-controller)), so the browser login through
+`https://$CAMUNDA_HOSTNAME` can fail on D2–D4 while `/auth/` (Keycloak, no policy) still
+answers. If it does, add the Contour namespace to `ingress.allowedNamespaces` in a
+local values file; in D4 that list must also keep `$NS-allowed`, because Helm replaces
+lists.
 
 After each D step:
 
@@ -652,14 +743,21 @@ After each D step:
   done
   ```
 
+- The browser login at `https://$CAMUNDA_HOSTNAME/orchestration` redirects to Keycloak
+  and back, and the ID token's `iss` claim is
+  `https://$CAMUNDA_HOSTNAME/auth/realms/camunda-platform`.
 - The e2e smoke suite passes after D2–D4 (the D1 baseline needs no policy check).
 
 | Step | Policies in `$NS` | Ingress from `$NS-outsider` | Ingress from `$NS-allowed` | Egress from the release pods |
 |---|---|---|---|---|
 | D1 | none | reaches every port | reaches every port | open |
-| D2 | `netpol-zeebe`, `netpol-connectors`, `netpol-optimize`, `Ingress` | blocked on every port | every component's 8080 (zeebe, connectors, optimize) | open |
+| D2 | `netpol-zeebe`, `netpol-connectors`, `netpol-identity`, `Ingress` | blocked on every port | 8080 on every component; zeebe and connectors listen there, identity (8084) does not | open |
 | D3 | same three, `Ingress` + `Egress` | blocked | blocked — no ingress rule for `$NS-allowed` in this step | `$NS-allowed` 8080 only; `$NS-outsider` and external blocked; DNS intact |
-| D4 | same three, `Ingress` | blocked | zeebe 8080 and 26500, connectors 8080, optimize 8090; 9600/26501/26502 blocked | open |
+| D4 | same three, `Ingress` | blocked | zeebe 8080 and 26500, connectors 8080, identity 8084; 9600/26501/26502 blocked | open |
+
+Not verified until a deploy: the browser login, DNS for `$CAMUNDA_HOSTNAME`, the TLS
+certificate, the Contour namespace to allow, and the `iss` claim. The policy list and the
+issuer values are from `helm template` only.
 
 ### Catalog entry
 
