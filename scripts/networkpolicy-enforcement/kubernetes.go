@@ -79,8 +79,8 @@ func (r runner) labelNamespace(namespace, label string) func(context.Context) er
 	}
 }
 
-func (r runner) policies(ctx context.Context) ([]string, error) {
-	out, err := r.kubectl(ctx, "get", "networkpolicy", "--namespace", r.cfg.namespace, "-o", "jsonpath={.items[*].metadata.name}")
+func (r runner) policies(ctx context.Context, namespace string) ([]string, error) {
+	out, err := r.kubectl(ctx, "get", "networkpolicy", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
 	if err != nil {
 		return nil, fmt.Errorf("list NetworkPolicies: %w", err)
 	}
@@ -89,14 +89,14 @@ func (r runner) policies(ctx context.Context) ([]string, error) {
 	return names, nil
 }
 
-func (r runner) assertPolicies(ctx context.Context, want []string) error {
-	got, err := r.policies(ctx)
+func (r runner) assertPolicies(ctx context.Context, namespace, release string, want []string) error {
+	got, err := r.policies(ctx, namespace)
 	if err != nil {
 		return err
 	}
 	expected := make([]string, 0, len(want))
 	for _, name := range want {
-		expected = append(expected, r.cfg.release+"-"+name)
+		expected = append(expected, release+"-"+name)
 	}
 	slices.Sort(expected)
 	if !slices.Equal(got, expected) {
@@ -106,8 +106,12 @@ func (r runner) assertPolicies(ctx context.Context, want []string) error {
 }
 
 func (r runner) podIP(ctx context.Context, component string) (string, error) {
-	selector := "app.kubernetes.io/instance=" + r.cfg.release + ",app.kubernetes.io/component=" + component
-	ip, err := r.kubectl(ctx, "get", "pod", "--namespace", r.cfg.namespace, "-l", selector, "-o", "jsonpath={.items[0].status.podIP}")
+	return r.podIPIn(ctx, r.cfg.namespace, r.cfg.release, component)
+}
+
+func (r runner) podIPIn(ctx context.Context, namespace, release, component string) (string, error) {
+	selector := "app.kubernetes.io/instance=" + release + ",app.kubernetes.io/component=" + component
+	ip, err := r.kubectl(ctx, "get", "pod", "--namespace", namespace, "-l", selector, "-o", "jsonpath={.items[0].status.podIP}")
 	if err != nil || ip == "" {
 		return "", errors.Join(fmt.Errorf("no pod IP for %s", component), err)
 	}
@@ -151,8 +155,12 @@ func (r runner) jsonpath(ctx context.Context, what string, args ...string) (stri
 }
 
 func (r runner) componentPod(ctx context.Context, component string) (string, error) {
-	selector := "app.kubernetes.io/instance=" + r.cfg.release + ",app.kubernetes.io/component=" + component
-	return r.jsonpath(ctx, "pod for "+component, "pod", "--namespace", r.cfg.namespace, "-l", selector, "-o", "jsonpath={.items[0].metadata.name}")
+	return r.componentPodIn(ctx, r.cfg.namespace, r.cfg.release, component)
+}
+
+func (r runner) componentPodIn(ctx context.Context, namespace, release, component string) (string, error) {
+	selector := "app.kubernetes.io/instance=" + release + ",app.kubernetes.io/component=" + component
+	return r.jsonpath(ctx, "pod for "+component, "pod", "--namespace", namespace, "-l", selector, "-o", "jsonpath={.items[0].metadata.name}")
 }
 
 func (r runner) egressTarget(ctx context.Context, t target) (string, int, error) {
@@ -161,12 +169,21 @@ func (r runner) egressTarget(ctx context.Context, t target) (string, int, error)
 		ip, err := r.podIP(ctx, connectors)
 		return ip, componentPorts[connectors][0], err
 	case targetExternal:
-		ip, err := r.jsonpath(ctx, "node InternalIP", "nodes", "-o", `jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}`)
-		return ip, 6443, err
+		return r.externalTarget(ctx)
 	default:
 		ip, err := r.jsonpath(ctx, "probe IP", "pod", "netpol-probe", "--namespace", r.sourceNamespace(source(t-targetInside)), "-o", "jsonpath={.status.podIP}")
 		return ip, probePort, err
 	}
+}
+
+// externalTarget resolves the destination of the external egress probe. An
+// EXTERNAL_TARGET host overrides the default, the first node's InternalIP.
+func (r runner) externalTarget(ctx context.Context) (string, int, error) {
+	if r.cfg.externalHost != "" {
+		return r.cfg.externalHost, r.cfg.externalPort, nil
+	}
+	ip, err := r.jsonpath(ctx, "node InternalIP", "nodes", "-o", `jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}`)
+	return ip, r.cfg.externalPort, err
 }
 
 func (r runner) egressReachable(ctx context.Context, pod string, t target) (bool, error) {
