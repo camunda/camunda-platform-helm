@@ -95,6 +95,9 @@ export function makeShadowConfig(opts: {
         testIgnore: [
           "**/cluster-variables.spec.{ts,js}",
           "**/test-setup.spec.{ts,js}",
+          ...(process.env.ENTRA_TOTP_SECRET
+            ? []
+            : ["**/entra-login.spec.{ts,js}"]),
           ...(opts.extraTestIgnore ?? []),
         ],
         grep: /^(?!.*(@tasklistV1|Connector Secrets User Flow|Custom Tags|Custom Properties)).*$/,
