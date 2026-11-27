@@ -16,3 +16,12 @@ global:
     enabled: true
     ingress:
       enabled: true
+
+# base.yaml enables optimize and camundaHub, and identity/keycloak.yaml enables
+# optimize again; both would render their own NetworkPolicies (optimize,
+# web-modeler-restapi, web-modeler-websockets). This layer is merged after both.
+optimize:
+  enabled: false
+
+camundaHub:
+  enabled: false
