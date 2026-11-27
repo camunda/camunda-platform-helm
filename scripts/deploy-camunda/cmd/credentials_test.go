@@ -211,3 +211,18 @@ func TestCredentialsConfigureStoresPairWithoutPrintingSecret(t *testing.T) {
 		t.Fatal("configure output exposed secret")
 	}
 }
+
+func TestResolveRegistryCredentialsFallsBackWhenEnvPairIsHalfSet(t *testing.T) {
+	store := useMemoryCredentialStore(t)
+	store.values[credentials.DockerHubRegistry] = credentials.Credential{Username: "stored", Password: "stored-token"}
+	t.Setenv("DOCKERHUB_USERNAME", "half-set")
+	t.Setenv("DOCKERHUB_PASSWORD", "")
+
+	flags := config.DockerFlags{EnsureDockerHub: true}
+	if err := resolveRegistryCredentials(&flags); err != nil {
+		t.Fatalf("half-set env pair must not fail resolution: %v", err)
+	}
+	if flags.DockerHubUsername != "stored" || flags.DockerHubPassword != "stored-token" {
+		t.Fatalf("expected the keyring credential to win, got %#v", flags)
+	}
+}
