@@ -58,9 +58,12 @@ jobs:
     name: Test helm-values-mcp
     needs: mcp-changes
     if: >-
-      needs.mcp-changes.outputs.relevant == 'true' ||
+      (needs.mcp-changes.outputs.relevant == 'true' ||
       github.event_name == 'merge_group' ||
-      github.event_name == 'workflow_dispatch'
+      github.event_name == 'workflow_dispatch') &&
+      !startsWith(github.head_ref, 'release-please--') &&
+      !(github.event.merge_group.head_commit.author.name == 'distro-ci[bot]' &&
+        startsWith(github.event.merge_group.head_commit.message, 'chore(release): '))
     runs-on: ubuntu-latest
     permissions:
       id-token: write
