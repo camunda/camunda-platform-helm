@@ -2519,3 +2519,9 @@ Bundled Bitnami subcharts (removed in 8.10)
   "condition" (hasKey .Values "elasticsearch")
   "oldName" "elasticsearch"
 ) }}
+{{- if (.Values.capacityManager | default dict).enabled }}
+  {{- $nonDefaultTenants := include "orchestration.nonDefaultPhysicalTenantIds" . }}
+  {{- if $nonDefaultTenants }}
+    {{- fail (printf "[camunda][error] capacityManager does not yet support physical tenants other than \"default\" (declared: %s). Remove them from camunda.physical-tenants in orchestration.extraConfiguration, from orchestration.secretStore.physicalTenants, and from global.topology.clusters[].physicalTenants, or set capacityManager.enabled=false." $nonDefaultTenants) }}
+  {{- end }}
+{{- end }}
