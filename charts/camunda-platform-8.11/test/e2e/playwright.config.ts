@@ -81,6 +81,11 @@ export default defineConfig(
   makeShadowConfig({
     version: "SM-8.11",
     testDir,
+    // entra-login needs ENTRA_TOTP_SECRET to reach the Microsoft IdP; gate it
+    // the same way the suite's own playwright.config.ts does.
+    extraTestIgnore: process.env.ENTRA_TOTP_SECRET
+      ? []
+      : ["**/entra-login.spec.{ts,js}"],
     includeSetupProject: true,
     tasklistV2Header: true,
     fullyParallel: true,
