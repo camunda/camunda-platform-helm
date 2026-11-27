@@ -37,6 +37,10 @@ integration:
       shortname: optls
       tier: 2
       enabled: true
+    - id: networkpolicy
+      shortname: networkpolicy
+      tier: 2
+      enabled: false
     - id: opensearch
       shortname: oske
       tier: 2
