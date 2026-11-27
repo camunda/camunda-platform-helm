@@ -1,0 +1,9 @@
+{{- if and (eq (include "camundaPlatform.orchestrationEnabled" .) "true") (eq (include "camundaPlatform.networkPolicyEnabled" (dict "networkPolicy" .Values.orchestration.networkPolicy "context" .)) "true") -}}
+{{- $svc := .Values.orchestration.service -}}
+{{- include "camundaPlatform.networkPolicy" (dict
+      "name" (include "orchestration.fullname" .)
+      "labels" (include "orchestration.labels" .)
+      "matchLabels" (include "orchestration.matchLabels" .)
+      "ports" (list $svc.httpPort $svc.commandPort $svc.internalPort $svc.managementPort $svc.grpcPort)
+      "context" .) }}
+{{- end -}}

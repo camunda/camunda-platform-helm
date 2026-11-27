@@ -1,0 +1,8 @@
+{{- if and (eq (include "camundaPlatform.connectorsEnabled" .) "true") (eq (include "camundaPlatform.networkPolicyEnabled" (dict "networkPolicy" .Values.connectors.networkPolicy "context" .)) "true") -}}
+{{- include "camundaPlatform.networkPolicy" (dict
+      "name" (include "connectors.fullname" .)
+      "labels" (include "connectors.labels" .)
+      "matchLabels" (include "connectors.matchLabels" .)
+      "ports" (list .Values.connectors.service.serverPort)
+      "context" .) }}
+{{- end -}}

@@ -3310,3 +3310,57 @@ legacy Optimize exporters, and the NOTES.txt warning.
 {{- define "camundaPlatform.spansFailureDomains" -}}
 {{- (include "camundaPlatform.partitioning" . | fromJson).spansFailureDomains -}}
 {{- end -}}
+
+{{/*
+[camunda-platform] "true" when an ingress NetworkPolicy should be rendered for a component.
+
+Usage:
+{{ include "camundaPlatform.networkPolicyEnabled" (dict "networkPolicy" .Values.connectors.networkPolicy "context" $) }}
+*/}}
+{{- define "camundaPlatform.networkPolicyEnabled" -}}
+{{- $global := .context.Values.global.networkPolicy | default dict -}}
+{{- $ingress := $global.ingress | default dict -}}
+{{- $component := .networkPolicy | default dict -}}
+{{- if and $global.enabled (ne (toString $ingress.enabled) "false") (ne (toString $component.enabled) "false") -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Renders an ingress-only NetworkPolicy that allows pods in the release
+namespace to reach the given pod ports, followed by global.networkPolicy.ingress.extraRules.
+
+Usage:
+{{ include "camundaPlatform.networkPolicy" (dict "name" $name "labels" $labels "matchLabels" $matchLabels "ports" (list 8080) "context" $) }}
+*/}}
+{{- define "camundaPlatform.networkPolicy" -}}
+{{- $ingress := .context.Values.global.networkPolicy.ingress | default dict -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .name }}
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- .labels | nindent 4 }}
+  {{- with .context.Values.global.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- .matchLabels | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        {{- range .ports }}
+        - protocol: TCP
+          port: {{ . }}
+        {{- end }}
+    {{- with $ingress.extraRules }}
+    {{- tpl (toYaml .) $.context | nindent 4 }}
+    {{- end }}
+{{- end -}}
