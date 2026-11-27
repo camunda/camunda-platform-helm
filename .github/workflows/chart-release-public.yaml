@@ -752,7 +752,7 @@ jobs:
           repository-owner: ${{ github.repository_owner }}
           repository-name: ${{ github.event.repository.name }}
           merge-method: squash
-          timeout-minutes: "120"
+          timeout-minutes: "59"
           max-evictions: "3"
 
       - name: Notice if monitor ended with PR still queued
@@ -771,7 +771,7 @@ jobs:
                 text:
                   type: mrkdwn
                   text: |
-                    :hourglass_flowing_sand: *Helm Chart ${{ needs.release.outputs.version }}* was published; its release-please PR was still in the merge queue (state: `${{ steps.merge-queue.outputs.queue-state }}`, position: `${{ steps.merge-queue.outputs.queue-position }}`) when the 120-minute monitor window ended. It should merge on its own — verify it landed so `main` syncs with the released artifact.
+                    :hourglass_flowing_sand: *Helm Chart ${{ needs.release.outputs.version }}* was published; its release-please PR was still in the merge queue (state: `${{ steps.merge-queue.outputs.queue-state }}`, position: `${{ steps.merge-queue.outputs.queue-position }}`) when the 59-minute monitor window ended. It should merge on its own — verify it landed so `main` syncs with the released artifact.
                     <${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.post-release.outputs.pr-number }}|View PR> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>
 
       - name: Alert if release-please PR did not merge
