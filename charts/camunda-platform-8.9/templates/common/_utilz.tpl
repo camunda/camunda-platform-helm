@@ -135,3 +135,20 @@ Usage:
 {{- end }}
 {{- end }}
 {{- end -}}
+
+{{/*
+camundaPlatform.extraConfigHasFile
+Returns "true" when an extraConfiguration list [{file, content}] has an entry for the given file name.
+
+Usage:
+  {{- if eq (include "camundaPlatform.extraConfigHasFile" (dict "extraConfig" .Values.orchestration.extraConfiguration "file" "log4j2.xml")) "true" }}
+*/}}
+{{- define "camundaPlatform.extraConfigHasFile" -}}
+{{- $found := "" -}}
+{{- range .extraConfig }}
+{{- if eq (.file | default "") $.file }}
+{{- $found = "true" -}}
+{{- end }}
+{{- end }}
+{{- $found -}}
+{{- end -}}
