@@ -27,14 +27,26 @@ import (
 // sweepNow is the fixed clock the sweep tests compare ages against.
 var sweepNow = time.Date(2026, 11, 27, 12, 0, 0, 0, time.UTC)
 
-// sweepApp builds one Graph application listing entry.
-func sweepApp(displayName string, ageHours int) map[string]string {
-	return map[string]string{
+// sweepApp builds one Graph application listing entry aged ageHours, with no
+// password credential.
+func sweepApp(displayName string, ageHours int) map[string]any {
+	return map[string]any{
 		"id":              "obj-" + displayName,
 		"appId":           "app-" + displayName,
 		"displayName":     displayName,
 		"createdDateTime": sweepNow.Add(-time.Duration(ageHours) * time.Hour).Format(time.RFC3339),
 	}
+}
+
+// sweepAppProvisioned builds a listing entry created ageHours ago whose newest
+// password credential starts credentialAgeHours ago.
+func sweepAppProvisioned(displayName string, ageHours, credentialAgeHours int) map[string]any {
+	app := sweepApp(displayName, ageHours)
+	app["passwordCredentials"] = []map[string]string{
+		{"startDateTime": sweepNow.Add(-time.Duration(ageHours) * time.Hour).Format(time.RFC3339)},
+		{"startDateTime": sweepNow.Add(-time.Duration(credentialAgeHours) * time.Hour).Format(time.RFC3339)},
+	}
+	return app
 }
 
 // useTestServer points the Graph and login base URLs at srv for one test.
@@ -71,11 +83,12 @@ func names(apps []SweptApp) []string {
 }
 
 func TestSweepLoginApps_DeletesOnlyOldQAEntraApps(t *testing.T) {
-	listing := []map[string]string{
+	listing := []map[string]any{
 		sweepApp("camunda-oidc-qa-id-qaen-ce20-8-10-qaen", 48),
 		sweepApp("camunda-oidc-qa-id-qaen-ab12-8-11-qaen", 25),
 		sweepApp("camunda-oidc-qa-id-qaen-cd34-8-11-qaen", 2),
 		sweepApp("camunda-oidc-qa-id-qaen-ef78-8-11-qaen", 24),
+		sweepAppProvisioned("camunda-oidc-qa-id-qaen-reuse-8-10-qaen", 72, 3),
 		sweepApp("camunda-oidc-qa-id-qaelupg-ef56-8-10", 48),
 		sweepApp("camunda-oidc-distro-pr-1234-qaen", 48),
 	}
@@ -87,6 +100,12 @@ func TestSweepLoginApps_DeletesOnlyOldQAEntraApps(t *testing.T) {
 			filter := r.URL.Query().Get("$filter")
 			if !strings.Contains(filter, sweepPrefix) {
 				t.Errorf("unexpected filter %q", filter)
+			}
+			selected := r.URL.Query().Get("$select")
+			for _, field := range []string{"id", "appId", "displayName", "createdDateTime", "passwordCredentials"} {
+				if !slices.Contains(strings.Split(selected, ","), field) {
+					t.Errorf("$select %q does not select %s", selected, field)
+				}
 			}
 			jsonResponse(w, 200, map[string]any{"value": listing})
 		},
@@ -123,6 +142,9 @@ func TestSweepLoginApps_DeletesOnlyOldQAEntraApps(t *testing.T) {
 		if strings.Contains(app.DisplayName, "-ef78-") {
 			t.Error("an app aged exactly --max-age must be kept")
 		}
+		if strings.Contains(app.DisplayName, "-reuse-") {
+			t.Error("an app re-provisioned within --max-age must be kept")
+		}
 	}
 	if result.Scanned != len(listing) {
 		t.Errorf("Scanned = %d, want %d", result.Scanned, len(listing))
@@ -134,7 +156,7 @@ func TestSweepLoginApps_DryRunDeletesNothing(t *testing.T) {
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, 200, map[string]any{
-				"value": []map[string]string{sweepApp("camunda-oidc-qa-id-qaen-ce20-8-10-qaen", 48)},
+				"value": []map[string]any{sweepApp("camunda-oidc-qa-id-qaen-ce20-8-10-qaen", 48)},
 			})
 		},
 		"DELETE /applications/": func(w http.ResponseWriter, r *http.Request) {
@@ -166,13 +188,13 @@ func TestSweepLoginApps_FollowsPaging(t *testing.T) {
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Query().Get("$skiptoken") == "" {
 				jsonResponse(w, 200, map[string]any{
-					"value":           []map[string]string{sweepApp("camunda-oidc-qa-id-qaen-page1-8-10-qaen", 48)},
+					"value":           []map[string]any{sweepApp("camunda-oidc-qa-id-qaen-page1-8-10-qaen", 48)},
 					"@odata.nextLink": graphBaseURL + "/applications?$skiptoken=page2",
 				})
 				return
 			}
 			jsonResponse(w, 200, map[string]any{
-				"value": []map[string]string{sweepApp("camunda-oidc-qa-id-qaen-page2-8-10-qaen", 48)},
+				"value": []map[string]any{sweepApp("camunda-oidc-qa-id-qaen-page2-8-10-qaen", 48)},
 			})
 		},
 		"DELETE /applications/": func(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +218,7 @@ func TestSweepLoginApps_ReportsFailedDeletes(t *testing.T) {
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, 200, map[string]any{
-				"value": []map[string]string{
+				"value": []map[string]any{
 					sweepApp("camunda-oidc-qa-id-qaen-gone-8-10-qaen", 48),
 					sweepApp("camunda-oidc-qa-id-qaen-bad-8-10-qaen", 48),
 				},
@@ -229,13 +251,15 @@ func TestSweepLoginApps_ReportsFailedDeletes(t *testing.T) {
 }
 
 func TestSweepLoginApps_SkipsUnreadableCreationTime(t *testing.T) {
-	broken := sweepApp("camunda-oidc-qa-id-qaen-broken-8-10-qaen", 48)
-	broken["createdDateTime"] = "not-a-timestamp"
+	brokenCreated := sweepApp("camunda-oidc-qa-id-qaen-nocreate-8-10-qaen", 48)
+	brokenCreated["createdDateTime"] = "not-a-timestamp"
+	brokenCredential := sweepAppProvisioned("camunda-oidc-qa-id-qaen-nocred-8-10-qaen", 48, 48)
+	brokenCredential["passwordCredentials"] = []map[string]string{{"startDateTime": "not-a-timestamp"}}
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{
 		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
 		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
-			jsonResponse(w, 200, map[string]any{"value": []map[string]string{broken}})
+			jsonResponse(w, 200, map[string]any{"value": []map[string]any{brokenCreated, brokenCredential}})
 		},
 		"DELETE /applications/": func(w http.ResponseWriter, r *http.Request) {
 			t.Error("app with unreadable creation time must not be deleted")
@@ -303,5 +327,81 @@ func TestSweepNamePattern(t *testing.T) {
 		if got := sweepNamePattern.MatchString(name); got != want {
 			t.Errorf("%s: match = %v, want %v", name, got, want)
 		}
+	}
+}
+
+func TestSweepLoginApps_RejectsOffHostPagingLink(t *testing.T) {
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{
+				"value":           []map[string]any{sweepApp("camunda-oidc-qa-id-qaen-page1-8-10-qaen", 48)},
+				"@odata.nextLink": "https://example.invalid/applications?$skiptoken=page2",
+			})
+		},
+		"DELETE /applications/": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("a sweep that aborts on a bad paging link must not delete")
+			w.WriteHeader(http.StatusNoContent)
+		},
+	})
+	defer srv.Close()
+	useTestServer(t, srv)
+
+	if _, err := SweepLoginApps(context.Background(), sweepTestOptions(srv, false)); err == nil {
+		t.Error("expected a paging link outside Graph to abort the sweep")
+	}
+}
+
+func TestSweepLoginApps_AcceptsMaxAgeAtTheFloor(t *testing.T) {
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{"value": []map[string]any{}})
+		},
+	})
+	defer srv.Close()
+	useTestServer(t, srv)
+
+	opts := sweepTestOptions(srv, true)
+	opts.MaxAge = minSweepMaxAge
+	if _, err := SweepLoginApps(context.Background(), opts); err != nil {
+		t.Errorf("max age at the floor must be accepted: %v", err)
+	}
+}
+
+func TestSweepLoginApps_RetriesThrottledDelete(t *testing.T) {
+	origBase, origMax := retryBaseBackoff, retryMaxBackoff
+	retryBaseBackoff, retryMaxBackoff = time.Millisecond, time.Millisecond
+	t.Cleanup(func() { retryBaseBackoff, retryMaxBackoff = origBase, origMax })
+
+	attempts := 0
+	srv := newTestServer(t, map[string]http.HandlerFunc{
+		"POST /test-tenant/oauth2/v2.0/token": tokenHandler(),
+		"GET /applications": func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, map[string]any{
+				"value": []map[string]any{sweepApp("camunda-oidc-qa-id-qaen-429-8-10-qaen", 48)},
+			})
+		},
+		"DELETE /applications/": func(w http.ResponseWriter, r *http.Request) {
+			attempts++
+			if attempts < 3 {
+				w.WriteHeader(http.StatusTooManyRequests)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		},
+	})
+	defer srv.Close()
+	useTestServer(t, srv)
+
+	result, err := SweepLoginApps(context.Background(), sweepTestOptions(srv, false))
+	if err != nil {
+		t.Fatalf("SweepLoginApps: %v", err)
+	}
+	if len(result.Deleted) != 1 || len(result.Failed) != 0 {
+		t.Errorf("a throttled delete must still succeed: deleted=%v failed=%v", names(result.Deleted), names(result.Failed))
+	}
+	if attempts != 3 {
+		t.Errorf("attempts = %d, want 3", attempts)
 	}
 }

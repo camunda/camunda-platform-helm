@@ -47,6 +47,15 @@ const sweepPageSize = 999
 // minSweepMaxAge is the lowest --max-age a sweep accepts.
 const minSweepMaxAge = 12 * time.Hour
 
+// sweepDeleteRetryable retries a throttled or failed delete, and treats 404 as
+// terminal: the app is already gone.
+func sweepDeleteRetryable(statusCode int, body []byte, err error) bool {
+	if statusCode == http.StatusNotFound {
+		return false
+	}
+	return defaultRetryable(statusCode, body, err)
+}
+
 // SweepOptions configures a sweep of leaked QA Entra login app registrations.
 type SweepOptions struct {
 	// Options supplies the Graph credentials and HTTP client; its Namespace is
@@ -65,10 +74,12 @@ type SweepOptions struct {
 
 // SweptApp is one QA login app registration the sweep matched.
 type SweptApp struct {
-	DisplayName string    `json:"displayName"`
-	AppID       string    `json:"appId"`
-	ObjectID    string    `json:"objectId"`
-	CreatedAt   time.Time `json:"createdAt"`
+	DisplayName string `json:"displayName"`
+	AppID       string `json:"appId"`
+	ObjectID    string `json:"objectId"`
+	// ProvisionedAt is the app's creation time or the start of its newest
+	// password credential, whichever is later.
+	ProvisionedAt time.Time `json:"provisionedAt"`
 	// Error is why a delete failed, empty when it succeeded.
 	Error string `json:"error,omitempty"`
 }
@@ -88,10 +99,34 @@ type SweepResult struct {
 
 // graphApplication is the subset of a Graph application a sweep reads.
 type graphApplication struct {
-	ID          string `json:"id"`
-	AppID       string `json:"appId"`
-	DisplayName string `json:"displayName"`
-	CreatedAt   string `json:"createdDateTime"`
+	ID                  string `json:"id"`
+	AppID               string `json:"appId"`
+	DisplayName         string `json:"displayName"`
+	CreatedAt           string `json:"createdDateTime"`
+	PasswordCredentials []struct {
+		StartDateTime string `json:"startDateTime"`
+	} `json:"passwordCredentials"`
+}
+
+// lastProvisioned returns the app's creation time, or the start of its newest
+// password credential when that is later: EnsureLoginApp reuses a registration
+// by display name and rotateCredentials adds a credential on every run, so the
+// credential start is when the app was last handed to a deployment.
+func lastProvisioned(app graphApplication) (time.Time, error) {
+	anchor, err := time.Parse(time.RFC3339, app.CreatedAt)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("parse createdDateTime %q: %w", app.CreatedAt, err)
+	}
+	for _, cred := range app.PasswordCredentials {
+		started, err := time.Parse(time.RFC3339, cred.StartDateTime)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("parse credential startDateTime %q: %w", cred.StartDateTime, err)
+		}
+		if started.After(anchor) {
+			anchor = started
+		}
+	}
+	return anchor, nil
 }
 
 // SweepLoginApps deletes the login app registrations that match
@@ -134,29 +169,29 @@ func SweepLoginApps(ctx context.Context, opts SweepOptions) (SweepResult, error)
 		if !sweepNamePattern.MatchString(app.DisplayName) {
 			continue
 		}
-		createdAt, err := time.Parse(time.RFC3339, app.CreatedAt)
+		provisionedAt, err := lastProvisioned(app)
 		if err != nil {
 			logging.Logger.Warn().
+				Err(err).
 				Str("displayName", app.DisplayName).
-				Str("createdDateTime", app.CreatedAt).
-				Msg("Skipping app with unreadable creation time")
+				Msg("Skipping app with unreadable timestamps")
 			continue
 		}
-		if !createdAt.Before(cutoff) {
+		if !provisionedAt.Before(cutoff) {
 			continue
 		}
 		result.Candidates = append(result.Candidates, SweptApp{
-			DisplayName: app.DisplayName,
-			AppID:       app.AppID,
-			ObjectID:    app.ID,
-			CreatedAt:   createdAt.UTC(),
+			DisplayName:   app.DisplayName,
+			AppID:         app.AppID,
+			ObjectID:      app.ID,
+			ProvisionedAt: provisionedAt.UTC(),
 		})
 	}
 
 	for _, candidate := range result.Candidates {
 		log := logging.Logger.With().
 			Str("displayName", candidate.DisplayName).
-			Str("createdAt", candidate.CreatedAt.Format(time.RFC3339)).
+			Str("provisionedAt", candidate.ProvisionedAt.Format(time.RFC3339)).
 			Logger()
 
 		if opts.DryRun {
@@ -164,15 +199,18 @@ func SweepLoginApps(ctx context.Context, opts SweepOptions) (SweepResult, error)
 			continue
 		}
 
-		statusCode, err := graphDelete(ctx, client, token, "/applications/"+candidate.ObjectID)
+		_, statusCode, err := withGraphRetry(ctx, "sweepDeleteApp", sweepDeleteRetryable, func() ([]byte, int, error) {
+			code, derr := graphDelete(ctx, client, token, "/applications/"+candidate.ObjectID)
+			return nil, code, derr
+		})
 		switch {
+		case statusCode == http.StatusNoContent || statusCode == http.StatusNotFound:
+			log.Info().Int("status", statusCode).Msg("Deleted orphaned Entra login app")
+			result.Deleted = append(result.Deleted, candidate)
 		case err != nil:
 			candidate.Error = err.Error()
 			log.Warn().Err(err).Msg("Delete request failed")
 			result.Failed = append(result.Failed, candidate)
-		case statusCode == http.StatusNoContent || statusCode == http.StatusNotFound:
-			log.Info().Int("status", statusCode).Msg("Deleted orphaned Entra login app")
-			result.Deleted = append(result.Deleted, candidate)
 		default:
 			candidate.Error = fmt.Sprintf("unexpected status %d", statusCode)
 			log.Warn().Int("status", statusCode).Msg("Unexpected status when deleting Entra app")
@@ -187,7 +225,8 @@ func SweepLoginApps(ctx context.Context, opts SweepOptions) (SweepResult, error)
 // with prefix, following Graph's paging links.
 func listAppsByPrefix(ctx context.Context, client *http.Client, token, prefix string) ([]graphApplication, error) {
 	path := fmt.Sprintf(
-		"/applications?$filter=startswith(displayName,'%s')&$select=id,appId,displayName,createdDateTime&$top=%d",
+		"/applications?$filter=startswith(displayName,'%s')"+
+			"&$select=id,appId,displayName,createdDateTime,passwordCredentials&$top=%d",
 		prefix, sweepPageSize,
 	)
 

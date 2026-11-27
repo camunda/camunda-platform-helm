@@ -81,7 +81,7 @@ jobs:
             echo "### Entra login app sweep (dry run: ${DRY_RUN}, max age: ${MAX_AGE})"
             echo ""
             jq -r '"Scanned \(.scanned) app registration(s), matched \(.candidates | length).", "",
-                   ((.candidates // [])[] | "- `\(.displayName)` created \(.createdAt)"),
+                   ((.candidates // [])[] | "- `\(.displayName)` last provisioned \(.provisionedAt)"),
                    ((.failed // [])[] | "- ❌ `\(.displayName)`: \(.error)")' "$result"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: 🚨 Notify the team via Slack 🚨

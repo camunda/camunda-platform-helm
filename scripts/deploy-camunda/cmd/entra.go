@@ -185,6 +185,9 @@ func newEntraCleanupLoginAppCommand() *cobra.Command {
 	)
 }
 
+// sweepLoginApps is entra.SweepLoginApps, replaced in tests.
+var sweepLoginApps = entra.SweepLoginApps
+
 // newEntraSweepLoginAppsCommand creates the "entra sweep-login-apps" subcommand.
 func newEntraSweepLoginAppsCommand() *cobra.Command {
 	var (
@@ -214,7 +217,7 @@ Environment variables (or set in .env file):
 			}
 			loadEnvFile(envFile)
 
-			result, err := entra.SweepLoginApps(context.Background(), entra.SweepOptions{
+			result, err := sweepLoginApps(context.Background(), entra.SweepOptions{
 				MaxAge: maxAge,
 				DryRun: dryRun,
 			})
