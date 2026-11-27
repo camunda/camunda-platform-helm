@@ -9,15 +9,15 @@ Supported versions:
 
 - Camunda applications: [8.8](https://github.com/camunda/camunda/releases?q=tag%3A8.8&expanded=true)
 - Camunda version matrix: [8.8](https://helm.camunda.io/camunda-platform/version-matrix/camunda-8.8)
-- Helm values: [13.14.7](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.14.7?modal=values)
+- Helm values: [13.14.8](https://artifacthub.io/packages/helm/camunda/camunda-platform/13.14.8?modal=values)
 - Helm CLI: [3.22.1](https://github.com/helm/helm/releases/tag/v3.22.1)
 
 Camunda images:
 
 - docker.io/camunda/camunda:8.8.48
 - docker.io/camunda/connectors-bundle:8.8.29
-- docker.io/camunda/console:8.8.150
-- docker.io/camunda/identity:8.8.23
+- docker.io/camunda/console:8.8.151
+- docker.io/camunda/identity:8.8.24
 - docker.io/camunda/optimize:8.8.48
 - docker.io/camunda/web-modeler-restapi:8.8.27
 - docker.io/camunda/web-modeler-webapp:8.8.27
@@ -45,10 +45,10 @@ Enterprise images ([Camunda Enterprise](https://docs.camunda.io/docs/8.8/self-ma
 For quick verification of the Helm chart integrity using [Cosign](https://docs.sigstore.dev/signing/quickstart/):
 
 ```shell
-cosign verify-blob camunda-platform-13.14.7.tgz \
-  --bundle "camunda-platform-13.14.7-cosign-bundle.json" \
+cosign verify-blob camunda-platform-13.14.8.tgz \
+  --bundle "camunda-platform-13.14.8-cosign-bundle.json" \
   --certificate-identity-regexp "https://github.com/camunda/camunda-platform-helm" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
-For detailed verification instructions, check the steps in the `camunda-platform-13.14.7-cosign-verify.sh` file.
+For detailed verification instructions, check the steps in the `camunda-platform-13.14.8-cosign-verify.sh` file.

@@ -1,5 +1,15 @@
 # Changelog
 
+## [13.14.8](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.14.7...camunda-platform-8.8-13.14.8) (2026-11-25)
+
+
+### Dependencies
+
+* update camunda-platform-images (patch) ([#8013](https://github.com/camunda/camunda-platform-helm/issues/8013)) ([733d956](https://github.com/camunda/camunda-platform-helm/commit/733d956eb3f99142637495a29dc6397f3d556933))
+* update camunda-platform-images (patch) ([#8019](https://github.com/camunda/camunda-platform-helm/issues/8019)) ([eb0ad03](https://github.com/camunda/camunda-platform-helm/commit/eb0ad034ec7cb45bfe1a35de1f3ef311ca46cba5))
+* update camunda/console docker tag to v8.8.151 ([#8024](https://github.com/camunda/camunda-platform-helm/issues/8024)) ([841a7ec](https://github.com/camunda/camunda-platform-helm/commit/841a7eca309e79f852d523b491b1a5e4db4bdc05))
+* update golang to v1.27.4 ([#7923](https://github.com/camunda/camunda-platform-helm/issues/7923)) ([856feb8](https://github.com/camunda/camunda-platform-helm/commit/856feb8927a4ae1680c0014adbf10102c09cd204))
+
 ## [13.14.7](https://github.com/camunda/camunda-platform-helm/compare/camunda-platform-8.8-13.14.6...camunda-platform-8.8-13.14.7) (2026-11-24)
 
 
