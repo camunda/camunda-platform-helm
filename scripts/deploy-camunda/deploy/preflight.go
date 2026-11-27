@@ -29,8 +29,8 @@ import (
 	"sort"
 	"strings"
 
+	"scripts/camunda-core/pkg/registry"
 	"scripts/camunda-core/pkg/scenarios"
-	"scripts/camunda-core/pkg/utils"
 	"scripts/deploy-camunda/config"
 	"scripts/prepare-helm-values/pkg/env"
 	"scripts/prepare-helm-values/pkg/placeholders"
@@ -219,20 +219,6 @@ func presence(envMap map[string]string, names []string) (present, missing []stri
 	return present, missing
 }
 
-// firstNonEmptyEnv returns the explicit flag value if set, else the first
-// non-empty value among the named env vars (resolved through envMap so .env
-// entries count).
-func firstNonEmptyEnv(envMap map[string]string, flagVal string, names ...string) string {
-	if flagVal != "" {
-		return flagVal
-	}
-	vals := make([]string, 0, len(names))
-	for _, n := range names {
-		vals = append(vals, envMap[n])
-	}
-	return utils.FirstNonEmpty(vals...)
-}
-
 func checkConfigFile(opts PreflightOptions) Check {
 	if opts.ConfigFound {
 		return Check{Name: "config file", Status: StatusOK, Detail: opts.ConfigPath}
@@ -281,22 +267,21 @@ func checkKubeContext(ctx context.Context, flags *config.RuntimeFlags, opts Pref
 }
 
 // checkDockerCredentials validates Harbor (and optionally Docker Hub) creds
-// using the same flag/env fallback chain as camunda-core/pkg/docker. The checks
+// using the same flag/env fallback chain as camunda-core/pkg/registry. The checks
 // only fail when the corresponding --ensure-docker-* flag makes the pull secret
 // mandatory; otherwise an absence is a warning.
 func checkDockerCredentials(flags *config.RuntimeFlags, envMap map[string]string) []Check {
 	var checks []Check
 
-	harborUser := firstNonEmptyEnv(envMap, flags.Docker.DockerUsername, "HARBOR_USERNAME", "TEST_DOCKER_USERNAME_CAMUNDA_CLOUD", "NEXUS_USERNAME")
-	harborPass := firstNonEmptyEnv(envMap, flags.Docker.DockerPassword, "HARBOR_PASSWORD", "TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD", "NEXUS_PASSWORD")
+	lookup := func(name string) string { return envMap[name] }
+	harborUser, harborPass := registry.Harbor.Login.Resolve(flags.Docker.DockerUsername, flags.Docker.DockerPassword, lookup)
 	checks = append(checks, dockerCredCheck(
 		"docker creds (Harbor)", harborUser, harborPass, flags.Docker.EnsureDockerRegistry,
 		"run `deploy-camunda credentials configure --registry harbor`, or set --docker-username/--docker-password or HARBOR_USERNAME/HARBOR_PASSWORD"))
 
 	// Only probe Docker Hub when its pull secret is requested.
 	if flags.Docker.EnsureDockerHub {
-		hubUser := firstNonEmptyEnv(envMap, flags.Docker.DockerHubUsername, "DOCKERHUB_USERNAME", "TEST_DOCKER_USERNAME")
-		hubPass := firstNonEmptyEnv(envMap, flags.Docker.DockerHubPassword, "DOCKERHUB_PASSWORD", "TEST_DOCKER_PASSWORD")
+		hubUser, hubPass := registry.DockerHubLogin.Resolve(flags.Docker.DockerHubUsername, flags.Docker.DockerHubPassword, lookup)
 		checks = append(checks, dockerCredCheck(
 			"docker creds (Docker Hub)", hubUser, hubPass, true,
 			"run `deploy-camunda credentials configure --registry dockerhub`, or set --dockerhub-username/--dockerhub-password or DOCKERHUB_USERNAME/DOCKERHUB_PASSWORD"))

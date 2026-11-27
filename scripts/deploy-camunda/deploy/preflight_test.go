@@ -111,19 +111,6 @@ func TestPresence(t *testing.T) {
 	}
 }
 
-func TestFirstNonEmptyEnv(t *testing.T) {
-	envMap := map[string]string{"B": "fromB", "C": "fromC"}
-	if got := firstNonEmptyEnv(envMap, "flag", "A", "B"); got != "flag" {
-		t.Errorf("flag should win, got %q", got)
-	}
-	if got := firstNonEmptyEnv(envMap, "", "A", "B", "C"); got != "fromB" {
-		t.Errorf("first non-empty env should win, got %q", got)
-	}
-	if got := firstNonEmptyEnv(envMap, "", "A", "Z"); got != "" {
-		t.Errorf("none set should be empty, got %q", got)
-	}
-}
-
 func TestCheckVaultMapping(t *testing.T) {
 	tests := []struct {
 		name    string

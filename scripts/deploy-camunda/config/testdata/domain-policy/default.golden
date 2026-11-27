@@ -1,0 +1,7 @@
+domains: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud
+prune-suffixes: .ci.distro.ultrawombat.com, .distribution.aws.camunda.cloud
+required: --ingress-base-domain is required when using --ingress-subdomain; valid values: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud
+validate "ci.distro.ultrawombat.com": <nil>
+validate "distribution.aws.camunda.cloud": <nil>
+validate "example.com": --ingress-base-domain must be one of: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud
+validate "*": --ingress-base-domain must be one of: ci.distro.ultrawombat.com, distribution.aws.camunda.cloud

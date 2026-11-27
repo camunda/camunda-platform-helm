@@ -299,7 +299,7 @@ func registerIngressBaseDomainCompletion(cmd *cobra.Command) {
 // registerIngressBaseDomainCompletionForFlag adds tab completion for a named ingress-base-domain flag.
 func registerIngressBaseDomainCompletionForFlag(cmd *cobra.Command, flagName string) {
 	_ = cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return filterByPrefix(config.ValidIngressBaseDomains, toComplete), cobra.ShellCompDirectiveNoFileComp
+		return filterByPrefix(config.DefaultDomainPolicy().Domains(), toComplete), cobra.ShellCompDirectiveNoFileComp
 	})
 }
 

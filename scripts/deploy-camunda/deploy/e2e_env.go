@@ -22,6 +22,8 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+
+	contract "scripts/camunda-core/pkg/credentials"
 )
 
 type E2EEnvMergeOptions struct {
@@ -69,15 +71,15 @@ func MergeE2EEnv(opts E2EEnvMergeOptions) error {
 		return err
 	}
 
-	firstUserPw, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "identity-user-password")
+	firstUserPw, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, contract.KeyFirstUser)
 	if err != nil {
 		return err
 	}
-	kcAdminPw, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "identity-keycloak-admin-password")
+	kcAdminPw, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, contract.KeyKeycloakAdmin)
 	if err != nil {
 		return err
 	}
-	clientSecret, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, "client-secret")
+	clientSecret, err := resolveSecretKey(opts.KubeContext, opts.HubNamespace, contract.KeyOIDCClient)
 	if err != nil {
 		return err
 	}
@@ -217,7 +219,7 @@ func resolveSecretKey(kubeContext, namespace, key string) (string, error) {
 	if kubeContext != "" {
 		a = append(a, "--context", kubeContext)
 	}
-	a = append(a, "-n", namespace, "get", "secret", "integration-test-credentials",
+	a = append(a, "-n", namespace, "get", "secret", contract.SecretName,
 		"-o", fmt.Sprintf("jsonpath={.data['%s']}", key))
 	out, err := exec.Command("kubectl", a...).Output()
 	if err != nil {

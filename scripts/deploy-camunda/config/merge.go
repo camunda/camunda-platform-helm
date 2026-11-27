@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -490,11 +489,11 @@ func Validate(flags *RuntimeFlags, cfgRes ...*ConfigResolution) error {
 		return fmt.Errorf("--ingress-hostname cannot be used with --ingress-subdomain or --ingress-base-domain; use either --ingress-hostname OR --ingress-subdomain with --ingress-base-domain")
 	}
 	if flags.Ingress.IngressSubdomain != "" && flags.Ingress.IngressBaseDomain == "" {
-		return fmt.Errorf("--ingress-base-domain is required when using --ingress-subdomain; valid values: %s", strings.Join(ValidIngressBaseDomains, ", "))
+		return DefaultDomainPolicy().RequiredError()
 	}
 	if flags.Ingress.IngressBaseDomain != "" {
-		if !IsValidIngressBaseDomain(flags.Ingress.IngressBaseDomain) {
-			return fmt.Errorf("--ingress-base-domain must be one of: %s", strings.Join(ValidIngressBaseDomains, ", "))
+		if err := DefaultDomainPolicy().Validate("ingress-base-domain", flags.Ingress.IngressBaseDomain); err != nil {
+			return err
 		}
 	}
 
@@ -515,7 +514,7 @@ func parseScenarios(scenario string) []string {
 
 // IsValidIngressBaseDomain checks if the given domain is in the allowed list.
 func IsValidIngressBaseDomain(domain string) bool {
-	return slices.Contains(ValidIngressBaseDomains, domain)
+	return DefaultDomainPolicy().Allows(domain)
 }
 
 // HasExplicitSelectionConfig returns true if any selection + composition flags were explicitly set.

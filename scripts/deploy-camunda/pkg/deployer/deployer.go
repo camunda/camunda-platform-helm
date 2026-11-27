@@ -22,12 +22,12 @@ import (
 	"scripts/camunda-core/pkg/helm"
 	"scripts/camunda-core/pkg/kube"
 	"scripts/camunda-core/pkg/logging"
-	"scripts/camunda-core/pkg/utils"
+	"scripts/camunda-core/pkg/registry"
 	"scripts/deploy-camunda/pkg/types"
 	"time"
 )
 
-//nolint:gocognit,gocyclo // split tracked in #7584
+//nolint:gocognit // split tracked in #7584
 func Deploy(ctx context.Context, o types.Options) error {
 	// Render-only mode: do not touch the cluster or docker; just render templates
 	if o.RenderTemplates {
@@ -85,30 +85,14 @@ func Deploy(ctx context.Context, o types.Options) error {
 	}
 
 	if o.EnsureDockerRegistry {
-		// Resolve Harbor registry credentials from flags or environment fallbacks
-		username := o.DockerRegistryUsername
-		password := o.DockerRegistryPassword
-		if username == "" {
-			username = utils.FirstNonEmpty(os.Getenv("HARBOR_USERNAME"), os.Getenv("TEST_DOCKER_USERNAME_CAMUNDA_CLOUD"), os.Getenv("NEXUS_USERNAME"))
-		}
-		if password == "" {
-			password = utils.FirstNonEmpty(os.Getenv("HARBOR_PASSWORD"), os.Getenv("TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD"), os.Getenv("NEXUS_PASSWORD"))
-		}
+		username, password := registry.Harbor.Login.ResolveEnv(o.DockerRegistryUsername, o.DockerRegistryPassword)
 		if err := kubeClient.EnsureDockerRegistrySecret(ctx, o.Namespace, username, password); err != nil {
 			return err
 		}
 	}
 
 	if o.EnsureDockerHub {
-		// Resolve Docker Hub credentials from flags or environment fallbacks
-		username := o.DockerHubUsername
-		password := o.DockerHubPassword
-		if username == "" {
-			username = utils.FirstNonEmpty(os.Getenv("DOCKERHUB_USERNAME"), os.Getenv("TEST_DOCKER_USERNAME"))
-		}
-		if password == "" {
-			password = utils.FirstNonEmpty(os.Getenv("DOCKERHUB_PASSWORD"), os.Getenv("TEST_DOCKER_PASSWORD"))
-		}
+		username, password := registry.DockerHubLogin.ResolveEnv(o.DockerHubUsername, o.DockerHubPassword)
 		if err := kubeClient.EnsureDockerHubSecret(ctx, o.Namespace, username, password); err != nil {
 			return err
 		}
