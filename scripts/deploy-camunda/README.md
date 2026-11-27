@@ -323,6 +323,15 @@ To add a scenario for a shape you frequently deploy:
    and orphan resources. Topology releases use the same values-layer checks;
    `TestTopologyValidate*` in `matrix/topology_test.go` covers their local
    requirements and cross-release references.
+4. If the scenario changes which values files it selects, re-run
+   `cd scripts/deploy-camunda && go test ./matrix/ -run TestValuesChainGolden -update-golden`
+   and inspect the diff. `TestValuesChainGolden`
+   (`matrix/values_chain_golden_test.go`) pins, for every tier-1/2 entry of
+   8.9–8.11, the effective selection, the ordered source files (chart-root
+   overlays + scenario layers + scenario extra values), the processed `-f`
+   chain, and the sha256 of both the merged values and the resolved-image
+   file — so it catches a selection, ordering or content regression in the
+   values pipeline, not just a missing file.
 
 `deploy-camunda matrix run --shortname-filter my-scenario` now picks it
 up. When you're done iterating, if it's useful to more than one person,
