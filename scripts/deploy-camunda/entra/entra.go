@@ -131,8 +131,10 @@ type VenomApp struct {
 	ClientSecret string
 }
 
-// resolveOpts fills in empty Options fields from environment variables.
-func resolveOpts(opts *Options) error {
+// resolveCredentials fills in empty Graph credential fields from environment
+// variables. Used on its own by operations that act on the whole tenant rather
+// than on one namespace.
+func resolveCredentials(opts *Options) error {
 	if opts.DirectoryID == "" {
 		opts.DirectoryID = os.Getenv("ENTRA_APP_DIRECTORY_ID")
 	}
@@ -151,6 +153,14 @@ func resolveOpts(opts *Options) error {
 	}
 	if opts.ClientSecret == "" {
 		return fmt.Errorf("ENTRA_APP_CLIENT_SECRET is required (set Options.ClientSecret or ENTRA_APP_CLIENT_SECRET env var)")
+	}
+	return nil
+}
+
+// resolveOpts fills in empty Options fields from environment variables.
+func resolveOpts(opts *Options) error {
+	if err := resolveCredentials(opts); err != nil {
+		return err
 	}
 	if opts.Namespace == "" {
 		return fmt.Errorf("namespace is required")
