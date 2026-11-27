@@ -75,6 +75,7 @@ func TestSweepLoginApps_DeletesOnlyOldQAEntraApps(t *testing.T) {
 		sweepApp("camunda-oidc-qa-id-qaen-ce20-8-10-qaen", 48),
 		sweepApp("camunda-oidc-qa-id-qaen-ab12-8-11-qaen", 25),
 		sweepApp("camunda-oidc-qa-id-qaen-cd34-8-11-qaen", 2),
+		sweepApp("camunda-oidc-qa-id-qaen-ef78-8-11-qaen", 24),
 		sweepApp("camunda-oidc-qa-id-qaelupg-ef56-8-10", 48),
 		sweepApp("camunda-oidc-distro-pr-1234-qaen", 48),
 	}
@@ -117,6 +118,11 @@ func TestSweepLoginApps_DeletesOnlyOldQAEntraApps(t *testing.T) {
 	}
 	if len(result.Failed) != 0 {
 		t.Errorf("Failed = %v, want none", names(result.Failed))
+	}
+	for _, app := range result.Candidates {
+		if strings.Contains(app.DisplayName, "-ef78-") {
+			t.Error("an app aged exactly --max-age must be kept")
+		}
 	}
 	if result.Scanned != len(listing) {
 		t.Errorf("Scanned = %d, want %d", result.Scanned, len(listing))
@@ -253,16 +259,18 @@ func TestSweepLoginApps_InvalidOptions(t *testing.T) {
 	t.Setenv("ENTRA_APP_CLIENT_ID", "")
 	t.Setenv("ENTRA_APP_CLIENT_SECRET", "")
 
-	if _, err := SweepLoginApps(context.Background(), SweepOptions{MaxAge: time.Hour}); err == nil {
+	if _, err := SweepLoginApps(context.Background(), SweepOptions{MaxAge: 24 * time.Hour}); err == nil {
 		t.Error("expected an error without credentials")
 	}
 
 	srv := newTestServer(t, map[string]http.HandlerFunc{})
 	defer srv.Close()
-	opts := sweepTestOptions(srv, true)
-	opts.MaxAge = 0
-	if _, err := SweepLoginApps(context.Background(), opts); err == nil {
-		t.Error("expected an error for a non-positive max age")
+	for _, maxAge := range []time.Duration{0, minSweepMaxAge - time.Minute} {
+		opts := sweepTestOptions(srv, true)
+		opts.MaxAge = maxAge
+		if _, err := SweepLoginApps(context.Background(), opts); err == nil {
+			t.Errorf("max age %s: expected an error", maxAge)
+		}
 	}
 }
 

@@ -198,11 +198,11 @@ func newEntraSweepLoginAppsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sweep-login-apps",
 		Short: "Delete QA Entra login app registrations left behind by finished deployments",
-		Long: `Delete the camunda-oidc-qa-*qaen* Entra app registrations older than --max-age.
+		Long: `Delete the login app registrations of QA Entra namespaces older than --max-age.
 
-Only app registrations of QA Entra namespaces are considered; every other app
-registration in the tenant is left alone. --max-age must stay above the TTL of
-the namespaces these apps belong to, so a running deployment keeps its app.
+Every other app registration in the tenant is left alone. --max-age must stay
+above the TTL of the namespaces these apps belong to, so a running deployment
+keeps its app; values below 12h are rejected.
 
 Environment variables (or set in .env file):
   ENTRA_APP_DIRECTORY_ID  - Entra tenant/directory ID

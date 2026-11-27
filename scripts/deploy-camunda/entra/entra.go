@@ -132,8 +132,7 @@ type VenomApp struct {
 }
 
 // resolveCredentials fills in empty Graph credential fields from environment
-// variables. Used on its own by operations that act on the whole tenant rather
-// than on one namespace.
+// variables, without validating Namespace.
 func resolveCredentials(opts *Options) error {
 	if opts.DirectoryID == "" {
 		opts.DirectoryID = os.Getenv("ENTRA_APP_DIRECTORY_ID")

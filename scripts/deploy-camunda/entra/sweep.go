@@ -26,25 +26,34 @@ import (
 	"scripts/camunda-core/pkg/logging"
 )
 
-// sweepPrefix is the display-name prefix the Graph listing filters on:
-// loginAppDisplayName of a namespace carrying the QA namespace prefix.
-const sweepPrefix = "camunda-oidc-qa-"
+// qaNamespacePrefix is the namespace prefix the QA flows deploy with.
+const qaNamespacePrefix = "qa-"
+
+// qaEntraShortname is the shortname of the Entra QA scenarios.
+const qaEntraShortname = "qaen"
+
+// sweepPrefix is the display-name prefix the Graph listing filters on.
+var sweepPrefix = loginAppDisplayName(qaNamespacePrefix)
 
 // sweepNamePattern narrows the listing to namespaces that also carry the
-// "qaen" shortname of the Entra QA scenarios.
-var sweepNamePattern = regexp.MustCompile(`^camunda-oidc-qa-[a-z0-9-]*qaen`)
+// Entra QA shortname.
+var sweepNamePattern = regexp.MustCompile(
+	`^` + regexp.QuoteMeta(sweepPrefix) + `[a-z0-9-]*` + regexp.QuoteMeta(qaEntraShortname),
+)
 
 // sweepPageSize is the Graph page size for the application listing.
 const sweepPageSize = 999
 
+// minSweepMaxAge is the lowest --max-age a sweep accepts.
+const minSweepMaxAge = 12 * time.Hour
+
 // SweepOptions configures a sweep of leaked QA Entra login app registrations.
 type SweepOptions struct {
-	// Options supplies the Graph credentials and HTTP client. Namespace is
-	// unused — a sweep spans the tenant.
+	// Options supplies the Graph credentials and HTTP client; its Namespace is
+	// unused.
 	Options
 
-	// MaxAge keeps app registrations younger than this. It must stay above the
-	// namespace TTL of the deployments that provision them.
+	// MaxAge keeps app registrations younger than this, at least minSweepMaxAge.
 	MaxAge time.Duration
 
 	// DryRun lists what would be deleted without deleting anything.
@@ -85,18 +94,17 @@ type graphApplication struct {
 	CreatedAt   string `json:"createdDateTime"`
 }
 
-// SweepLoginApps deletes the QA Entra login app registrations that match
-// sweepNamePattern and are older than opts.MaxAge, whose namespace no cleanup
-// workflow ever deleted them with. On a dry run it reports the same candidates
-// without deleting any.
+// SweepLoginApps deletes the login app registrations that match
+// sweepNamePattern and are older than opts.MaxAge. On a dry run it reports the
+// same candidates without deleting any.
 func SweepLoginApps(ctx context.Context, opts SweepOptions) (SweepResult, error) {
 	result := SweepResult{DryRun: opts.DryRun}
 
 	if err := resolveCredentials(&opts.Options); err != nil {
 		return result, err
 	}
-	if opts.MaxAge <= 0 {
-		return result, fmt.Errorf("max age must be positive, got %s", opts.MaxAge)
+	if opts.MaxAge < minSweepMaxAge {
+		return result, fmt.Errorf("max age must be at least %s, got %s", minSweepMaxAge, opts.MaxAge)
 	}
 	now := opts.Now
 	if now.IsZero() {
