@@ -38,5 +38,5 @@ func main() {
 		fmt.Fprintf(os.Stderr, "FAIL: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("PASS: NetworkPolicies render, enforce, open extraRules exactly, restrict egress and are removed on rollback")
+	fmt.Println("PASS: NetworkPolicies render, enforce, open extraRules exactly, restrict egress, open allowedNamespaces exactly and are removed on rollback")
 }

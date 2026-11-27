@@ -1,0 +1,6 @@
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces:
+        - "{{ .Release.Namespace }}-allowed"

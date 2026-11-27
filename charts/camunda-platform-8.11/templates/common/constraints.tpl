@@ -47,6 +47,8 @@ non-empty string such as global.identity.service.url.
 
 {{- $topologyMode := include "camundaPlatform.topologyMode" . }}
 {{- $topology := .Values.global.topology | default dict }}
+{{- include "camunda.constraints.networkPolicyAllowedNamespaces" . }}
+
 {{- if not (has $topologyMode (list "combined" "hub" "orchestration" "optimize")) }}
   {{- fail (printf "[camunda][error] global.topology.mode must be one of combined, hub, orchestration, or optimize; got %q." $topologyMode) }}
 {{- end }}
@@ -1416,6 +1418,31 @@ The following values inside your values.yaml need to be set but were not:
       {{- end }}
     {{- end }}
 
+  {{- end }}
+{{- end }}
+
+{{- define "camunda.constraints.networkPolicyAllowedNamespaces" }}
+  {{- $lists := dict "global.networkPolicy.ingress.allowedNamespaces" ((.Values.global.networkPolicy | default dict).ingress | default dict).allowedNamespaces }}
+  {{- range $key := list "orchestration" "connectors" "identity" "optimize" }}
+    {{- $_ := set $lists (printf "%s.networkPolicy.ingress.allowedNamespaces" $key) (((get $.Values $key | default dict).networkPolicy | default dict).ingress | default dict).allowedNamespaces }}
+  {{- end }}
+  {{- if eq (include "camundaHub.webModelerEnabled" .) "true" }}
+    {{- $hub := include "camundaHub.values" . | fromYaml }}
+    {{- range $key := list "restapi" "websockets" }}
+      {{- $_ := set $lists (printf "camundaHub.%s.networkPolicy.ingress.allowedNamespaces" $key) (((get $hub $key | default dict).networkPolicy | default dict).ingress | default dict).allowedNamespaces }}
+    {{- end }}
+  {{- end }}
+  {{- range $key, $list := $lists }}
+    {{- range $entry := $list | default list }}
+      {{- if kindIs "map" $entry }}
+        {{- if eq (hasKey $entry "name") (hasKey $entry "namespaceSelector") }}
+          {{- fail (printf "[camunda][error] each object entry of %s must set exactly one of name or namespaceSelector." $key) }}
+        {{- end }}
+        {{- if and (hasKey $entry "namespaceSelector") (empty $entry.namespaceSelector) }}
+          {{- fail (printf "[camunda][error] %s has an entry with an empty namespaceSelector, which would allow every namespace; set matchLabels or matchExpressions." $key) }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 {{- end }}
 

@@ -1,0 +1,11 @@
+global:
+  networkPolicy:
+    enabled: true
+    ingress:
+      allowedNamespaces:
+        - namespaceSelector:
+            matchLabels:
+              camunda.io/tenant-of: "{{ .Release.Namespace }}"
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: hub-client
