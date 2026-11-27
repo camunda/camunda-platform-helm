@@ -340,13 +340,17 @@ Compile all warnings into a single message.
 {{- end -}}
 {{- end -}}
 
-{{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars when the merged value is emitted. */ -}}
+{{- /* NOTE: Drops JDK_JAVA_OPTIONS from extraEnvVars when the merged value is emitted. A valueFrom entry after the last literal stays and overrides the merged entry, as Kubernetes applies the last one. */ -}}
 {{- define "keycloak.excludeJdkJavaOptions" -}}
 {{- $drop := .dropJdk -}}
+{{- $lastLiteral := -1 -}}
+{{- range $i, $e := .envVars | default list -}}
+{{- if and (kindIs "string" $e.name) (eq $e.name "JDK_JAVA_OPTIONS") (hasKey $e "value") (kindIs "string" $e.value) -}}{{- $lastLiteral = $i -}}{{- end -}}
+{{- end -}}
 {{- $result := list -}}
-{{- range .envVars | default list -}}
-{{- if or (not $drop) (not (and (kindIs "string" .name) (eq .name "JDK_JAVA_OPTIONS"))) -}}
-{{- $result = append $result . -}}
+{{- range $i, $e := .envVars | default list -}}
+{{- if or (not $drop) (not (and (kindIs "string" $e.name) (eq $e.name "JDK_JAVA_OPTIONS"))) (and (hasKey $e "valueFrom") (gt $i $lastLiteral)) -}}
+{{- $result = append $result $e -}}
 {{- end -}}
 {{- end -}}
 {{- $result | toJson -}}

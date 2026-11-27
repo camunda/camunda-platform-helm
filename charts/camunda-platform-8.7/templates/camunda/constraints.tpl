@@ -148,9 +148,14 @@ configmap-warnings.yaml, which renders the "<release>-warnings" ConfigMap on the
 {{- if $kc.extraEnvVarsCM }}{{ $sources = append $sources "identityKeycloak.extraEnvVarsCM" }}{{ end -}}
 {{- if $kc.extraEnvVarsSecret }}{{ $sources = append $sources "identityKeycloak.extraEnvVarsSecret" }}{{ end -}}
 {{- if kindIs "slice" ($kc.extraEnvVars | default list) -}}
+{{- /* A later literal entry replaces an earlier valueFrom entry. */ -}}
+{{- $valueFromWins := false -}}
 {{- range $entry := $kc.extraEnvVars -}}
-{{- if and (kindIs "string" $entry.name) (eq $entry.name "JDK_JAVA_OPTIONS") (hasKey $entry "valueFrom") }}{{ $sources = append $sources "identityKeycloak.extraEnvVars[valueFrom]" }}{{ end -}}
+{{- if and (kindIs "string" $entry.name) (eq $entry.name "JDK_JAVA_OPTIONS") -}}
+{{- if hasKey $entry "valueFrom" }}{{ $valueFromWins = true }}{{ else if and (hasKey $entry "value") (kindIs "string" $entry.value) }}{{ $valueFromWins = false }}{{ end -}}
 {{- end -}}
+{{- end -}}
+{{- if $valueFromWins }}{{ $sources = append $sources "identityKeycloak.extraEnvVars[valueFrom]" }}{{ end -}}
 {{- end -}}
 {{- if $sources -}}
 {{- printf "\n%s" (printf "[camunda][warning] SECURITY NOTICE: CVE-2026-114938 mitigation may not apply. Keycloak loads JDK_JAVA_OPTIONS from %s after the chart's ConfigMap, so those values can replace -XX:-UseBASE64Intrinsics. Add the flag to them." (join ", " $sources)) }}
