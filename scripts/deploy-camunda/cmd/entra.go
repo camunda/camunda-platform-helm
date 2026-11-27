@@ -16,11 +16,13 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"scripts/camunda-core/pkg/logging"
 	"scripts/deploy-camunda/entra"
 	"scripts/prepare-helm-values/pkg/env"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -35,6 +37,7 @@ func newEntraCommand() *cobra.Command {
 	entraCmd.AddCommand(newEntraEnsureCommand())
 	entraCmd.AddCommand(newEntraCleanupCommand())
 	entraCmd.AddCommand(newEntraCleanupLoginAppCommand())
+	entraCmd.AddCommand(newEntraSweepLoginAppsCommand())
 	entraCmd.AddCommand(newEntraUpdateRedirectURIsCommand())
 
 	return entraCmd
@@ -180,6 +183,89 @@ func newEntraCleanupLoginAppCommand() *cobra.Command {
 		"Delete the Entra login app registration a qa-entra deployment provisions for itself.",
 		entra.CleanupLoginApp,
 	)
+}
+
+// sweepLoginApps is entra.SweepLoginApps, replaced in tests.
+var sweepLoginApps = entra.SweepLoginApps
+
+// newEntraSweepLoginAppsCommand creates the "entra sweep-login-apps" subcommand.
+func newEntraSweepLoginAppsCommand() *cobra.Command {
+	var (
+		maxAge     time.Duration
+		dryRun     bool
+		outputFile string
+		logLevel   string
+		envFile    string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "sweep-login-apps",
+		Short: "Delete QA Entra login app registrations left behind by finished deployments",
+		Long: `Delete the login app registrations of QA Entra namespaces older than --max-age.
+
+Every other app registration in the tenant is left alone. --max-age must stay
+above the TTL of the namespaces these apps belong to, so a running deployment
+keeps its app; values below 12h are rejected.
+
+Environment variables (or set in .env file):
+  ENTRA_APP_DIRECTORY_ID  - Entra tenant/directory ID
+  ENTRA_APP_CLIENT_ID     - Parent app client ID
+  ENTRA_APP_CLIENT_SECRET - Parent app client secret`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := setupEntraLogging(logLevel); err != nil {
+				return err
+			}
+			loadEnvFile(envFile)
+
+			result, err := sweepLoginApps(context.Background(), entra.SweepOptions{
+				MaxAge: maxAge,
+				DryRun: dryRun,
+			})
+			if err != nil {
+				return err
+			}
+			if err := writeSweepResult(outputFile, result); err != nil {
+				return err
+			}
+
+			logging.Logger.Info().
+				Int("scanned", result.Scanned).
+				Int("candidates", len(result.Candidates)).
+				Int("deleted", len(result.Deleted)).
+				Int("failed", len(result.Failed)).
+				Bool("dryRun", result.DryRun).
+				Msg("Entra login app sweep finished")
+
+			if len(result.Failed) > 0 {
+				return fmt.Errorf("failed to delete %d of %d Entra app registrations", len(result.Failed), len(result.Candidates))
+			}
+			return nil
+		},
+	}
+
+	f := cmd.Flags()
+	f.DurationVar(&maxAge, "max-age", 24*time.Hour, "Keep app registrations younger than this")
+	f.BoolVar(&dryRun, "dry-run", true, "List what would be deleted without deleting it")
+	f.StringVarP(&outputFile, "output", "o", "", "Write the JSON sweep result to this file")
+	f.StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
+	f.StringVar(&envFile, "env-file", "", "Path to .env file (defaults to .env in current dir)")
+
+	return cmd
+}
+
+// writeSweepResult writes result as indented JSON to path, skipping an empty path.
+func writeSweepResult(path string, result entra.SweepResult) error {
+	if path == "" {
+		return nil
+	}
+	payload, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode sweep result: %w", err)
+	}
+	if err := os.WriteFile(path, append(payload, '\n'), 0o600); err != nil {
+		return fmt.Errorf("write sweep result to %s: %w", path, err)
+	}
+	return nil
 }
 
 // newEntraAppCleanupCommand builds a best-effort cleanup subcommand that runs

@@ -1,0 +1,122 @@
+name: "Clean Up Entra Login Apps"
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: List the app registrations that would be deleted without deleting them.
+        type: boolean
+        default: true
+      max-age:
+        description: Keep app registrations younger than this (Go duration, e.g. 24h).
+        type: string
+        default: 24h
+
+permissions:
+  contents: read
+
+env:
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+  MAX_AGE: ${{ inputs.max-age || '24h' }}
+
+jobs:
+  sweep:
+    name: Sweep orphaned QA Entra login apps
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+      - name: CI Setup - Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: CI Setup - Install tools
+        uses: camunda/infraex-common-config/.github/actions/asdf-install-tooling@ab4b2b3604eea14f2b41b77bbc9a66bbf2e51df4 # 3.0.13
+      - name: Import Vault secrets
+        id: test-credentials-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          secrets: |
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+            secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+            secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+          exportEnv: false
+      - name: Sweep Entra login app registrations
+        id: sweep
+        working-directory: scripts/deploy-camunda
+        env:
+          ENTRA_APP_CLIENT_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_ID }}
+          ENTRA_APP_CLIENT_SECRET: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_CLIENT_SECRET }}
+          ENTRA_APP_DIRECTORY_ID: ${{ steps.test-credentials-secret.outputs.ENTRA_APP_DIRECTORY_ID }}
+        run: |
+          set -euo pipefail
+          go run . entra sweep-login-apps \
+            --max-age "${MAX_AGE}" \
+            --dry-run="${DRY_RUN}" \
+            --output "${RUNNER_TEMP}/entra-sweep.json" \
+            --log-level info
+      - name: Report the sweep result
+        id: report
+        if: always()
+        run: |
+          set -euo pipefail
+          result="${RUNNER_TEMP}/entra-sweep.json"
+          if [[ ! -f "$result" ]]; then
+            echo "The sweep produced no result file."
+            exit 0
+          fi
+          jq -r '"scanned=\(.scanned)",
+                 "candidates=\(.candidates | length)",
+                 "deleted=\(.deleted | length)",
+                 "failed=\(.failed | length)"' "$result" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Entra login app sweep (dry run: ${DRY_RUN}, max age: ${MAX_AGE})"
+            echo ""
+            jq -r '"Scanned \(.scanned) app registration(s), matched \(.candidates | length).", "",
+                   ((.candidates // [])[] | "- `\(.displayName)` last provisioned \(.provisionedAt)"),
+                   ((.failed // [])[] | "- ❌ `\(.displayName)`: \(.error)")' "$result"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: 🚨 Notify the team via Slack 🚨
+        if: failure()
+        uses: slackapi/slack-github-action@0bc3581177d9a0f8d555e07689384b376528e8fa # v4.1.0
+        with:
+          webhook: ${{ steps.test-credentials-secret.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: Entra Login App Cleanup Failed
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    Orphaned Entra login app registrations were not cleaned up. They keep
+                    accumulating in the tenant until this is fixed.
+
+                    *Summary:*
+                      • Matched app registrations: ${{ steps.report.outputs.candidates || 'n/a' }}
+                      • Deleted: ${{ steps.report.outputs.deleted || 'n/a' }}
+                      • Failed to delete: ${{ steps.report.outputs.failed || 'n/a' }}
+
+                    <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Check failed workflow>
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwt_path: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwt_role: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwt_audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
