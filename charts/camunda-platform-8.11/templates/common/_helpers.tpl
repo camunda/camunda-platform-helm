@@ -3312,12 +3312,25 @@ legacy Optimize exporters, and the NOTES.txt warning.
 {{- end -}}
 
 {{/*
-[camunda-platform] "true" when an ingress NetworkPolicy should be rendered for a component.
+[camunda-platform] "true" when a NetworkPolicy should be rendered for a component, that is when its
+ingress or its egress rules are enabled.
 
 Usage:
 {{ include "camundaPlatform.networkPolicyEnabled" (dict "networkPolicy" .Values.connectors.networkPolicy "context" $) }}
 */}}
 {{- define "camundaPlatform.networkPolicyEnabled" -}}
+{{- if or (include "camundaPlatform.networkPolicyIngressEnabled" .) (include "camundaPlatform.networkPolicyEgressEnabled" .) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] "true" when the component NetworkPolicy has ingress rules.
+
+Usage:
+{{ include "camundaPlatform.networkPolicyIngressEnabled" (dict "networkPolicy" .Values.connectors.networkPolicy "context" $) }}
+*/}}
+{{- define "camundaPlatform.networkPolicyIngressEnabled" -}}
 {{- $global := .context.Values.global.networkPolicy | default dict -}}
 {{- $ingress := $global.ingress | default dict -}}
 {{- $component := .networkPolicy | default dict -}}
@@ -3327,14 +3340,38 @@ true
 {{- end -}}
 
 {{/*
-[camunda-platform] Renders an ingress-only NetworkPolicy that allows pods in the release
-namespace to reach the given pod ports, followed by global.networkPolicy.ingress.extraRules.
+[camunda-platform] "true" when the component NetworkPolicy has egress rules: global.networkPolicy.enabled,
+global.networkPolicy.egress.enabled, the component networkPolicy.enabled and networkPolicy.egress.enabled
+are all true.
 
 Usage:
-{{ include "camundaPlatform.networkPolicy" (dict "name" $name "labels" $labels "matchLabels" $matchLabels "ports" (list 8080) "context" $) }}
+{{ include "camundaPlatform.networkPolicyEgressEnabled" (dict "networkPolicy" .Values.connectors.networkPolicy "context" $) }}
+*/}}
+{{- define "camundaPlatform.networkPolicyEgressEnabled" -}}
+{{- $global := .context.Values.global.networkPolicy | default dict -}}
+{{- $egress := $global.egress | default dict -}}
+{{- $component := .networkPolicy | default dict -}}
+{{- $componentEgress := $component.egress | default dict -}}
+{{- if and $global.enabled $egress.enabled (ne (toString $component.enabled) "false") (ne (toString $componentEgress.enabled) "false") -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+[camunda-platform] Renders the component NetworkPolicy. Ingress rules allow pods in the release
+namespace to reach the given pod ports, followed by global.networkPolicy.ingress.extraRules. Egress
+rules allow the release namespace and, with global.networkPolicy.egress.allowDNS, kube-dns on port 53,
+followed by global.networkPolicy.egress.extraRules and the component networkPolicy.egress.extraRules.
+
+Usage:
+{{ include "camundaPlatform.networkPolicy" (dict "name" $name "labels" $labels "matchLabels" $matchLabels "ports" (list 8080) "networkPolicy" .Values.connectors.networkPolicy "context" $) }}
 */}}
 {{- define "camundaPlatform.networkPolicy" -}}
 {{- $ingress := .context.Values.global.networkPolicy.ingress | default dict -}}
+{{- $egress := .context.Values.global.networkPolicy.egress | default dict -}}
+{{- $componentEgress := (.networkPolicy | default dict).egress | default dict -}}
+{{- $ingressEnabled := include "camundaPlatform.networkPolicyIngressEnabled" . -}}
+{{- $egressEnabled := include "camundaPlatform.networkPolicyEgressEnabled" . -}}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -3351,7 +3388,13 @@ spec:
     matchLabels:
       {{- .matchLabels | nindent 6 }}
   policyTypes:
+    {{- if $ingressEnabled }}
     - Ingress
+    {{- end }}
+    {{- if $egressEnabled }}
+    - Egress
+    {{- end }}
+  {{- if $ingressEnabled }}
   ingress:
     - from:
         - podSelector: {}
@@ -3363,4 +3406,30 @@ spec:
     {{- with $ingress.extraRules }}
     {{- tpl (toYaml .) $.context | nindent 4 }}
     {{- end }}
+  {{- end }}
+  {{- if $egressEnabled }}
+  egress:
+    - to:
+        - podSelector: {}
+    {{- if ne (toString $egress.allowDNS) "false" }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    {{- end }}
+    {{- with $egress.extraRules }}
+    {{- tpl (toYaml .) $.context | nindent 4 }}
+    {{- end }}
+    {{- with $componentEgress.extraRules }}
+    {{- tpl (toYaml .) $.context | nindent 4 }}
+    {{- end }}
+  {{- end }}
 {{- end -}}
