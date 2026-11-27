@@ -93,6 +93,12 @@ permissions:
 jobs:
   init:
     name: Generate chart matrix
+    if: >-
+      ${{
+        !startsWith(github.head_ref, 'release-please--') &&
+        !(github.event.merge_group.head_commit.author.name == 'distro-ci[bot]' &&
+          startsWith(github.event.merge_group.head_commit.message, 'chore(release): '))
+      }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -209,7 +215,7 @@ jobs:
           echo "matrix=${ANNOTATED}" >> "$GITHUB_OUTPUT"
 
   unit-testing:
-    if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}
+    if: ${{ needs.init.outputs.camunda-versions != '[]' }}
     name: ${{ matrix.version }} - Unit Test
     needs: [init]
     strategy:
@@ -232,6 +238,12 @@ jobs:
 
   unit-testing-scripts:
     name: UnitTest Scripts
+    if: >-
+      ${{
+        !startsWith(github.head_ref, 'release-please--') &&
+        !(github.event.merge_group.head_commit.author.name == 'distro-ci[bot]' &&
+          startsWith(github.event.merge_group.head_commit.message, 'chore(release): '))
+      }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -277,7 +289,7 @@ jobs:
       camunda-helm-git-ref: "${{ github.sha }}"
 
   kind-testing:
-    if: ${{ needs.init.outputs.camunda-versions != '[]' && !contains(github.head_ref, 'release-please--branches--') }}
+    if: ${{ needs.init.outputs.camunda-versions != '[]' }}
     name: Local cluster - KIND ${{ matrix.version }}
     needs: [init, validation]
     strategy:
@@ -319,7 +331,6 @@ jobs:
     if: >-
       ${{
         needs.init.outputs.camunda-versions != '[]' &&
-        !contains(github.head_ref, 'release-please--branches--') &&
         !(startsWith(github.head_ref, 'renovate/') && (
           contains(github.head_ref, 'camunda-platform-images') ||
           contains(github.head_ref, 'camunda-platform-digests')

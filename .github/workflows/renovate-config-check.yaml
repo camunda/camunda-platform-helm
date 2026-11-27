@@ -21,6 +21,7 @@ permissions:
 jobs:
   check:
     name: Check renovate config
+    if: ${{ !startsWith(github.head_ref || github.ref_name, 'release-please--') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

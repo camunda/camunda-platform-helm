@@ -24,6 +24,12 @@ concurrency:
 jobs:
   test:
     name: Go lint + test
+    if: >-
+      ${{
+        !startsWith(github.head_ref, 'release-please--') &&
+        !(github.event.merge_group.head_commit.author.name == 'distro-ci[bot]' &&
+          startsWith(github.event.merge_group.head_commit.message, 'chore(release): '))
+      }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
