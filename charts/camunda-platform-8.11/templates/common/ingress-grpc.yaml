@@ -33,7 +33,7 @@ spec:
             pathType: {{ .Values.orchestration.ingress.grpc.pathType }}
             backend:
               service:
-                name: {{ include "orchestration.serviceName" . }}
+                name: {{ include "orchestration.clientServiceName" . }}
                 port:
                   number: {{ .Values.orchestration.service.grpcPort }}
   {{- if .Values.orchestration.ingress.grpc.tls.enabled }}

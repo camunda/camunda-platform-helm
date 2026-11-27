@@ -90,6 +90,10 @@ integration:
       shortname: gatkc
       tier: 2
       enabled: true
+    - id: standalone-gateway
+      shortname: stgw
+      tier: 2
+      enabled: true
     - id: elasticsearch-arm
       shortname: esarm
       tier: 2

@@ -1425,6 +1425,247 @@
                         "additionalProperties": false
                     }
                 },
+                "standaloneGateway": {
+                    "properties": {
+                        "resources": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "requests": {
+                                    "additionalProperties": true
+                                },
+                                "limits": {
+                                    "additionalProperties": true
+                                }
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "seccompProfile": {
+                                    "additionalProperties": true
+                                }
+                            }
+                        },
+                        "podSecurityContext": {
+                            "additionalProperties": true,
+                            "properties": {
+                                "seccompProfile": {
+                                    "additionalProperties": true
+                                }
+                            }
+                        },
+                        "podAnnotations": {
+                            "additionalProperties": true
+                        },
+                        "podLabels": {
+                            "additionalProperties": true
+                        },
+                        "nodeSelector": {
+                            "additionalProperties": true
+                        },
+                        "serviceAccount": {
+                            "properties": {
+                                "annotations": {
+                                    "additionalProperties": true
+                                },
+                                "labels": {
+                                    "additionalProperties": true
+                                }
+                            }
+                        },
+                        "service": {
+                            "properties": {
+                                "annotations": {
+                                    "type": "object",
+                                    "description": "can be used to define annotations, which will be applied to the standalone gateway Service",
+                                    "default": {},
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "env": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment variable name"
+                                    },
+                                    "value": {
+                                        "description": "Environment variable value",
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "valueFrom": {
+                                        "description": "Source for the environment variable's value (Kubernetes EnvVarSource).",
+                                        "type": "object",
+                                        "properties": {
+                                            "fieldRef": {
+                                                "type": "object",
+                                                "description": "Selects a field of the pod (supports metadata.name, metadata.namespace, metadata.uid, metadata.labels['<KEY>'], metadata.annotations['<KEY>'], spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs).",
+                                                "properties": {
+                                                    "apiVersion": {
+                                                        "type": "string"
+                                                    },
+                                                    "fieldPath": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "fieldPath"
+                                                ]
+                                            },
+                                            "resourceFieldRef": {
+                                                "type": "object",
+                                                "description": "Selects a resource of the container (only resources limits and requests are currently supported).",
+                                                "properties": {
+                                                    "containerName": {
+                                                        "type": "string"
+                                                    },
+                                                    "resource": {
+                                                        "type": "string"
+                                                    },
+                                                    "divisor": {
+                                                        "type": [
+                                                            "string",
+                                                            "integer",
+                                                            "number"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "resource"
+                                                ]
+                                            },
+                                            "configMapKeyRef": {
+                                                "type": "object",
+                                                "description": "Selects a key of a ConfigMap.",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "optional": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key"
+                                                ]
+                                            },
+                                            "secretKeyRef": {
+                                                "type": "object",
+                                                "description": "Selects a key of a Secret.",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "optional": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "affinity": {
+                            "type": "object",
+                            "description": "if specified, the standalone gateway pod's scheduling constraints. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.",
+                            "default": {},
+                            "additionalProperties": true
+                        },
+                        "autoscaling": {
+                            "properties": {
+                                "behavior": {
+                                    "type": "object",
+                                    "description": "can be used to configure the scaling behavior of the HorizontalPodAutoscaler",
+                                    "default": {},
+                                    "additionalProperties": true
+                                },
+                                "targetCPUUtilizationPercentage": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
+                                "targetMemoryUtilizationPercentage": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                }
+                            }
+                        },
+                        "ingress": {
+                            "properties": {
+                                "rest": {
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "description": "defines the ingress related annotations, consumed mostly by the ingress controller.",
+                                            "default": {},
+                                            "additionalProperties": true
+                                        },
+                                        "labels": {
+                                            "type": "object",
+                                            "description": "can be used to define labels which will be applied to the standalone gateway REST ingress resource",
+                                            "default": {},
+                                            "additionalProperties": true
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "automountServiceAccountToken": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "podDisruptionBudget": {
+                            "properties": {
+                                "minAvailable": {
+                                    "type": [
+                                        "integer",
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "maxUnavailable": {
+                                    "type": [
+                                        "integer",
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
                 "affinity": {
                     "type": "object",
                     "description": "if specified, the pod's scheduling constraints. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.",
