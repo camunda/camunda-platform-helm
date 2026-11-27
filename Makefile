@@ -80,6 +80,15 @@ test.zone-aware-migration:
 	cd scripts/zone-aware-migration && go test -race ./...
 	$(chartPath)/test/integration/scenarios/zone-aware-migration/verify-zone-aware-migration.sh
 
+.PHONY: build.networkpolicy-enforcement
+build.networkpolicy-enforcement:
+	cd scripts/networkpolicy-enforcement && go build .
+
+.PHONY: test.networkpolicy-enforcement
+test.networkpolicy-enforcement: build.networkpolicy-enforcement
+	cd scripts/networkpolicy-enforcement && go test ./...
+	CHART_DIR=$(CURDIR)/charts/camunda-platform-8.11 scripts/networkpolicy-enforcement/networkpolicy-enforcement $(networkPolicyArgs)
+
 # test.deploy-camunda-credential-stores: run the credential reconcile scripts
 # against real PostgreSQL, Elasticsearch, and Keycloak containers (needs docker).
 .PHONY: test.deploy-camunda-credential-stores
