@@ -170,6 +170,13 @@ go.update-registry-golden:
 	@echo "\n[$@] Updating registry snapshots in charts/<v>/test/ci/registry-snapshot.yaml"
 	@cd scripts/deploy-camunda && go test ./matrix/ -run TestRegistryGolden -update-golden
 
+# go.update-catalogue-golden: refresh scripts/deploy-camunda/catalogue/testdata/builtin_catalogue.golden,
+# the builtin Recipe view of every chart version's composable registry.
+.PHONY: go.update-catalogue-golden
+go.update-catalogue-golden:
+	@echo "\n[$@] Updating scripts/deploy-camunda/catalogue/testdata/builtin_catalogue.golden"
+	@cd scripts/deploy-camunda && go test ./catalogue/ -run TestBuiltinCatalogueGolden -update-golden
+
 # go.update-golden-only: update the golden files only without the rest of the tests
 .PHONY: go.update-golden-only
 go.update-golden-only: .helm-version-check helm.dependency-update go.update-golden-only-lite
