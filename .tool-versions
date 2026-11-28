@@ -25,4 +25,4 @@ bats 1.14.0
 pre-commit 4.7.0
 python 3.15.2
 # renovate: datasource=github-releases depName=BurntSushi/ripgrep
-ripgrep 15.2.0
+ripgrep 16.0.0
