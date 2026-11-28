@@ -114,7 +114,7 @@
 # This stage downloads CLI tools and compresses them with UPX.
 # Only the compressed binaries are copied to the final image.
 # ==============================================================================
-FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS tools
+FROM debian:bookworm-slim@sha256:e67eeead736ff7bbe258ef088bff683635c561b1fcfefad0806c1df4ab49ce0e AS tools
 
 # Install minimal tools for downloading and compressing
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -189,7 +189,7 @@ RUN echo "=== Compressed binary sizes ===" && ls -lh /tools/
 # ==============================================================================
 # Stage 2: Final optimized image
 # ==============================================================================
-FROM node:24-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54
+FROM node:24-slim@sha256:873f586f3794f52281bd039bf02c048a0be08fde619338f9941bad1eb6b34530
 
 LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-platform-helm"
 LABEL org.opencontainers.image.description="Playwright Runner (Ultra-optimized, Chromium headless-shell only) for Camunda Platform Helm integration tests"
